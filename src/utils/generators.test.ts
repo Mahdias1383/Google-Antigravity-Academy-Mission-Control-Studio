@@ -139,6 +139,7 @@ import {
   calculateWeeklyPlannerMetrics,
   formatActiveTimerDisplay,
   calculateXpAndLevelProgression,
+  calculateTrophyCaseStatus,
 } from './achievements';
 import { ALL_CURRICULUM_MODULES } from '../data/curriculumIndex';
 
@@ -224,7 +225,6 @@ test('calculateXpAndLevelProgression combines module XP, reading time XP, and st
     { studioId: 'mcp', titleFa: 'استودیوی FastMCP', titleEn: 'FastMCP Studio', xpPerAction: 120, actionsLogged: 1 },
   ];
   const initialLevel = calculateXpAndLevelProgression(150, 50, studios);
-  // 150 module + (50 * 4 = 200) reading + (200 + 120 = 320) studio = 670 XP -> Level 2 (600..1300)
   assert.equal(initialLevel.moduleXp, 150);
   assert.equal(initialLevel.readingTimeXp, 200);
   assert.equal(initialLevel.studioUsageXp, 320);
@@ -235,10 +235,30 @@ test('calculateXpAndLevelProgression combines module XP, reading time XP, and st
   const leveledUp = calculateXpAndLevelProgression(1650, 280, [
     { studioId: 'sim', titleFa: 'شبیه‌ساز Mission Control', titleEn: 'Mission Control Sim', xpPerAction: 100, actionsLogged: 6 },
   ]);
-  // 1650 + 1120 + 600 = 3370 XP -> Level 5 (3000..4000)
   assert.equal(leveledUp.currentLevel, 5);
   assert.equal(leveledUp.totalCombinedXp, 3370);
 });
+
+test('calculateTrophyCaseStatus unlocks rare trophies for high-difficulty scenarios and 100% module mastery', () => {
+  const partialTrophies = calculateTrophyCaseStatus(4, 8, ['scenario-zero-downtime-alembic']);
+  assert.equal(partialTrophies.unlockedCount, 1);
+  assert.equal(partialTrophies.totalTrophies, 5);
+  assert.equal(partialTrophies.trophyBonusXp, 350);
+  assert.equal(partialTrophies.allUnlocked, false);
+  assert.equal(partialTrophies.trophies[0].unlocked, false); // Mythic 100% mastery locked
+
+  const fullTrophies = calculateTrophyCaseStatus(8, 8, [
+    'scenario-zero-downtime-alembic',
+    'scenario-worktree-isolation',
+    'scenario-fastmcp-security',
+    'scenario-browser-subagent-e2e',
+  ]);
+  assert.equal(fullTrophies.unlockedCount, 5);
+  assert.equal(fullTrophies.trophyBonusXp, 1800);
+  assert.equal(fullTrophies.allUnlocked, true);
+  assert.equal(fullTrophies.trophies[0].unlocked, true); // Mythic 100% mastery unlocked
+});
+
 
 
 

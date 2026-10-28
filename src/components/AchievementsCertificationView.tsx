@@ -21,6 +21,8 @@ import {
   Trophy,
   Cpu,
   BookOpen,
+  Crown,
+  ShieldCheck,
 } from 'lucide-react';
 import { CurriculumModule } from '../types/curriculum';
 import {
@@ -31,6 +33,7 @@ import {
   calculateStreakSummary,
   calculateWeeklyPlannerMetrics,
   calculateXpAndLevelProgression,
+  calculateTrophyCaseStatus,
   formatActiveTimerDisplay,
   formatShareableReportCardText,
 } from '../utils/achievements';
@@ -140,6 +143,12 @@ export const AchievementsCertificationView: React.FC<{
   // Interactive Studio Usage State (for XP & Level System)
   const [studioUsageItems, setStudioUsageItems] = useState<StudioUsageItem[]>(INITIAL_STUDIO_USAGE);
 
+  // Completed High-Difficulty Mission Scenarios State (for Trophy Case)
+  const [completedScenarioIds, setCompletedScenarioIds] = useState<string[]>([
+    'scenario-zero-downtime-alembic',
+    'scenario-fastmcp-security',
+  ]);
+
   useEffect(() => {
     if (!timerRunning) return;
     const interval = window.setInterval(() => {
@@ -151,11 +160,34 @@ export const AchievementsCertificationView: React.FC<{
   const metrics = calculateCertificationMetrics(allModules, completedModules, architectName);
   const streakStats = calculateStreakSummary(studyDays);
   const plannerAnalytics = calculateWeeklyPlannerMetrics(studyDays, dailyTargetMinutes);
+  const trophyCase = calculateTrophyCaseStatus(
+    metrics.completedCount,
+    metrics.totalModules,
+    completedScenarioIds
+  );
   const xpProgression = calculateXpAndLevelProgression(
-    metrics.totalXp,
+    metrics.totalXp + trophyCase.trophyBonusXp,
     streakStats.totalMinutesStudied,
     studioUsageItems
   );
+
+  const handleToggleScenarioTrophy = (scenarioId: string) => {
+    setCompletedScenarioIds((prev) =>
+      prev.includes(scenarioId)
+        ? prev.filter((id) => id !== scenarioId)
+        : [...prev, scenarioId]
+    );
+  };
+
+  const handleUnlockAllTrophies = () => {
+    onCompleteAllModules();
+    setCompletedScenarioIds([
+      'scenario-zero-downtime-alembic',
+      'scenario-worktree-isolation',
+      'scenario-fastmcp-security',
+      'scenario-browser-subagent-e2e',
+    ]);
+  };
 
   const completedGoalsCount = dailyGoals.filter((g) => g.completed).length;
   const totalPlannedGoalMinutes = dailyGoals.reduce((sum, g) => sum + g.targetMinutes, 0);
@@ -1113,6 +1145,191 @@ export const AchievementsCertificationView: React.FC<{
               />
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* NEW: Rare Digital Trophy Case (100% Curriculum Mastery & High-Difficulty Mission Scenarios) */}
+      <div
+        className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/75 p-6 sm:p-8 space-y-6"
+        data-testid="trophy-case-section"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-amber-500/15 border border-amber-500/40 flex items-center justify-center text-amber-500 shrink-0">
+              <Crown className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
+                  ویترین تندیس‌های نادر دیجیتال
+                </h2>
+                <span
+                  dir="ltr"
+                  data-testid="trophy-unlocked-counter"
+                  className="ltr-inline px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-500 text-xs font-mono font-extrabold tabular-nums"
+                >
+                  {trophyCase.unlockedCount} / {trophyCase.totalTrophies} UNLOCKED
+                </span>
+              </div>
+              <div dir="ltr" className="ltr-inline text-xs font-mono text-amber-500/90 mt-0.5">
+                Rare Digital Trophy Case · 100% Curriculum Mastery &amp; High-Difficulty Mission Scenarios
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <div dir="ltr" className="ltr-inline text-xs font-mono font-bold text-emerald-500 tabular-nums">
+              +{trophyCase.trophyBonusXp} Bonus Trophy XP
+            </div>
+            {!trophyCase.allUnlocked && (
+              <button
+                type="button"
+                onClick={handleUnlockAllTrophies}
+                className="px-3.5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1.5"
+              >
+                <Trophy className="w-3.5 h-3.5" />
+                <span>فتح تمام تندیس‌های نادر</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Trophy Pedestals Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {trophyCase.trophies.map((trophy) => {
+            const isMythic = trophy.rarity === 'Mythic';
+            const isLegendary = trophy.rarity === 'Legendary';
+
+            const rarityBadgeStyle = isMythic
+              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+              : isLegendary
+              ? 'bg-purple-500/20 text-purple-400 border border-purple-500/40'
+              : 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40';
+
+            const activeCardBorder = trophy.unlocked
+              ? isMythic
+                ? 'border-amber-500/60 bg-gradient-to-br from-amber-500/10 via-slate-900/40 to-slate-950/60'
+                : isLegendary
+                ? 'border-purple-500/50 bg-purple-500/5 dark:bg-purple-500/10'
+                : 'border-cyan-500/50 bg-cyan-500/5 dark:bg-cyan-500/10'
+              : 'border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/50 opacity-75';
+
+            return (
+              <div
+                key={trophy.trophyId}
+                data-testid={`trophy-card-${trophy.trophyId}`}
+                className={`rounded-xl border p-5 flex flex-col justify-between transition-all space-y-4 overflow-hidden ${activeCardBorder} ${
+                  isMythic ? 'md:col-span-2 lg:col-span-1' : ''
+                }`}
+              >
+                <div className="space-y-3">
+                  {/* Top Meta Row: Code + Rarity + Bonus XP */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        dir="ltr"
+                        className={`ltr-inline text-[10px] font-mono font-extrabold px-2 py-0.5 rounded uppercase ${rarityBadgeStyle}`}
+                      >
+                        {trophy.rarity}
+                      </span>
+                      <span dir="ltr" className="ltr-inline text-[11px] font-mono text-slate-500">
+                        {trophy.code}
+                      </span>
+                    </div>
+                    <span dir="ltr" className="ltr-inline text-xs font-mono font-bold text-emerald-500 tabular-nums">
+                      +{trophy.bonusXp} XP
+                    </span>
+                  </div>
+
+                  {/* Trophy Emblem & Title */}
+                  <div className="flex items-start gap-3 pt-1">
+                    <div
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
+                        trophy.unlocked
+                          ? isMythic
+                            ? 'bg-amber-500 text-slate-950 border-amber-400'
+                            : isLegendary
+                            ? 'bg-purple-600 text-white border-purple-400'
+                            : 'bg-cyan-600 text-white border-cyan-400'
+                          : 'bg-slate-200 dark:bg-slate-800 text-slate-400 border-slate-300 dark:border-slate-700'
+                      }`}
+                    >
+                      {trophy.unlocked ? (
+                        isMythic ? (
+                          <Crown className="w-5 h-5" />
+                        ) : (
+                          <Trophy className="w-5 h-5" />
+                        )
+                      ) : (
+                        <Lock className="w-4 h-4" />
+                      )}
+                    </div>
+
+                    <div className="space-y-1 min-w-0 flex-1">
+                      <h3 className="text-sm font-extrabold text-slate-900 dark:text-white leading-5">
+                        {trophy.titleFa}
+                      </h3>
+                      <div dir="ltr" className="text-[11px] font-mono text-blue-500 truncate text-right">
+                        {trophy.titleEn}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Scenario or Mastery Requirement Pill */}
+                  <div
+                    dir="ltr"
+                    className="ltr-code text-[10px] font-mono px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-slate-600 dark:text-slate-300"
+                  >
+                    {trophy.scenarioOrRequirementEn}
+                  </div>
+
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-6">
+                    {trophy.descriptionFa}
+                  </p>
+                </div>
+
+                {/* Action Footer */}
+                <div className="pt-3 border-t border-slate-200/70 dark:border-slate-800/80 flex items-center justify-between gap-2">
+                  <span
+                    dir="ltr"
+                    className={`ltr-inline text-[10px] font-mono font-bold ${
+                      trophy.unlocked ? 'text-emerald-500' : 'text-slate-400'
+                    }`}
+                  >
+                    {trophy.unlocked ? 'UNLOCKED IN VAULT' : 'LOCKED CHALLENGE'}
+                  </span>
+
+                  {trophy.unlockConditionType === 'all-modules' ? (
+                    <button
+                      type="button"
+                      onClick={onCompleteAllModules}
+                      disabled={trophy.unlocked}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                        trophy.unlocked
+                          ? 'bg-emerald-500/20 text-emerald-500 cursor-default'
+                          : 'bg-amber-500 hover:bg-amber-400 text-slate-950 cursor-pointer'
+                      }`}
+                    >
+                      {trophy.unlocked ? 'تسلط ۱۰۰٪ احراز شد' : 'تکمیل ۱۰۰٪ کل ماژول‌ها'}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleToggleScenarioTrophy(trophy.trophyId)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                        trophy.unlocked
+                          ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 hover:bg-emerald-500/30'
+                          : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-blue-600 hover:text-white'
+                      }`}
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      <span>{trophy.unlocked ? 'سناریو فتح شد' : 'ثبت تکمیل سناریو'}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 

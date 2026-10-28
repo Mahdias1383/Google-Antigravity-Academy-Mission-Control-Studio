@@ -416,4 +416,127 @@ export function calculateXpAndLevelProgression(
   };
 }
 
+export interface DigitalTrophySpec {
+  trophyId: string;
+  code: string;
+  titleFa: string;
+  titleEn: string;
+  rarity: 'Mythic' | 'Legendary' | 'Epic';
+  category: 'Full Curriculum Mastery' | 'High-Difficulty Scenario';
+  scenarioOrRequirementEn: string;
+  descriptionFa: string;
+  bonusXp: number;
+  unlocked: boolean;
+  unlockConditionType: 'all-modules' | 'scenario';
+}
+
+export interface TrophyCaseSummary {
+  trophies: DigitalTrophySpec[];
+  unlockedCount: number;
+  totalTrophies: number;
+  trophyBonusXp: number;
+  allUnlocked: boolean;
+}
+
+const TROPHY_DEFINITIONS: Array<Omit<DigitalTrophySpec, 'unlocked'>> = [
+  {
+    trophyId: 'trophy-omni-mastery',
+    code: 'TR-MYTHIC-01',
+    titleFa: 'تاج تسلط ۱۰۰٪ معمار ارشد Antigravity',
+    titleEn: 'Omni-Architect 100% Curriculum Crown',
+    rarity: 'Mythic',
+    category: 'Full Curriculum Mastery',
+    scenarioOrRequirementEn: '100% Mastery Across All 8 Core Engineering Modules',
+    descriptionFa:
+      'اهداشده به معمارانی که هر ۸ فصل تخصصی آکادمی Google Antigravity را با تسلط کامل به پایان رسانده‌اند.',
+    bonusXp: 500,
+    unlockConditionType: 'all-modules',
+  },
+  {
+    trophyId: 'scenario-zero-downtime-alembic',
+    code: 'TR-LEGEND-02',
+    titleFa: 'تندیس مهاجرت بدون قطعی Alembic و قفل تراکنش',
+    titleEn: 'Zero-Downtime Alembic Migration Sentinel',
+    rarity: 'Legendary',
+    category: 'High-Difficulty Scenario',
+    scenarioOrRequirementEn: 'Scenario #1 · Expand-and-Contract Async PostgreSQL Migration',
+    descriptionFa:
+      'تکمیل سناریوی سطح بالای مهاجرت دیتابیس‌های پرترافیک با استراتژی Expand-and-Contract و پایپ‌لاین // turbo.',
+    bonusXp: 350,
+    unlockConditionType: 'scenario',
+  },
+  {
+    trophyId: 'scenario-worktree-isolation',
+    code: 'TR-LEGEND-03',
+    titleFa: 'نشان فرماندهی ۳ ایجنت موازی روی Git Worktrees',
+    titleEn: 'Multi-Agent Git Worktree Orchestrator',
+    rarity: 'Legendary',
+    category: 'High-Difficulty Scenario',
+    scenarioOrRequirementEn: 'Scenario #4 · Parallel Background Agents Without Index Lock',
+    descriptionFa:
+      'مهار تداخل فایل‌های کاری و اجرای هم‌زمان ۳ ایجنت مستقل روی شاخه‌های ایزوله Git Worktree در Mission Control.',
+    bonusXp: 350,
+    unlockConditionType: 'scenario',
+  },
+  {
+    trophyId: 'scenario-fastmcp-security',
+    code: 'TR-EPIC-04',
+    titleFa: 'سپر امنیت FastMCP و مهار کوئری‌های مخرب',
+    titleEn: 'Air-Gapped FastMCP Security Shield',
+    rarity: 'Epic',
+    category: 'High-Difficulty Scenario',
+    scenarioOrRequirementEn: 'Scenario #3 · Read-Only FastMCP Telemetry & Guardrail Deny-List',
+    descriptionFa:
+      'پیاده‌سازی سرور FastMCP ایزوله با تراکنش‌های Read-Only و مسدودسازی دستورات مخرب در لیست سیاه ترمینال.',
+    bonusXp: 300,
+    unlockConditionType: 'scenario',
+  },
+  {
+    trophyId: 'scenario-browser-subagent-e2e',
+    code: 'TR-EPIC-05',
+    titleFa: 'کاپ ممیزی بصری E2E و شکار خطاهای شبکه ۵xx',
+    titleEn: 'Browser Subagent Telemetry & WebP Auditor',
+    rarity: 'Epic',
+    category: 'High-Difficulty Scenario',
+    scenarioOrRequirementEn: 'Scenario #6 · Automated DOM/Network Inspection & WebP Proof',
+    descriptionFa:
+      'استفاده از ساب‌ایجنت مرورگر برای رهگیری خودکار خطاهای کنسول و شبکه و ثبت مدرک ویدیویی WebP در walkthrough.md.',
+    bonusXp: 300,
+    unlockConditionType: 'scenario',
+  },
+];
+
+export function calculateTrophyCaseStatus(
+  completedModuleCount: number,
+  totalModules: number,
+  completedScenarioIds: string[]
+): TrophyCaseSummary {
+  const safeTotalModules = Math.max(1, totalModules || 8);
+  const hasFullMastery = completedModuleCount >= safeTotalModules;
+  const completedScenarioSet = new Set(completedScenarioIds);
+
+  const trophies: DigitalTrophySpec[] = TROPHY_DEFINITIONS.map((def) => {
+    const unlocked =
+      def.unlockConditionType === 'all-modules'
+        ? hasFullMastery
+        : completedScenarioSet.has(def.trophyId);
+    return {
+      ...def,
+      unlocked,
+    };
+  });
+
+  const unlockedCount = trophies.filter((t) => t.unlocked).length;
+  const trophyBonusXp = trophies.reduce((sum, t) => (t.unlocked ? sum + t.bonusXp : sum), 0);
+
+  return {
+    trophies,
+    unlockedCount,
+    totalTrophies: trophies.length,
+    trophyBonusXp,
+    allUnlocked: unlockedCount === trophies.length,
+  };
+}
+
+
 

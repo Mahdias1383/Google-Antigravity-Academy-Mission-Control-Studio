@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Play,
   MessageSquarePlus,
@@ -9,11 +9,24 @@ import {
   Send,
   AlertTriangle,
   Eye,
+  Download,
+  RefreshCw,
+  Upload,
+  Database,
+  Copy,
+  Check,
 } from 'lucide-react';
 import {
   ExportSectionPdfButton,
   PrintableDocumentPayload,
+  CodeSandboxTabs,
 } from '../components/CodeAndPdfTools';
+import {
+  buildKnowledgeBaseUserStateJson,
+  parseKnowledgeBaseUserStateJson,
+} from '../utils/generators';
+
+const USER_STATE_STORAGE_KEY = 'ag_knowledge_base_user_state_v1';
 
 interface SimulatorTaskTemplate {
   id: string;
@@ -124,7 +137,15 @@ const SIMULATOR_TASKS: SimulatorTaskTemplate[] = [
 
 export const MissionControlSimulator: React.FC<{
   onExportPdf: (payload: PrintableDocumentPayload) => void;
-}> = ({ onExportPdf }) => {
+  completedModules?: string[];
+  totalModules?: number;
+  onRestoreCompletedModules?: (modules: string[]) => void;
+}> = ({
+  onExportPdf,
+  completedModules = ['module-1', 'module-2'],
+  totalModules = 8,
+  onRestoreCompletedModules,
+}) => {
   const [selectedTaskId, setSelectedTaskId] = useState<string>(SIMULATOR_TASKS[0].id);
   const [executionMode, setExecutionMode] = useState<'Planning Mode' | 'Fast Mode'>('Planning Mode');
   const [activeArtifactTab, setActiveArtifactTab] = useState<'task.md' | 'implementation_plan.md' | 'walkthrough.md'>('implementation_plan.md');
@@ -135,7 +156,134 @@ export const MissionControlSimulator: React.FC<{
   ]);
   const [executionStage, setExecutionStage] = useState<'planning-review' | 'executing' | 'completed'>('planning-review');
 
+  // Sync Workspace (.agent/knowledge-base/user-state.json) State
+  const [lastSyncedIso, setLastSyncedIso] = useState<string>('2026-10-28T08:45:00.000Z');
+  const [syncStatusBanner, setSyncStatusBanner] = useState<string>('');
+  const [copiedUserState, setCopiedUserState] = useState<boolean>(false);
+  const [showRestorePanel, setShowRestorePanel] = useState<boolean>(false);
+  const [restoreJsonDraft, setRestoreJsonDraft] = useState<string>('');
+  const [restoreError, setRestoreError] = useState<string>('');
+
+  // Hydrate persisted .agent/knowledge-base/user-state.json on mount for cross-session continuity
+  useEffect(() => {
+    try {
+      const savedRaw = window.localStorage.getItem(USER_STATE_STORAGE_KEY);
+      if (!savedRaw) return;
+      const parsed = parseKnowledgeBaseUserStateJson(savedRaw);
+      if (parsed.valid && parsed.data) {
+        const doc = parsed.data;
+        if (SIMULATOR_TASKS.some((t) => t.id === doc.activeTaskState.taskId)) {
+          setSelectedTaskId(doc.activeTaskState.taskId);
+        }
+        setExecutionMode(doc.workspaceProfile.executionMode);
+        setExecutionStage(doc.workspaceProfile.executionStage);
+        setActiveArtifactTab(doc.activeTaskState.activeArtifactTab);
+        setInlineComments(doc.activeTaskState.inlineReviewComments);
+        setLastSyncedIso(doc.exportedAtIso);
+      }
+    } catch {
+      // Ignore storage errors in restricted environments
+    }
+  }, []);
+
   const currentTask = SIMULATOR_TASKS.find((t) => t.id === selectedTaskId) || SIMULATOR_TASKS[0];
+
+  const userStateJson = buildKnowledgeBaseUserStateJson({
+    exportedAtIso: lastSyncedIso,
+    workspaceName: 'google-antigravity-academy-workspace',
+    taskId: currentTask.id,
+    titleEn: currentTask.titleEn,
+    titleFa: currentTask.titleFa,
+    worktree: currentTask.worktree,
+    executionMode,
+    executionStage,
+    activeArtifactTab,
+    inlineComments,
+    tasks: currentTask.tasks,
+    completedModules,
+    totalModules,
+  });
+
+  const handleSyncAndExportWorkspace = (triggerDownload: boolean = true) => {
+    const nowIso = new Date().toISOString();
+    setLastSyncedIso(nowIso);
+    const freshJson = buildKnowledgeBaseUserStateJson({
+      exportedAtIso: nowIso,
+      workspaceName: 'google-antigravity-academy-workspace',
+      taskId: currentTask.id,
+      titleEn: currentTask.titleEn,
+      titleFa: currentTask.titleFa,
+      worktree: currentTask.worktree,
+      executionMode,
+      executionStage,
+      activeArtifactTab,
+      inlineComments,
+      tasks: currentTask.tasks,
+      completedModules,
+      totalModules,
+    });
+
+    try {
+      window.localStorage.setItem(USER_STATE_STORAGE_KEY, freshJson);
+    } catch {
+      // Ignore storage quota issues
+    }
+
+    if (triggerDownload) {
+      const blob = new Blob([freshJson], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = 'user-state.json';
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(url);
+      setSyncStatusBanner(
+        'وضعیت محیط کار در .agent/knowledge-base/user-state.json همگام‌سازی و دانلود شد (Cross-Session Continuity Active).'
+      );
+    } else {
+      setSyncStatusBanner(
+        'وضعیت فعلی در حافظه پایدار .agent/knowledge-base/user-state.json ذخیره شد.'
+      );
+    }
+  };
+
+  const handleCopyUserStateJson = () => {
+    navigator.clipboard?.writeText(userStateJson);
+    setCopiedUserState(true);
+    setTimeout(() => setCopiedUserState(false), 2000);
+  };
+
+  const handleApplyRestoredState = () => {
+    setRestoreError('');
+    const result = parseKnowledgeBaseUserStateJson(restoreJsonDraft);
+    if (!result.valid || !result.data) {
+      setRestoreError(result.error || 'ساختار فایل JSON معتبر نیست.');
+      return;
+    }
+    const doc = result.data;
+    if (SIMULATOR_TASKS.some((t) => t.id === doc.activeTaskState.taskId)) {
+      setSelectedTaskId(doc.activeTaskState.taskId);
+    }
+    setExecutionMode(doc.workspaceProfile.executionMode);
+    setExecutionStage(doc.workspaceProfile.executionStage);
+    setActiveArtifactTab(doc.activeTaskState.activeArtifactTab);
+    setInlineComments(doc.activeTaskState.inlineReviewComments);
+    setLastSyncedIso(doc.exportedAtIso);
+    if (onRestoreCompletedModules && Array.isArray(doc.academyProgress.completedModules)) {
+      onRestoreCompletedModules(doc.academyProgress.completedModules);
+    }
+    try {
+      window.localStorage.setItem(USER_STATE_STORAGE_KEY, restoreJsonDraft);
+    } catch {
+      // Ignore storage error
+    }
+    setShowRestorePanel(false);
+    setSyncStatusBanner(
+      'وضعیت محیط کار و پیشرفت ماژول‌ها با موفقیت از .agent/knowledge-base/user-state.json بازیابی شد!'
+    );
+  };
 
   const handleAddInlineComment = () => {
     if (!selectedLineNumber || !commentDraft.trim()) return;
@@ -217,12 +365,38 @@ export const MissionControlSimulator: React.FC<{
               یک تسک مهندسی را انتخاب کنید، روی هر خط از <code dir="ltr" className="ltr-inline">implementation_plan.md</code> کلیک کرده و کامنت ممیزی PR-Style ثبت کنید، سپس اجرای خودکار ایجنت و تولید <code dir="ltr" className="ltr-inline">walkthrough.md</code> را مشاهده نمایید.
             </p>
           </div>
-          <ExportSectionPdfButton
-            label="دریافت PDF این بخش"
-            payload={simulatorPdfPayload}
-            onExport={onExportPdf}
-          />
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => handleSyncAndExportWorkspace(true)}
+              data-testid="sync-workspace-btn"
+              className="px-3.5 py-2 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors flex items-center gap-2 cursor-pointer whitespace-nowrap"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>همگام‌سازی محیط کار (Sync Workspace)</span>
+            </button>
+            <ExportSectionPdfButton
+              label="دریافت PDF این بخش"
+              payload={simulatorPdfPayload}
+              onExport={onExportPdf}
+            />
+          </div>
         </div>
+
+        {syncStatusBanner && (
+          <div
+            data-testid="sync-workspace-status-banner"
+            className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center justify-between gap-3"
+          >
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+              <span>{syncStatusBanner}</span>
+            </div>
+            <span dir="ltr" className="ltr-inline font-mono text-[11px] text-emerald-500">
+              .agent/knowledge-base/user-state.json
+            </span>
+          </div>
+        )}
 
         {/* Task & Mode Controls */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 pt-2">
@@ -542,6 +716,170 @@ export const MissionControlSimulator: React.FC<{
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Persistent Knowledge Base & Workspace Sync Inspector (.agent/knowledge-base/user-state.json) */}
+      <div
+        className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/75 p-6 space-y-5"
+        data-testid="workspace-sync-panel"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center text-emerald-500 shrink-0">
+              <Database className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                  همگام‌سازی پایدار محیط کار و پایگاه دانش (Sync Workspace &amp; Knowledge Base)
+                </h2>
+                <span
+                  dir="ltr"
+                  className="ltr-inline px-2.5 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-mono text-xs font-bold"
+                >
+                  .agent/knowledge-base/user-state.json
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                برای جلوگیری از فراموشی کانتکست (<span dir="ltr" className="ltr-inline">Context Rot</span>) و حفظ پیوستگی بین نشست‌های کاری، وضعیت فعلی تسک، کامنت‌های ممیزی خطی و پیشرفت ماژول‌های آکادمی را در قالب فایل استاندارد <code dir="ltr" className="ltr-inline">.agent/knowledge-base/user-state.json</code> استخراج یا بازیابی کنید.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleSyncAndExportWorkspace(true)}
+              data-testid="export-user-state-json-btn"
+              className="px-3.5 py-2 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>دانلود user-state.json</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleCopyUserStateJson}
+              data-testid="copy-user-state-json-btn"
+              className="px-3 py-2 rounded-lg text-xs font-semibold border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-200 hover:border-blue-500 transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              {copiedUserState ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>کپی شد!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5 text-blue-500" />
+                  <span>کپی JSON</span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setRestoreJsonDraft(userStateJson);
+                setRestoreError('');
+                setShowRestorePanel((prev) => !prev);
+              }}
+              data-testid="toggle-restore-state-btn"
+              className="px-3 py-2 rounded-lg text-xs font-semibold border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-200 hover:border-emerald-500 transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <Upload className="w-3.5 h-3.5 text-emerald-500" />
+              <span>بازیابی وضعیت (Import / Restore State)</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Summary KPI Strip for Persistent State */}
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+          <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60">
+            <div className="text-[11px] text-slate-500 dark:text-slate-400">مسیر آرتیفکت پایدار</div>
+            <div dir="ltr" className="ltr-inline text-xs font-mono font-bold text-blue-500 mt-1 truncate">
+              .agent/knowledge-base/user-state.json
+            </div>
+          </div>
+          <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60">
+            <div className="text-[11px] text-slate-500 dark:text-slate-400">شاخه ایزوله فعال (Worktree)</div>
+            <div dir="ltr" className="ltr-inline text-xs font-mono font-bold text-emerald-500 mt-1 truncate">
+              {currentTask.worktree}
+            </div>
+          </div>
+          <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60">
+            <div className="text-[11px] text-slate-500 dark:text-slate-400">کامنت‌های ممیزی ذخیره شده</div>
+            <div dir="ltr" className="ltr-inline text-xs font-mono font-bold text-amber-500 mt-1 tabular-nums">
+              {inlineComments.length} Inline Review(s)
+            </div>
+          </div>
+          <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60">
+            <div className="text-[11px] text-slate-500 dark:text-slate-400">پیشرفت ماژول‌های آکادمی</div>
+            <div dir="ltr" className="ltr-inline text-xs font-mono font-bold text-purple-500 mt-1 tabular-nums">
+              {completedModules.length} / {totalModules} ModulesSynced
+            </div>
+          </div>
+        </div>
+
+        {/* Optional Restore / Import Drawer */}
+        {showRestorePanel && (
+          <div
+            data-testid="restore-state-drawer"
+            className="p-4 rounded-xl border border-emerald-500/40 bg-emerald-500/5 space-y-3"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                محتوای فایل <code dir="ltr" className="ltr-inline">.agent/knowledge-base/user-state.json</code> خود را برای بازیابی نشست قبلی وارد کنید:
+              </span>
+              <span dir="ltr" className="ltr-inline text-[11px] font-mono text-emerald-500">
+                Cross-Session State Hydration
+              </span>
+            </div>
+            <textarea
+              dir="ltr"
+              rows={7}
+              value={restoreJsonDraft}
+              onChange={(e) => setRestoreJsonDraft(e.target.value)}
+              data-testid="restore-state-textarea"
+              className="ltr-code w-full p-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs font-mono text-slate-800 dark:text-slate-200"
+            />
+            {restoreError && (
+              <div className="text-xs text-rose-500 font-semibold">{restoreError}</div>
+            )}
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowRestorePanel(false)}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer"
+              >
+                انصراف
+              </button>
+              <button
+                type="button"
+                onClick={handleApplyRestoredState}
+                data-testid="apply-restore-state-btn"
+                className="px-4 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1.5 cursor-pointer"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>اعمال و بازیابی وضعیت (Restore Workspace)</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Live .agent/knowledge-base/user-state.json Code Preview */}
+        <CodeSandboxTabs
+          examples={[
+            {
+              id: 'user-state-json-preview',
+              title: 'user-state.json',
+              filename: '.agent/knowledge-base/user-state.json',
+              language: 'json',
+              description:
+                'خروجی زنده و ساختاریافته وضعیت محیط کار (شامل Worktree فعال، وضعیت چک‌لیست task.md، کامنت‌های ممیزی خطی و پیشرفت سرفصل‌های آکادمی):',
+              code: userStateJson,
+            },
+          ]}
+        />
       </div>
     </div>
   );

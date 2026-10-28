@@ -1,0 +1,34 @@
+name: CI — Unit Tests & Production Build
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  verify:
+    name: Test & Build (Node 22)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run Unit Test Suite
+        run: npx tsx --test src/utils/generators.test.ts
+
+      - name: Type-Check Codebase
+        run: npm run lint
+
+      - name: Build Production Bundle
+        run: npm run build

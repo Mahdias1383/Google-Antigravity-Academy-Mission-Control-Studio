@@ -23,7 +23,19 @@ import {
   BookOpen,
   Crown,
   ShieldCheck,
+  Cloud,
+  LogIn,
+  LogOut,
+  RefreshCw,
 } from 'lucide-react';
+import type { User } from 'firebase/auth';
+import {
+  signInWithGooglePopup,
+  signOutArchitect,
+  subscribeToAuthChanges,
+  syncArchitectProgressToCloud,
+  loadArchitectProgressFromCloud,
+} from '../lib/firebase';
 import { CurriculumModule } from '../types/curriculum';
 import {
   StudySessionDay,
@@ -148,6 +160,45 @@ export const AchievementsCertificationView: React.FC<{
     'scenario-zero-downtime-alembic',
     'scenario-fastmcp-security',
   ]);
+
+  // Firebase Auth & Cloud Firestore Sync State
+  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
+  const [cloudSyncMessage, setCloudSyncMessage] = useState<string>('');
+
+  useEffect(() => {
+    const unsubscribe = subscribeToAuthChanges(async (user) => {
+      setFirebaseUser(user);
+      if (user) {
+        try {
+          setCloudSyncStatus('syncing');
+          const saved = await loadArchitectProgressFromCloud(user.uid);
+          if (saved) {
+            setArchitectName(saved.architectName);
+            setRoleTitle(saved.roleTitle);
+            setOrganization(saved.organization);
+            setCompletedScenarioIds(saved.completedScenarioIds);
+            setDailyTargetMinutes(saved.dailyTargetMinutes);
+            setCloudSyncStatus('synced');
+            setCloudSyncMessage('اطلاعات کارنامه از پایگاه داده ابری بازیابی شد (Loaded from Firestore)');
+          } else {
+            if (user.displayName) {
+              setArchitectName(user.displayName);
+            }
+            setCloudSyncStatus('idle');
+            setCloudSyncMessage('آماده ذخیره اولین نسخه کارنامه در Firestore');
+          }
+        } catch {
+          setCloudSyncStatus('error');
+          setCloudSyncMessage('خطا در بازیابی اطلاعات ابری');
+        }
+      } else {
+        setCloudSyncStatus('idle');
+        setCloudSyncMessage('');
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     if (!timerRunning) return;
@@ -439,6 +490,108 @@ export const AchievementsCertificationView: React.FC<{
                 مجموع امتیاز (Total XP)
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Firebase Auth & Cloud Firestore Sync Bar */}
+        <div
+          className="pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+          data-testid="firebase-cloud-sync-bar"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-500 shrink-0">
+              <Cloud className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-bold text-slate-900 dark:text-white">
+                  پایگاه داده ابری و احراز هویت (Firebase Firestore &amp; Google Auth)
+                </span>
+                <span
+                  dir="ltr"
+                  className="ltr-inline px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-mono text-[10px] font-bold"
+                >
+                  elevated-gravity-h01dl · Active
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                {firebaseUser
+                  ? `متصل به حساب ${firebaseUser.email || firebaseUser.displayName} — ${
+                      cloudSyncMessage || 'آماده همگام‌سازی امتیازات، جام‌ها و کارنامه در فضای ابری'
+                    }`
+                  : 'برای ذخیره‌سازی دائمی امتیازات XP، جام‌های کلکسیونی و کارنامه مهندسی بین دستگاه‌ها، با حساب گوگل وارد شوید.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {!firebaseUser ? (
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    setCloudSyncStatus('syncing');
+                    await signInWithGooglePopup();
+                  } catch {
+                    setCloudSyncStatus('error');
+                    setCloudSyncMessage('پنجره ورود گوگل بسته شد یا در محیط پیش‌نمایش محدود شد');
+                  }
+                }}
+                data-testid="firebase-google-signin-btn"
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white transition-colors cursor-pointer"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>ورود با گوگل (Google Sign-In)</span>
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  disabled={cloudSyncStatus === 'syncing'}
+                  onClick={async () => {
+                    if (!firebaseUser) return;
+                    try {
+                      setCloudSyncStatus('syncing');
+                      await syncArchitectProgressToCloud(firebaseUser.uid, {
+                        architectName,
+                        roleTitle,
+                        organization,
+                        completedModules,
+                        completedScenarioIds,
+                        dailyTargetMinutes,
+                        totalMinutesStudied: streakStats.totalMinutesStudied,
+                        totalCombinedXp: xpProgression.totalCombinedXp,
+                        currentLevel: xpProgression.currentLevel,
+                      });
+                      setCloudSyncStatus('synced');
+                      setCloudSyncMessage('ذخیره‌سازی در Cloud Firestore با موفقیت انجام شد ✓');
+                    } catch {
+                      setCloudSyncStatus('error');
+                      setCloudSyncMessage('خطا در ذخیره‌سازی ابری');
+                    }
+                  }}
+                  data-testid="firebase-cloud-sync-btn"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white transition-colors cursor-pointer"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${cloudSyncStatus === 'syncing' ? 'animate-spin' : ''}`} />
+                  <span>
+                    {cloudSyncStatus === 'syncing'
+                      ? 'در حال همگام‌سازی...'
+                      : cloudSyncStatus === 'synced'
+                      ? 'همگام‌سازی شد (Synced to Firestore)'
+                      : 'ذخیره در فضای ابری (Sync to Cloud)'}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void signOutArchitect()}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>خروج</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

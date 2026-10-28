@@ -324,3 +324,325 @@ export function estimateRuleTokenOverhead(mode: RuleGeneratorConfig['activationM
     efficiencyRating: 'Optimal',
   };
 }
+
+export interface KnowledgeBaseUserStateInput {
+  exportedAtIso?: string;
+  workspaceName?: string;
+  taskId: string;
+  titleEn: string;
+  titleFa: string;
+  worktree: string;
+  executionMode: 'Planning Mode' | 'Fast Mode';
+  executionStage: 'planning-review' | 'executing' | 'completed';
+  activeArtifactTab: 'task.md' | 'implementation_plan.md' | 'walkthrough.md';
+  inlineComments: { line: number; comment: string }[];
+  tasks: { id: string; text: string; doneAfterExec: boolean }[];
+  completedModules: string[];
+  totalModules: number;
+}
+
+export interface KnowledgeBaseUserStateDocument {
+  schemaVersion: '1.0.0';
+  artifactPath: '.agent/knowledge-base/user-state.json';
+  exportedAtIso: string;
+  workspaceProfile: {
+    workspaceName: string;
+    activeWorktree: string;
+    executionMode: 'Planning Mode' | 'Fast Mode';
+    executionStage: 'planning-review' | 'executing' | 'completed';
+  };
+  activeTaskState: {
+    taskId: string;
+    titleEn: string;
+    titleFa: string;
+    activeArtifactTab: 'task.md' | 'implementation_plan.md' | 'walkthrough.md';
+    inlineReviewComments: { line: number; comment: string }[];
+    checklistProgress: {
+      id: string;
+      text: string;
+      status: '[ ]' | '[/]' | '[x]';
+    }[];
+  };
+  academyProgress: {
+    completedModules: string[];
+    totalModules: number;
+    completionPercent: number;
+  };
+  continuityMetadata: {
+    contextRotPrevention: 'enabled';
+    knowledgeBasePersistence: 'verified';
+    resumeCommand: string;
+  };
+}
+
+export function buildKnowledgeBaseUserStateJson(
+  input: KnowledgeBaseUserStateInput
+): string {
+  const safeTotal = Math.max(1, input.totalModules);
+  const completionPercent = Math.min(
+    100,
+    Math.round((input.completedModules.length / safeTotal) * 100)
+  );
+
+  const checklistProgress = input.tasks.map((item, idx) => {
+    const status: '[ ]' | '[/]' | '[x]' =
+      input.executionStage === 'completed'
+        ? '[x]'
+        : idx === 0
+        ? '[x]'
+        : idx === 1
+        ? '[/]'
+        : '[ ]';
+    return {
+      id: item.id,
+      text: item.text,
+      status,
+    };
+  });
+
+  const doc: KnowledgeBaseUserStateDocument = {
+    schemaVersion: '1.0.0',
+    artifactPath: '.agent/knowledge-base/user-state.json',
+    exportedAtIso: input.exportedAtIso || '2026-10-28T08:45:00.000Z',
+    workspaceProfile: {
+      workspaceName: input.workspaceName || 'google-antigravity-academy-workspace',
+      activeWorktree: input.worktree,
+      executionMode: input.executionMode,
+      executionStage: input.executionStage,
+    },
+    activeTaskState: {
+      taskId: input.taskId,
+      titleEn: input.titleEn,
+      titleFa: input.titleFa,
+      activeArtifactTab: input.activeArtifactTab,
+      inlineReviewComments: input.inlineComments.map((c) => ({
+        line: c.line,
+        comment: c.comment,
+      })),
+      checklistProgress,
+    },
+    academyProgress: {
+      completedModules: [...input.completedModules],
+      totalModules: input.totalModules,
+      completionPercent,
+    },
+    continuityMetadata: {
+      contextRotPrevention: 'enabled',
+      knowledgeBasePersistence: 'verified',
+      resumeCommand: `antigravity resume --state .agent/knowledge-base/user-state.json --worktree ${input.worktree}`,
+    },
+  };
+
+  return JSON.stringify(doc, null, 2);
+}
+
+export function parseKnowledgeBaseUserStateJson(rawJson: string): {
+  valid: boolean;
+  data?: KnowledgeBaseUserStateDocument;
+  error?: string;
+} {
+  try {
+    const parsed = JSON.parse(rawJson) as Partial<KnowledgeBaseUserStateDocument>;
+    if (
+      !parsed ||
+      typeof parsed !== 'object' ||
+      parsed.artifactPath !== '.agent/knowledge-base/user-state.json' ||
+      !parsed.workspaceProfile ||
+      !parsed.activeTaskState ||
+      !parsed.academyProgress
+    ) {
+      return {
+        valid: false,
+        error: 'Invalid .agent/knowledge-base/user-state.json schema structure.',
+      };
+    }
+    return {
+      valid: true,
+      data: parsed as KnowledgeBaseUserStateDocument,
+    };
+  } catch (err) {
+    return {
+      valid: false,
+      error: err instanceof Error ? err.message : 'Invalid JSON syntax.',
+    };
+  }
+}
+
+export type WorkspaceSectionId =
+  | 'curriculum'
+  | 'achievements'
+  | 'simulator'
+  | 'guardrails'
+  | 'mcp'
+  | 'cheatsheets'
+  | 'scenarios'
+  | 'ai-architect';
+
+export interface RecentSessionSnapshot {
+  version: '1.0';
+  lastAccessedSection: WorkspaceSectionId;
+  lastAccessedModuleId: string;
+  completedModules: string[];
+  updatedAtIso: string;
+}
+
+export interface ResolvedRecentSessionDescriptor {
+  section: WorkspaceSectionId;
+  moduleId: string;
+  kind: 'module' | 'studio';
+  targetTitleFa: string;
+  targetTitleEn: string;
+  badgeLabelEn: string;
+  completedModules: string[];
+  completedCount: number;
+  totalModules: number;
+  completionPercent: number;
+  updatedAtIso: string;
+}
+
+const STUDIO_METADATA_MAP: Record<
+  Exclude<WorkspaceSectionId, 'curriculum'>,
+  { titleFa: string; titleEn: string; badgeEn: string }
+> = {
+  simulator: {
+    titleFa: 'استودیو ۱: شبیه‌ساز زنده Mission Control و ممیزی آرتیفکت‌ها',
+    titleEn: 'Studio 1: Mission Control & Inline PR Review Simulator',
+    badgeEn: 'STUDIO · MISSION CONTROL',
+  },
+  guardrails: {
+    titleFa: 'استودیو ۲: ساخت قوانین .agent/rules و ورک‌فلوهای // turbo',
+    titleEn: 'Studio 2: Rule & Workflow Guardrail Builder Studio',
+    badgeEn: 'STUDIO · GUARDRAILS & RULES',
+  },
+  mcp: {
+    titleFa: 'استودیو ۳: سازنده بصری سرور FastMCP و mcp_config.json',
+    titleEn: 'Studio 3: Visual Enterprise FastMCP Server Studio',
+    badgeEn: 'STUDIO · FASTMCP BUILDER',
+  },
+  achievements: {
+    titleFa: 'دستاوردها، سطح‌بندی XP، برنامه‌ریز مطالعه و گواهینامه آکادمی',
+    titleEn: 'Achievements, XP Progression, Daily Planner & Certification',
+    badgeEn: 'ACADEMY · ACHIEVEMENTS & XP',
+  },
+  cheatsheets: {
+    titleFa: 'مرکز چیت‌شیت‌های مرجع و خروجی PDF ماژولار',
+    titleEn: 'Modular Reference Cheat Sheets & Scoped PDF Center',
+    badgeEn: 'STUDIO · CHEAT SHEETS',
+  },
+  scenarios: {
+    titleFa: 'آزمایشگاه ۸ چالش معماری واقعی در مقیاس Production',
+    titleEn: '8 Principal Architecture Production Case Studies',
+    badgeEn: 'STUDIO · CASE STUDIES LAB',
+  },
+  'ai-architect': {
+    titleFa: 'دستیار هوشمند معمار و جستجوی زنده مستندات Google Antigravity',
+    titleEn: 'Grounded AI Architect Copilot & Live Documentation Search',
+    badgeEn: 'STUDIO · AI SEARCH GROUNDING',
+  },
+};
+
+export function serializeRecentSessionSnapshot(
+  snapshot: RecentSessionSnapshot
+): string {
+  return JSON.stringify(snapshot);
+}
+
+export function resolveRecentSessionFromStorage(
+  rawSessionJson: string | null,
+  rawUserStateJson: string | null,
+  allModules: { id: string; number: number; titleFa: string; titleEn: string }[]
+): ResolvedRecentSessionDescriptor | null {
+  const totalModules = Math.max(1, allModules.length);
+
+  if (rawSessionJson) {
+    try {
+      const parsed = JSON.parse(rawSessionJson) as Partial<RecentSessionSnapshot>;
+      if (parsed && typeof parsed === 'object' && parsed.lastAccessedSection) {
+        const section = parsed.lastAccessedSection;
+        const moduleId = parsed.lastAccessedModuleId || allModules[0]?.id || 'module-1';
+        const completedModules = Array.isArray(parsed.completedModules)
+          ? parsed.completedModules
+          : ['module-1', 'module-2'];
+        const completedCount = completedModules.length;
+        const completionPercent = Math.min(
+          100,
+          Math.round((completedCount / totalModules) * 100)
+        );
+        const updatedAtIso = parsed.updatedAtIso || '2026-10-28T08:50:00.000Z';
+
+        if (section === 'curriculum') {
+          const foundMod =
+            allModules.find((m) => m.id === moduleId) || allModules[0];
+          return {
+            section: 'curriculum',
+            moduleId: foundMod ? foundMod.id : moduleId,
+            kind: 'module',
+            targetTitleFa: foundMod
+              ? `فصل ${foundMod.number}: ${foundMod.titleFa}`
+              : 'فصل ۱: معماری هسته و فلسفه Agent-First',
+            targetTitleEn: foundMod
+              ? `Module 0${foundMod.number}: ${foundMod.titleEn}`
+              : 'Module 01: Core Architecture',
+            badgeLabelEn: foundMod
+              ? `CURRICULUM · MODULE 0${foundMod.number}`
+              : 'CURRICULUM · MODULE',
+            completedModules,
+            completedCount,
+            totalModules,
+            completionPercent,
+            updatedAtIso,
+          };
+        }
+
+        const studioMeta = STUDIO_METADATA_MAP[section];
+        if (studioMeta) {
+          return {
+            section,
+            moduleId,
+            kind: 'studio',
+            targetTitleFa: studioMeta.titleFa,
+            targetTitleEn: studioMeta.titleEn,
+            badgeLabelEn: studioMeta.badgeEn,
+            completedModules,
+            completedCount,
+            totalModules,
+            completionPercent,
+            updatedAtIso,
+          };
+        }
+      }
+    } catch {
+      // Fall through to user-state.json fallback
+    }
+  }
+
+  if (rawUserStateJson) {
+    const parsedState = parseKnowledgeBaseUserStateJson(rawUserStateJson);
+    if (parsedState.valid && parsedState.data) {
+      const doc = parsedState.data;
+      const completedModules = doc.academyProgress.completedModules || [];
+      const completedCount = completedModules.length;
+      const completionPercent = Math.min(
+        100,
+        Math.round((completedCount / totalModules) * 100)
+      );
+      return {
+        section: 'simulator',
+        moduleId: allModules[0]?.id || 'module-1',
+        kind: 'studio',
+        targetTitleFa: `شبیه‌ساز Mission Control — ${doc.activeTaskState.titleFa}`,
+        targetTitleEn: `Mission Control Simulator — ${doc.activeTaskState.titleEn}`,
+        badgeLabelEn: `KNOWLEDGE BASE · ${doc.workspaceProfile.activeWorktree}`,
+        completedModules,
+        completedCount,
+        totalModules,
+        completionPercent,
+        updatedAtIso: doc.exportedAtIso,
+      };
+    }
+  }
+
+  return null;
+}
+
+

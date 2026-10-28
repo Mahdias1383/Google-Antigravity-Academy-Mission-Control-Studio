@@ -1,0 +1,202 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net: Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened Global Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation Blueprint: ArchitectProgress (/users/{userId})
+    function isValidArchitectProgress(data) {
+      return data.keys().hasAll([
+        'ownerId',
+        'architectName',
+        'roleTitle',
+        'organization',
+        'completedModules',
+        'completedScenarioIds',
+        'dailyTargetMinutes',
+        'totalMinutesStudied',
+        'totalCombinedXp',
+        'currentLevel',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'ownerId',
+        'architectName',
+        'roleTitle',
+        'organization',
+        'completedModules',
+        'completedScenarioIds',
+        'dailyTargetMinutes',
+        'totalMinutesStudied',
+        'totalCombinedXp',
+        'currentLevel',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 &&
+      data.ownerId == request.auth.uid &&
+      data.architectName is string && data.architectName.size() >= 1 && data.architectName.size() <= 120 &&
+      data.roleTitle is string && data.roleTitle.size() >= 1 && data.roleTitle.size() <= 120 &&
+      data.organization is string && data.organization.size() >= 1 && data.organization.size() <= 120 &&
+      data.completedModules is list && data.completedModules.size() <= 10 &&
+      (data.completedModules.size() == 0 || (data.completedModules[0] is string && data.completedModules[0].size() <= 64)) &&
+      data.completedScenarioIds is list && data.completedScenarioIds.size() <= 10 &&
+      (data.completedScenarioIds.size() == 0 || (data.completedScenarioIds[0] is string && data.completedScenarioIds[0].size() <= 64)) &&
+      data.dailyTargetMinutes is int && data.dailyTargetMinutes >= 10 && data.dailyTargetMinutes <= 240 &&
+      data.totalMinutesStudied is int && data.totalMinutesStudied >= 0 && data.totalMinutesStudied <= 100000 &&
+      data.totalCombinedXp is int && data.totalCombinedXp >= 0 && data.totalCombinedXp <= 500000 &&
+      data.currentLevel is int && data.currentLevel >= 1 && data.currentLevel <= 7 &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: DailyStudyGoal (/users/{userId}/goals/{goalId})
+    function isValidDailyStudyGoal(data) {
+      return data.keys().hasAll([
+        'ownerId',
+        'titleFa',
+        'moduleRef',
+        'targetMinutes',
+        'completed',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'ownerId',
+        'titleFa',
+        'moduleRef',
+        'targetMinutes',
+        'completed',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 &&
+      data.ownerId == request.auth.uid &&
+      data.titleFa is string && data.titleFa.size() >= 1 && data.titleFa.size() <= 200 &&
+      data.moduleRef is string && data.moduleRef.size() >= 1 && data.moduleRef.size() <= 100 &&
+      data.targetMinutes is int && data.targetMinutes >= 5 && data.targetMinutes <= 180 &&
+      data.completed is bool &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    // Collection: /users/{userId}
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId) && (resource == null || existing().ownerId == request.auth.uid);
+      allow list: if false;
+
+      allow create: if isVerifiedUser() &&
+        isOwner(userId) &&
+        isValidId(userId) &&
+        isValidArchitectProgress(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser() &&
+        isOwner(userId) &&
+        isValidId(userId) &&
+        isValidArchitectProgress(incoming()) &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (
+          // Action 1: Sync Progress, XP, Trophies & Profile
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'architectName',
+            'roleTitle',
+            'organization',
+            'completedModules',
+            'completedScenarioIds',
+            'dailyTargetMinutes',
+            'totalMinutesStudied',
+            'totalCombinedXp',
+            'currentLevel',
+            'updatedAt'
+          ])
+        );
+
+      allow delete: if isVerifiedUser() && isOwner(userId) && isValidId(userId);
+
+      // Subcollection: /users/{userId}/goals/{goalId}
+      match /goals/{goalId} {
+        allow get: if isOwner(userId) &&
+          isValidId(userId) &&
+          isValidId(goalId) &&
+          existing().ownerId == request.auth.uid &&
+          exists(/databases/$(database)/documents/users/$(userId)) &&
+          get(/databases/$(database)/documents/users/$(userId)).data.ownerId == request.auth.uid;
+
+        allow list: if isOwner(userId) &&
+          resource.data.ownerId == request.auth.uid;
+
+        allow create: if isVerifiedUser() &&
+          isOwner(userId) &&
+          isValidId(userId) &&
+          isValidId(goalId) &&
+          isValidDailyStudyGoal(incoming()) &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time &&
+          exists(/databases/$(database)/documents/users/$(userId)) &&
+          get(/databases/$(database)/documents/users/$(userId)).data.ownerId == request.auth.uid;
+
+        allow update: if isVerifiedUser() &&
+          isOwner(userId) &&
+          isValidId(userId) &&
+          isValidId(goalId) &&
+          isValidDailyStudyGoal(incoming()) &&
+          incoming().ownerId == existing().ownerId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          (
+            // Action: Toggle goal completion or edit goal metadata
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'titleFa',
+              'moduleRef',
+              'targetMinutes',
+              'completed',
+              'updatedAt'
+            ])
+          ) &&
+          exists(/databases/$(database)/documents/users/$(userId)) &&
+          get(/databases/$(database)/documents/users/$(userId)).data.ownerId == request.auth.uid;
+
+        allow delete: if isVerifiedUser() &&
+          isOwner(userId) &&
+          isValidId(userId) &&
+          isValidId(goalId) &&
+          existing().ownerId == request.auth.uid &&
+          exists(/databases/$(database)/documents/users/$(userId)) &&
+          get(/databases/$(database)/documents/users/$(userId)).data.ownerId == request.auth.uid;
+      }
+    }
+  }
+}

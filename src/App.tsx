@@ -14,8 +14,16 @@ import {
   FileSpreadsheet,
   Award,
   Globe,
+  History,
+  ArrowUpLeft,
+  X,
 } from 'lucide-react';
 import { ALL_CURRICULUM_MODULES } from './data/curriculumIndex';
+import {
+  serializeRecentSessionSnapshot,
+  resolveRecentSessionFromStorage,
+  ResolvedRecentSessionDescriptor,
+} from './utils/generators';
 import { ModuleContentView } from './components/ModuleContentView';
 import {
   ScopedPdfExportModal,
@@ -33,6 +41,7 @@ import {
   GroundedAiArchitectCopilot,
 } from './components/GlobalSearchAndAiCopilot';
 import { AchievementsCertificationView } from './components/AchievementsCertificationView';
+import { PWAInstallButton, OfflineIndicator } from './components/PWAInstallAndOffline';
 
 type ActiveWorkspaceSection =
   | 'curriculum'
@@ -55,6 +64,96 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
   const [searchModalOpen, setSearchModalOpen] = useState<boolean>(false);
   const [pdfPayload, setPdfPayload] = useState<PrintableDocumentPayload | null>(null);
+
+  // Resume Recent Session Modal State
+  const [detectedSession, setDetectedSession] = useState<ResolvedRecentSessionDescriptor | null>(null);
+  const [resumeModalOpen, setResumeModalOpen] = useState<boolean>(false);
+  const [sessionTrackingReady, setSessionTrackingReady] = useState<boolean>(false);
+
+  // Detect last accessed module or studio from localStorage on startup
+  useEffect(() => {
+    try {
+      const moduleSummaries = ALL_CURRICULUM_MODULES.map((m) => ({
+        id: m.id,
+        number: m.number,
+        titleFa: m.titleFa,
+        titleEn: m.titleEn,
+      }));
+      let rawSession = window.localStorage.getItem('ag_recent_session_v1');
+      const rawUserState = window.localStorage.getItem('ag_knowledge_base_user_state_v1');
+
+      if (!rawSession && !rawUserState) {
+        const seeded = serializeRecentSessionSnapshot({
+          version: '1.0',
+          lastAccessedSection: 'curriculum',
+          lastAccessedModuleId: 'module-2',
+          completedModules: ['module-1', 'module-2'],
+          updatedAtIso: '2026-10-28T08:50:00.000Z',
+        });
+        window.localStorage.setItem('ag_recent_session_v1', seeded);
+        rawSession = seeded;
+      }
+
+      const resolved = resolveRecentSessionFromStorage(
+        rawSession,
+        rawUserState,
+        moduleSummaries
+      );
+      if (resolved) {
+        setDetectedSession(resolved);
+        setResumeModalOpen(true);
+      }
+    } catch {
+      // Ignore storage access errors
+    } finally {
+      setSessionTrackingReady(true);
+    }
+  }, []);
+
+  // Persist current module/studio progress to localStorage when user navigates after startup modal is closed
+  useEffect(() => {
+    if (!sessionTrackingReady || resumeModalOpen) return;
+    try {
+      const snapshot = serializeRecentSessionSnapshot({
+        version: '1.0',
+        lastAccessedSection: activeSection,
+        lastAccessedModuleId: activeModuleId,
+        completedModules,
+        updatedAtIso: new Date().toISOString(),
+      });
+      window.localStorage.setItem('ag_recent_session_v1', snapshot);
+      const moduleSummaries = ALL_CURRICULUM_MODULES.map((m) => ({
+        id: m.id,
+        number: m.number,
+        titleFa: m.titleFa,
+        titleEn: m.titleEn,
+      }));
+      const updatedResolved = resolveRecentSessionFromStorage(
+        snapshot,
+        null,
+        moduleSummaries
+      );
+      if (updatedResolved) {
+        setDetectedSession(updatedResolved);
+      }
+    } catch {
+      // Ignore storage access errors
+    }
+  }, [activeSection, activeModuleId, completedModules, sessionTrackingReady, resumeModalOpen]);
+
+  const handleJumpToRecentSession = () => {
+    if (!detectedSession) {
+      setResumeModalOpen(false);
+      return;
+    }
+    setActiveSection(detectedSession.section);
+    setActiveModuleId(detectedSession.moduleId);
+    if (detectedSession.completedModules.length > 0) {
+      setCompletedModules(detectedSession.completedModules);
+    }
+    setResumeModalOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   useEffect(() => {
     const rootEl = document.documentElement;
@@ -245,7 +344,21 @@ export default function App() {
           </button>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3">
+          {detectedSession && (
+            <button
+              type="button"
+              onClick={() => setResumeModalOpen(true)}
+              data-testid="open-resume-modal-btn"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap"
+            >
+              <History className="w-3.5 h-3.5" />
+              <span>ادامه آخرین نشست (Resume)</span>
+            </button>
+          )}
+
+          <PWAInstallButton />
+
           <button
             type="button"
             onClick={() => setActiveSection('achievements')}
@@ -464,7 +577,12 @@ export default function App() {
           )}
 
           {activeSection === 'simulator' && (
-            <MissionControlSimulator onExportPdf={(payload) => setPdfPayload(payload)} />
+            <MissionControlSimulator
+              onExportPdf={(payload) => setPdfPayload(payload)}
+              completedModules={completedModules}
+              totalModules={ALL_CURRICULUM_MODULES.length}
+              onRestoreCompletedModules={(restored) => setCompletedModules(restored)}
+            />
           )}
 
           {activeSection === 'guardrails' && (
@@ -529,6 +647,135 @@ export default function App() {
         payload={pdfPayload}
         onClose={() => setPdfPayload(null)}
       />
+
+      {/* Resume Recent Session Startup Modal */}
+      {resumeModalOpen && detectedSession && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="resume-session-modal-title"
+          data-testid="resume-session-modal"
+        >
+          <div className="w-full max-w-lg rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0d1322] text-slate-900 dark:text-slate-100 shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="px-6 py-4 bg-slate-100 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-blue-600/15 border border-blue-500/40 flex items-center justify-center text-blue-500 shrink-0">
+                  <History className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2
+                    id="resume-session-modal-title"
+                    className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white"
+                  >
+                    ادامه آخرین نشست مهندسی (Resume Recent Session)
+                  </h2>
+                  <div
+                    dir="ltr"
+                    className="ltr-inline text-[11px] font-mono text-blue-600 dark:text-blue-400"
+                  >
+                    Detected from localStorage · Cross-Session Continuity
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setResumeModalOpen(false)}
+                aria-label="Close Resume Session Modal"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-5">
+              <p className="text-xs sm:text-sm leading-6 text-slate-600 dark:text-slate-300">
+                آخرین فعالیت و نقطه پیشرفت شما در حافظه مرورگر (<code dir="ltr" className="ltr-inline">localStorage</code>) شناسایی شد. آیا مایلید مستقیماً به همان بخش بازگردید؟
+              </p>
+
+              {/* Detected Target Card */}
+              <div
+                className="p-4 rounded-xl border border-blue-500/30 bg-blue-500/5 space-y-2.5"
+                data-testid="resume-session-target-card"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span
+                    dir="ltr"
+                    className="ltr-inline px-2.5 py-0.5 rounded-md bg-blue-600/15 border border-blue-500/30 text-blue-600 dark:text-blue-400 font-mono text-[11px] font-bold"
+                  >
+                    {detectedSession.badgeLabelEn}
+                  </span>
+                  <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                    {detectedSession.kind === 'studio' ? 'استودیوی تعاملی' : 'سرفصل آموزشی'}
+                  </span>
+                </div>
+
+                <div
+                  className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white"
+                  data-testid="resume-session-title-fa"
+                >
+                  {detectedSession.targetTitleFa}
+                </div>
+
+                <div
+                  dir="ltr"
+                  className="ltr-inline text-xs font-mono text-slate-500 dark:text-slate-400 block"
+                  data-testid="resume-session-title-en"
+                >
+                  {detectedSession.targetTitleEn}
+                </div>
+              </div>
+
+              {/* Saved Curriculum Progress Bar */}
+              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/70 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-slate-700 dark:text-slate-300">
+                    پیشرفت ثبت‌شده در سرفصل‌های آکادمی:
+                  </span>
+                  <span
+                    dir="ltr"
+                    className="ltr-inline font-mono font-bold text-emerald-500 tabular-nums"
+                  >
+                    {detectedSession.completedCount} / {detectedSession.totalModules} Modules ({detectedSession.completionPercent}%)
+                  </span>
+                </div>
+                <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-500 transition-all duration-300"
+                    style={{ width: `${detectedSession.completionPercent}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setResumeModalOpen(false)}
+                  data-testid="dismiss-resume-session-btn"
+                  className="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  ماندن در نمای فعلی (Stay Here)
+                </button>
+                <button
+                  type="button"
+                  onClick={handleJumpToRecentSession}
+                  data-testid="confirm-resume-session-btn"
+                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                >
+                  <span>پرش مستقیم به آخرین نقطه پیشرفت (Jump Back)</span>
+                  <ArrowUpLeft className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PWA Offline Mode Connectivity Indicator */}
+      <OfflineIndicator />
     </div>
   );
 }

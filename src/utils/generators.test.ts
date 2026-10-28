@@ -7,6 +7,10 @@ import {
   buildMcpConfigJson,
   buildFastMcpPythonCode,
   estimateRuleTokenOverhead,
+  buildKnowledgeBaseUserStateJson,
+  parseKnowledgeBaseUserStateJson,
+  serializeRecentSessionSnapshot,
+  resolveRecentSessionFromStorage,
 } from './generators';
 
 test('buildRuleMarkdown generates valid Glob frontmatter and selected domain sections', () => {
@@ -259,6 +263,81 @@ test('calculateTrophyCaseStatus unlocks rare trophies for high-difficulty scenar
   assert.equal(fullTrophies.trophies[0].unlocked, true); // Mythic 100% mastery unlocked
 });
 
+test('buildKnowledgeBaseUserStateJson and parseKnowledgeBaseUserStateJson serialize and restore .agent/knowledge-base/user-state.json accurately', () => {
+  const jsonOutput = buildKnowledgeBaseUserStateJson({
+    exportedAtIso: '2026-10-28T09:00:00.000Z',
+    workspaceName: 'antigravity-enterprise-core',
+    taskId: 'task-websocket',
+    titleEn: 'Build Async WebSocket Notification Service with Redis Pub/Sub',
+    titleFa: 'ساخت سرویس اعلان بلادرنگ WebSocket با Redis Pub/Sub',
+    worktree: '../ag-worktrees/wt-websocket',
+    executionMode: 'Planning Mode',
+    executionStage: 'completed',
+    activeArtifactTab: 'walkthrough.md',
+    inlineComments: [
+      { line: 5, comment: 'Ensure expired tickets return HTTP 403 before WebSocket upgrade.' },
+      { line: 8, comment: 'Use heartbeat ping interval of 15s.' },
+    ],
+    tasks: [
+      { id: 't1', text: 'Define Pydantic v2 WebSocketEnvelope schema', doneAfterExec: true },
+      { id: 't2', text: 'Implement Redis async fan-out manager', doneAfterExec: true },
+    ],
+    completedModules: ['module-1', 'module-2', 'module-3', 'module-4'],
+    totalModules: 8,
+  });
 
+  assert.equal(jsonOutput.includes('".agent/knowledge-base/user-state.json"'), true);
+  assert.equal(jsonOutput.includes('"completionPercent": 50'), true);
+  assert.equal(jsonOutput.includes('antigravity resume --state .agent/knowledge-base/user-state.json'), true);
 
+  const parsedResult = parseKnowledgeBaseUserStateJson(jsonOutput);
+  assert.equal(parsedResult.valid, true);
+  assert.equal(parsedResult.data?.artifactPath, '.agent/knowledge-base/user-state.json');
+  assert.equal(parsedResult.data?.workspaceProfile.executionStage, 'completed');
+  assert.equal(parsedResult.data?.activeTaskState.inlineReviewComments.length, 2);
+  assert.equal(parsedResult.data?.academyProgress.completedModules.length, 4);
+
+  const invalidResult = parseKnowledgeBaseUserStateJson('{"artifactPath": "wrong.json"}');
+  assert.equal(invalidResult.valid, false);
+});
+
+test('resolveRecentSessionFromStorage detects last accessed module or studio from localStorage accurately', () => {
+  const sampleModules = ALL_CURRICULUM_MODULES.map((m) => ({
+    id: m.id,
+    number: m.number,
+    titleFa: m.titleFa,
+    titleEn: m.titleEn,
+  }));
+
+  const studioSnapshotJson = serializeRecentSessionSnapshot({
+    version: '1.0',
+    lastAccessedSection: 'mcp',
+    lastAccessedModuleId: 'module-7',
+    completedModules: ['module-1', 'module-2', 'module-7'],
+    updatedAtIso: '2026-10-28T09:10:00.000Z',
+  });
+
+  const resolvedStudio = resolveRecentSessionFromStorage(studioSnapshotJson, null, sampleModules);
+  assert.notEqual(resolvedStudio, null);
+  assert.equal(resolvedStudio?.section, 'mcp');
+  assert.equal(resolvedStudio?.kind, 'studio');
+  assert.equal(resolvedStudio?.completedCount, 3);
+  assert.equal(resolvedStudio?.completionPercent, 38);
+
+  const moduleSnapshotJson = serializeRecentSessionSnapshot({
+    version: '1.0',
+    lastAccessedSection: 'curriculum',
+    lastAccessedModuleId: 'module-5',
+    completedModules: ['module-1', 'module-2', 'module-3', 'module-4'],
+    updatedAtIso: '2026-10-28T09:12:00.000Z',
+  });
+
+  const resolvedModule = resolveRecentSessionFromStorage(moduleSnapshotJson, null, sampleModules);
+  assert.notEqual(resolvedModule, null);
+  assert.equal(resolvedModule?.section, 'curriculum');
+  assert.equal(resolvedModule?.moduleId, 'module-5');
+  assert.equal(resolvedModule?.kind, 'module');
+  assert.equal(resolvedModule?.badgeLabelEn, 'CURRICULUM · MODULE 05');
+  assert.equal(resolvedModule?.completionPercent, 50);
+});
 

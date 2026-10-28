@@ -1,0 +1,153 @@
+{
+  "entities": {
+    "ArchitectProgress": {
+      "title": "ArchitectProgress",
+      "description": "Cloud-synced Academy progress, XP/Level state, completed modules, and unlocked trophies for an authenticated architect.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the document owner",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "architectName": {
+          "type": "string",
+          "description": "Display name on the Architect Report Card",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "roleTitle": {
+          "type": "string",
+          "description": "Engineering role title",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "organization": {
+          "type": "string",
+          "description": "Team or organization name",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "completedModules": {
+          "type": "array",
+          "description": "Bounded list of completed module IDs (max 10)",
+          "maxLength": 10
+        },
+        "completedScenarioIds": {
+          "type": "array",
+          "description": "Bounded list of completed high-difficulty scenario IDs (max 10)",
+          "maxLength": 10
+        },
+        "dailyTargetMinutes": {
+          "type": "integer",
+          "description": "Daily study goal target in minutes (10 to 240)"
+        },
+        "totalMinutesStudied": {
+          "type": "integer",
+          "description": "Cumulative minutes studied across sessions"
+        },
+        "totalCombinedXp": {
+          "type": "integer",
+          "description": "Total combined experience points"
+        },
+        "currentLevel": {
+          "type": "integer",
+          "description": "Current architect level (1 to 7)"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of initial profile creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last profile update"
+        }
+      },
+      "required": [
+        "ownerId",
+        "architectName",
+        "roleTitle",
+        "organization",
+        "completedModules",
+        "completedScenarioIds",
+        "dailyTargetMinutes",
+        "totalMinutesStudied",
+        "totalCombinedXp",
+        "currentLevel",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "DailyStudyGoal": {
+      "title": "DailyStudyGoal",
+      "description": "Individual daily study goal item stored in a user subcollection.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the goal owner",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "titleFa": {
+          "type": "string",
+          "description": "Persian title of the study goal",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "moduleRef": {
+          "type": "string",
+          "description": "Target curriculum module reference",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "targetMinutes": {
+          "type": "integer",
+          "description": "Planned study duration in minutes (5 to 180)"
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Whether the study goal has been completed"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when goal was created"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when goal was updated"
+        }
+      },
+      "required": [
+        "ownerId",
+        "titleFa",
+        "moduleRef",
+        "targetMinutes",
+        "completed",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/ArchitectProgress"
+      },
+      "description": "Stores each authenticated architect's cloud-synced Academy progress, XP/Level telemetry, and report card metadata."
+    },
+    "/users/{userId}/goals/{goalId}": {
+      "schema": {
+        "$ref": "#/entities/DailyStudyGoal"
+      },
+      "description": "Subcollection storing individual Daily Study Planner goals belonging to the parent user."
+    }
+  }
+}

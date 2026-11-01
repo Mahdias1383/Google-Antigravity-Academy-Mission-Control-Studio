@@ -922,5 +922,21 @@ test('calculateMasteryRankStanding assigns Trainee, Specialist, Architect, and P
   assert.equal(principal.ranks.every((r) => r.unlocked), true);
 });
 
+test('.github/workflows/main.yml defines automated Node.js setup, npm dependency installation, lint, test, and production build steps', async () => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const workflowPath = path.resolve(process.cwd(), '.github/workflows/main.yml');
+  assert.equal(fs.existsSync(workflowPath), true);
+
+  const workflowContent = fs.readFileSync(workflowPath, 'utf-8');
+  assert.equal(workflowContent.includes('actions/checkout@v4'), true);
+  assert.equal(workflowContent.includes('actions/setup-node@v4'), true);
+  assert.equal(workflowContent.includes('npm ci || npm install'), true);
+  assert.equal(workflowContent.includes('npm run lint'), true);
+  assert.equal(workflowContent.includes('npm test'), true);
+  assert.equal(workflowContent.includes('npm run build'), true);
+});
+
+
 
 

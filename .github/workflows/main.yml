@@ -1,0 +1,57 @@
+name: Antigravity Academy CI — Build, Lint & Test
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-lint-test:
+    name: Build, Lint & Test (Node.js 22.x)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    strategy:
+      matrix:
+        node-version: [22.x]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install Dependencies via npm
+        run: npm ci || npm install
+
+      - name: Run TypeScript & Code Lint Checks
+        run: npm run lint
+
+      - name: Run Unit & Security Rules Tests
+        run: npm test
+
+      - name: Build Production Bundle
+        run: npm run build
+
+      - name: Verify Production Build Output
+        run: |
+          test -d dist
+          test -f dist/index.html
+          echo "Production build verified successfully in dist/"

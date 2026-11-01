@@ -298,7 +298,7 @@ export const KnowledgeBaseExplorer: React.FC<{
     if (tagBubbleGraph.nodes.length === 0) return;
 
     interface BubblePackDatum {
-      children?: KnowledgeConceptTagNode[];
+      children?: BubblePackDatum[];
       tagId?: string;
       weightScore?: number;
       nodeData?: KnowledgeConceptTagNode;

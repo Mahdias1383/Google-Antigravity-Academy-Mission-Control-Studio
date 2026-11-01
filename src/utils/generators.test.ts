@@ -33,6 +33,18 @@ import {
   evaluateQuizAnswer,
   calculateQuizScoreSummary,
 } from './quizGenerators';
+import {
+  formatTimerDisplay,
+  formatDeepWorkDuration,
+  calculateDeepWorkXp,
+  recordDeepWorkSession,
+  calculateModuleDeepWorkSummaries,
+  calculateTotalDeepWorkStats,
+  parseDeepWorkLogsFromStorage,
+  serializeDeepWorkLogsToStorage,
+  POMODORO_MODES,
+  DeepWorkLogEntry,
+} from './pomodoroTimer';
 
 
 test('buildRuleMarkdown generates valid Glob frontmatter and selected domain sections', () => {
@@ -1034,4 +1046,90 @@ test('Knowledge Quiz: calculateQuizScoreSummary aggregates accuracy, earned XP, 
   assert.equal(partialSummary.accuracyPercent, 33);
   assert.equal(partialSummary.earnedXp, q0.xpReward);
   assert.equal(partialSummary.masteryTierEn, 'Knowledge Base Trainee');
+});
+
+test('Pomodoro Timer: formatTimerDisplay formats mm:ss correctly and formatDeepWorkDuration formats minutes and hours', () => {
+  assert.equal(formatTimerDisplay(1500), '25:00');
+  assert.equal(formatTimerDisplay(3000), '50:00');
+  assert.equal(formatTimerDisplay(300), '05:00');
+  assert.equal(formatTimerDisplay(45), '00:45');
+  assert.equal(formatTimerDisplay(0), '00:00');
+
+  assert.equal(formatDeepWorkDuration(25), '25m');
+  assert.equal(formatDeepWorkDuration(50), '50m');
+  assert.equal(formatDeepWorkDuration(60), '1.0h');
+  assert.equal(formatDeepWorkDuration(90), '1.5h');
+  assert.equal(formatDeepWorkDuration(150), '2.5h');
+});
+
+test('Pomodoro Timer: calculateDeepWorkXp awards XP based on duration and session mode', () => {
+  // Focus: 2.5 XP per min
+  assert.equal(calculateDeepWorkXp(25, 'focus'), 63);
+  // Deep Work: 3 XP per min
+  assert.equal(calculateDeepWorkXp(50, 'deep-work'), 150);
+  // Break: 0 XP
+  assert.equal(calculateDeepWorkXp(5, 'short-break'), 0);
+});
+
+test('Pomodoro Timer: recordDeepWorkSession, module summaries, and total stats track deep work accurately', () => {
+  const initialLogs: DeepWorkLogEntry[] = [];
+  const session1 = recordDeepWorkSession(initialLogs, {
+    moduleId: 'module-1',
+    moduleNumber: 1,
+    moduleTitleFa: 'معماری هسته Agent-First',
+    moduleTitleEn: 'Agent-First Core Architecture',
+    durationMinutes: 25,
+    mode: 'focus',
+    notes: 'Supercomplete & Tab-to-Jump review',
+  });
+
+  assert.equal(session1.updatedLogs.length, 1);
+  assert.equal(session1.createdEntry.durationMinutes, 25);
+  assert.equal(session1.createdEntry.xpEarned, 63);
+  assert.equal(session1.createdEntry.moduleId, 'module-1');
+
+  const session2 = recordDeepWorkSession(session1.updatedLogs, {
+    moduleId: 'module-1',
+    moduleNumber: 1,
+    moduleTitleFa: 'معماری هسته Agent-First',
+    moduleTitleEn: 'Agent-First Core Architecture',
+    durationMinutes: 50,
+    mode: 'deep-work',
+  });
+
+  const session3 = recordDeepWorkSession(session2.updatedLogs, {
+    moduleId: 'module-2',
+    moduleNumber: 2,
+    moduleTitleFa: 'مهندسی مبتنی بر آرتیفکت',
+    moduleTitleEn: 'Artifact-Driven Engineering',
+    durationMinutes: 45,
+    mode: 'focus',
+  });
+
+  assert.equal(session3.updatedLogs.length, 3);
+
+  // Module summaries
+  const summaries = calculateModuleDeepWorkSummaries(session3.updatedLogs);
+  assert.ok(summaries['module-1']);
+  assert.equal(summaries['module-1'].totalMinutes, 75); // 25 + 50
+  assert.equal(summaries['module-1'].sessionsCount, 2);
+  assert.equal(summaries['module-1'].totalHoursFormatted, '1.3h');
+
+  assert.ok(summaries['module-2']);
+  assert.equal(summaries['module-2'].totalMinutes, 45);
+  assert.equal(summaries['module-2'].sessionsCount, 1);
+
+  // Overall stats
+  const totalStats = calculateTotalDeepWorkStats(session3.updatedLogs);
+  assert.equal(totalStats.totalMinutes, 120); // 75 + 45
+  assert.equal(totalStats.totalHoursFormatted, '2.0h');
+  assert.equal(totalStats.totalSessions, 3);
+  assert.equal(totalStats.activeModulesCount, 2);
+  assert.ok(totalStats.topModuleTitleFa.includes('فصل 1'));
+
+  // Serialization & parsing
+  const serialized = serializeDeepWorkLogsToStorage(session3.updatedLogs);
+  const parsed = parseDeepWorkLogsFromStorage(serialized);
+  assert.equal(parsed.length, 3);
+  assert.equal(parsed[0].moduleId, 'module-2');
 });

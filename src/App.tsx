@@ -47,6 +47,7 @@ import { AchievementsCertificationView } from './components/AchievementsCertific
 import { KnowledgeBaseExplorer } from './components/KnowledgeBaseExplorer';
 import { MissionMilestoneOverlay } from './components/MissionMilestoneToast';
 import { PWAInstallButton, OfflineIndicator } from './components/PWAInstallAndOffline';
+import { PomodoroHeaderWidget } from './components/PomodoroHeaderWidget';
 
 type ActiveWorkspaceSection =
   | 'curriculum'
@@ -333,8 +334,25 @@ export default function App() {
           </button>
         </nav>
 
-        {/* Zone 3: 1 Primary Action (Command Search Launcher Cmd+K) */}
+        {/* Zone 3: Pomodoro Study Timer & Deep Work Logger + Search Launcher (Ctrl+K) */}
         <div className="flex items-center gap-3 shrink-0">
+          <PomodoroHeaderWidget
+            currentModule={currentModule}
+            onStudyMinutesLogged={(minutes, modId) => {
+              // Automatically link to session snapshot
+              try {
+                const nowIso = new Date().toISOString();
+                window.localStorage.setItem('ag_last_deep_work_logged_v1', JSON.stringify({
+                  moduleId: modId,
+                  minutes,
+                  loggedAtIso: nowIso,
+                }));
+              } catch {
+                // Ignore storage error
+              }
+            }}
+          />
+
           <button
             type="button"
             onClick={() => setSearchModalOpen(true)}

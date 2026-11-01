@@ -23,10 +23,12 @@ import {
   ExportSectionPdfButton,
   PrintableDocumentPayload,
 } from '../components/CodeAndPdfTools';
+import { useLanguage } from '../context/LanguageContext';
 
 export const GuardrailAutomationStudio: React.FC<{
   onExportPdf: (payload: PrintableDocumentPayload) => void;
 }> = ({ onExportPdf }) => {
+  const { language } = useLanguage();
   const [activeSubStudio, setActiveSubStudio] = useState<'rule' | 'workflow' | 'autonomy'>('rule');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
@@ -163,17 +165,25 @@ export const GuardrailAutomationStudio: React.FC<{
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
             <div className="text-xs font-bold text-blue-600 dark:text-blue-400">
-              استودیو ۲ · مهندسی گاردریل‌ها و پایپ‌لاین‌های اتوماسیون
+              {language === 'en'
+                ? 'Studio 02 · Guardrails Engineering & Automation Pipelines'
+                : 'استودیو ۲ · مهندسی گاردریل‌ها و پایپ‌لاین‌های اتوماسیون'}
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">
-              استودیوی طراحی Rule، Workflow و کالیبراسیون پالیسی ترمینال
+              {language === 'en'
+                ? 'Rule Designer, Workflow Sequencer & Terminal Policy Calibrator'
+                : 'استودیوی طراحی Rule، Workflow و کالیبراسیون پالیسی ترمینال'}
             </h1>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1">
-              ساخت تعاملی فایل‌های استاندارد <code dir="ltr" className="ltr-inline">.agent/rules/*.md</code>، دستورات اسلش <code dir="ltr" className="ltr-inline">.agent/workflows/*.md</code> و تنظیم سطح خودمختاری ترمینال.
+              {language === 'en' ? (
+                <>Interactive generation of standardized <code dir="ltr" className="ltr-inline">.agent/rules/*.md</code> rules, <code dir="ltr" className="ltr-inline">.agent/workflows/*.md</code> slash commands, and terminal autonomy levels.</>
+              ) : (
+                <>ساخت تعاملی فایل‌های استاندارد <code dir="ltr" className="ltr-inline">.agent/rules/*.md</code>، دستورات اسلش <code dir="ltr" className="ltr-inline">.agent/workflows/*.md</code> و تنظیم سطح خودمختاری ترمینال.</>
+              )}
             </p>
           </div>
           <ExportSectionPdfButton
-            label="دریافت PDF این بخش"
+            label={language === 'en' ? 'Export Section PDF' : 'دریافت PDF این بخش'}
             payload={studioPdfPayload}
             onExport={onExportPdf}
           />
@@ -191,7 +201,7 @@ export const GuardrailAutomationStudio: React.FC<{
             }`}
           >
             <Shield className="w-4 h-4 shrink-0" />
-            <span>۱. سازنده هوشمند قوانین</span>
+            <span>{language === 'en' ? '1. Smart Rule Builder' : '۱. سازنده هوشمند قوانین'}</span>
             <span dir="ltr" className="ltr-inline font-mono text-[11px] opacity-90">(.agent/rules)</span>
           </button>
           <button
@@ -204,7 +214,7 @@ export const GuardrailAutomationStudio: React.FC<{
             }`}
           >
             <Workflow className="w-4 h-4 shrink-0" />
-            <span>۲. سکوئنسر ورک‌فلو</span>
+            <span>{language === 'en' ? '2. Workflow Sequencer' : '۲. سکوئنسر ورک‌فلو'}</span>
             <span dir="ltr" className="ltr-inline font-mono text-[11px] opacity-90">(// turbo &amp; /slash)</span>
           </button>
           <button
@@ -217,7 +227,7 @@ export const GuardrailAutomationStudio: React.FC<{
             }`}
           >
             <Terminal className="w-4 h-4 shrink-0" />
-            <span>۳. کالیبراتور خودمختاری و پالیسی ترمینال</span>
+            <span>{language === 'en' ? '3. Autonomy Calibrator & Terminal Policy' : '۳. کالیبراتور خودمختاری و پالیسی ترمینال'}</span>
           </button>
         </div>
       </div>
@@ -227,12 +237,16 @@ export const GuardrailAutomationStudio: React.FC<{
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/75 p-6 space-y-5">
             <h2 className="text-base font-bold text-slate-900 dark:text-white">
-              تنظیمات متادیتا و دامنه‌های قانون
+              {language === 'en' ? 'Rule Metadata & Engineering Domains' : 'تنظیمات متادیتا و دامنه‌های قانون'}
             </h2>
 
             <div className="space-y-1.5">
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                نام فایل قانون (در مسیر <code dir="ltr" className="ltr-inline">.agent/rules/</code>):
+                {language === 'en' ? (
+                  <>Rule filename (in <code dir="ltr" className="ltr-inline">.agent/rules/</code>):</>
+                ) : (
+                  <>نام فایل قانون (در مسیر <code dir="ltr" className="ltr-inline">.agent/rules/</code>):</>
+                )}
               </label>
               <input
                 type="text"
@@ -245,7 +259,7 @@ export const GuardrailAutomationStudio: React.FC<{
 
             <div className="space-y-1.5">
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                حالت فعال‌سازی (Activation Mode):
+                {language === 'en' ? 'Activation Mode:' : 'حالت فعال‌سازی (Activation Mode):'}
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {(['Always On', 'Glob', 'Model Decision', 'Manual'] as const).map((mode) => (
@@ -269,7 +283,11 @@ export const GuardrailAutomationStudio: React.FC<{
             {ruleConfig.activationMode === 'Glob' && (
               <div className="space-y-1.5">
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  الگوهای مسیر فایل (<code dir="ltr" className="ltr-inline">globs</code> جداشده با ویرگول):
+                  {language === 'en' ? (
+                    <>File path patterns (comma-separated <code dir="ltr" className="ltr-inline">globs</code>):</>
+                  ) : (
+                    <>الگوهای مسیر فایل (<code dir="ltr" className="ltr-inline">globs</code> جداشده با ویرگول):</>
+                  )}
                 </label>
                 <input
                   type="text"
@@ -289,7 +307,7 @@ export const GuardrailAutomationStudio: React.FC<{
 
             <div className="space-y-2">
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                انتخاب ماژول‌های استاندارد مهندسی:
+                {language === 'en' ? 'Select Standard Engineering Modules:' : 'انتخاب ماژول‌های استاندارد مهندسی:'}
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {(
@@ -327,7 +345,9 @@ export const GuardrailAutomationStudio: React.FC<{
 
             <div className="p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 space-y-1">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-600 dark:text-slate-400">تخمین سربار توکن در هر نوبت:</span>
+                <span className="text-slate-600 dark:text-slate-400">
+                  {language === 'en' ? 'Estimated token overhead per turn:' : 'تخمین سربار توکن در هر نوبت:'}
+                </span>
                 <span dir="ltr" className="ltr-inline font-mono font-bold text-blue-500">
                   ~{tokenStats.tokensPerTurn} tokens/turn ({tokenStats.efficiencyRating})
                 </span>
@@ -369,7 +389,11 @@ export const GuardrailAutomationStudio: React.FC<{
           <div className="lg:col-span-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/75 p-6 space-y-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                طراحی گام‌های دستور اسلش (<code dir="ltr" className="ltr-inline">/{workflowConfig.commandName}</code>)
+                {language === 'en' ? (
+                  <>Design Slash Command Steps (<code dir="ltr" className="ltr-inline">/{workflowConfig.commandName}</code>)</>
+                ) : (
+                  <>طراحی گام‌های دستور اسلش (<code dir="ltr" className="ltr-inline">/{workflowConfig.commandName}</code>)</>
+                )}
               </h2>
               <label className="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 cursor-pointer">
                 <input
@@ -384,7 +408,7 @@ export const GuardrailAutomationStudio: React.FC<{
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  نام دستور اسلش:
+                  {language === 'en' ? 'Slash Command Name:' : 'نام دستور اسلش:'}
                 </label>
                 <input
                   type="text"
@@ -396,7 +420,7 @@ export const GuardrailAutomationStudio: React.FC<{
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  توضیح YAML ورک‌فلو:
+                  {language === 'en' ? 'Workflow YAML Description:' : 'توضیح YAML ورک‌فلو:'}
                 </label>
                 <input
                   type="text"
@@ -461,7 +485,7 @@ export const GuardrailAutomationStudio: React.FC<{
             {/* Add New Step Form */}
             <div className="p-4 rounded-lg border border-slate-200 dark:border-slate-800 space-y-2.5">
               <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                افزودن گام جدید به پایپ‌لاین:
+                {language === 'en' ? 'Add New Step to Pipeline:' : 'افزودن گام جدید به پایپ‌لاین:'}
               </div>
               <input
                 type="text"
@@ -486,7 +510,7 @@ export const GuardrailAutomationStudio: React.FC<{
                   className="px-3.5 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-1 cursor-pointer whitespace-nowrap"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>افزودن گام</span>
+                  <span>{language === 'en' ? 'Add Step' : 'افزودن گام'}</span>
                 </button>
               </div>
             </div>
@@ -527,12 +551,12 @@ export const GuardrailAutomationStudio: React.FC<{
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/75 p-6 space-y-5">
             <h2 className="text-base font-bold text-slate-900 dark:text-white">
-              پروفایل ریسک پروژه و محیط اجرایی
+              {language === 'en' ? 'Project Risk Profile & Target Environment' : 'پروفایل ریسک پروژه و محیط اجرایی'}
             </h2>
 
             <div className="space-y-2">
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                ۱. نوع محیط هدف (Target Environment):
+                {language === 'en' ? '1. Target Environment Type:' : '۱. نوع محیط هدف (Target Environment):'}
               </label>
               <div className="grid grid-cols-1 gap-2">
                 {(
@@ -568,7 +592,11 @@ export const GuardrailAutomationStudio: React.FC<{
                     setRiskProfile({ ...riskProfile, hasDestructiveDbAccess: e.target.checked })
                   }
                 />
-                <span>دسترسی به دیتابیس دارای داده‌های حساس یا غیرقابل بازگشت</span>
+                <span>
+                  {language === 'en'
+                    ? 'Access to database containing sensitive or irreversible production data'
+                    : 'دسترسی به دیتابیس دارای داده‌های حساس یا غیرقابل بازگشت'}
+                </span>
               </label>
 
               <label className="flex items-center gap-2.5 text-xs text-slate-800 dark:text-slate-200 cursor-pointer">
@@ -579,14 +607,18 @@ export const GuardrailAutomationStudio: React.FC<{
                     setRiskProfile({ ...riskProfile, requiresAuditTrail: e.target.checked })
                   }
                 />
-                <span>الزام ممیزی انطباق (Compliance Sign-Off پیش از تغییر کد)</span>
+                <span>
+                  {language === 'en'
+                    ? 'Mandatory compliance sign-off required prior to code mutations (Audit Trail)'
+                    : 'الزام ممیزی انطباق (Compliance Sign-Off پیش از تغییر کد)'}
+                </span>
               </label>
             </div>
           </div>
 
           <div className="lg:col-span-7 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/75 p-6 space-y-5">
             <h2 className="text-base font-bold text-slate-900 dark:text-white">
-              پیکربندی پیشنهادی کالیبراتور معماری
+              {language === 'en' ? 'Architectural Recommendation & Calibrated Policy' : 'پیکربندی پیشنهادی کالیبراتور معماری'}
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -611,7 +643,11 @@ export const GuardrailAutomationStudio: React.FC<{
             </div>
 
             <p className="text-xs sm:text-sm leading-7 text-slate-700 dark:text-slate-300 bg-blue-500/5 border border-blue-500/30 p-4 rounded-lg">
-              {autonomyRec.rationaleFa}
+              {language === 'en'
+                ? autonomyRec.executionMode === 'Planning Mode'
+                  ? 'High risk environment detected. Enforcing Planning Mode with Off/Auto Terminal Policy and mandatory human PR-style review gates before any mutations.'
+                  : 'Controlled environment detected. Enabling Fast Mode with Auto/Turbo Terminal Policy for optimal developer velocity while maintaining safety allow-lists.'
+                : autonomyRec.rationaleFa}
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

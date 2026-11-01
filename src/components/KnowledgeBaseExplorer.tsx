@@ -64,6 +64,7 @@ import {
   PrintableDocumentPayload,
 } from './CodeAndPdfTools';
 import { KnowledgeQuiz } from './KnowledgeQuiz';
+import { useLanguage } from '../context/LanguageContext';
 
 const DEFAULT_FALLBACK_STUDY_DAYS: StudySessionDay[] = [
   { dateIso: '2026-10-21', dayLabelFa: 'چهارشنبه', minutesStudied: 35, modulesTouched: 1, active: true },
@@ -119,6 +120,7 @@ export const KnowledgeBaseExplorer: React.FC<{
   completedModules = ['module-1', 'module-2'],
   onRestoreCompletedModules,
 }) => {
+  const { language } = useLanguage();
   const [entries, setEntries] = useState<KnowledgeBaseEntryItem[]>(() => {
     try {
       const rawUserState = window.localStorage.getItem(USER_STATE_STORAGE_KEY);
@@ -256,7 +258,9 @@ export const KnowledgeBaseExplorer: React.FC<{
     );
     setSelectedHeatmapDateIso(todayIso);
     setStatusBanner(
-      `تبریک! ${xpEarned} امتیاز XP از آزمون دانشی پایگاه دانش دریافت شد و در کارنامه مهندسی ثبت گردید.`
+      language === 'en'
+        ? `Congratulations! ${xpEarned} XP earned from the Knowledge Base Quiz and recorded in your engineering scorecard.`
+        : `تبریک! ${xpEarned} امتیاز XP از آزمون دانشی پایگاه دانش دریافت شد و در کارنامه مهندسی ثبت گردید.`
     );
   };
 
@@ -517,9 +521,11 @@ export const KnowledgeBaseExplorer: React.FC<{
       .text((d) => {
         const nd = d.data.nodeData;
         if (!nd) return '';
-        return `${nd.labelEn} (${nd.labelFa}) — Frequency: ${nd.frequency} entries · ${nd.totalTokens} tokens · Connected to ${nd.relatedTagIds.length} concepts`;
+        return language === 'en'
+          ? `${nd.labelEn} — Frequency: ${nd.frequency} entries · ${nd.totalTokens} tokens · Connected to ${nd.relatedTagIds.length} concepts`
+          : `${nd.labelEn} (${nd.labelFa}) — Frequency: ${nd.frequency} entries · ${nd.totalTokens} tokens · Connected to ${nd.relatedTagIds.length} concepts`;
       });
-  }, [tagBubbleGraph, selectedBubbleTag]);
+  }, [tagBubbleGraph, selectedBubbleTag, language]);
 
   // D3.js Yearly Calendar Heatmap (52 Weeks x 7 Days) Effect
   useEffect(() => {
@@ -656,7 +662,9 @@ export const KnowledgeBaseExplorer: React.FC<{
     });
     setSelectedHeatmapDateIso(todayIso);
     setStatusBanner(
-      'پالس پژوهش و کاوش پایگاه دانش برای امروز (2026-10-31) در هیت‌مپ تقویمی سالانه D3 ثبت شد.'
+      language === 'en'
+        ? 'Today’s Knowledge Base research & exploration pulse (2026-10-31) has been logged in the D3 yearly calendar heatmap.'
+        : 'پالس پژوهش و کاوش پایگاه دانش برای امروز (2026-10-31) در هیت‌مپ تقویمی سالانه D3 ثبت شد.'
     );
   };
 
@@ -708,7 +716,9 @@ export const KnowledgeBaseExplorer: React.FC<{
     setSelectedHeatmapDateIso('2026-10-31');
 
     setStatusBanner(
-      `آیتم دانشی «${editTitleFa || item.titleFa}» بازنویسی شد و شاخص پوسیدگی زمینه (Context Rot) آن به ۴٪ کاهش یافت.`
+      language === 'en'
+        ? `Knowledge entry "${editTitleEn || item.titleEn}" updated and its Context Rot index was reduced to 4%.`
+        : `آیتم دانشی «${editTitleFa || item.titleFa}» بازنویسی شد و شاخص پوسیدگی زمینه (Context Rot) آن به ۴٪ کاهش یافت.`
     );
   };
 
@@ -719,14 +729,20 @@ export const KnowledgeBaseExplorer: React.FC<{
       setEditingId(null);
     }
     setStatusBanner(
-      `مدخل «${item.keyPath}» (${item.tokenCount} Tokens) از پایگاه دانش حذف شد تا بودجه توکن ایجنت آزاد شود.`
+      language === 'en'
+        ? `Entry "${item.keyPath}" (${item.tokenCount} Tokens) removed from Knowledge Base to free up agent token budget.`
+        : `مدخل «${item.keyPath}» (${item.tokenCount} Tokens) از پایگاه دانش حذف شد تا بودجه توکن ایجنت آزاد شود.`
     );
   };
 
   const handlePruneAllStaleRot = () => {
     const staleCount = entries.filter((e) => e.stalenessPercent >= 65).length;
     if (staleCount === 0) {
-      setStatusBanner('هیچ آیتم منقضی‌شده‌ای با Context Rot بالا (≥ 65%) در پایگاه دانش وجود ندارد.');
+      setStatusBanner(
+        language === 'en'
+          ? 'No expired items with high Context Rot (≥ 65%) were found in the Knowledge Base.'
+          : 'هیچ آیتم منقضی‌شده‌ای با Context Rot بالا (≥ 65%) در پایگاه دانش وجود ندارد.'
+      );
       return;
     }
     const pruned = pruneStaleKnowledgeBaseEntries(entries, 65);
@@ -742,7 +758,9 @@ export const KnowledgeBaseExplorer: React.FC<{
     );
     setSelectedHeatmapDateIso('2026-10-31');
     setStatusBanner(
-      `${staleCount} آیتم منقضی‌شده و مسموم‌کننده زمینه (Stale Context Rot) با موفقیت هرس (Prune) شدند!`
+      language === 'en'
+        ? `${staleCount} expired Stale Context Rot items were pruned!`
+        : `${staleCount} آیتم منقضی‌شده و مسموم‌کننده زمینه (Stale Context Rot) با موفقیت هرس (Prune) شدند!`
     );
   };
 
@@ -754,7 +772,9 @@ export const KnowledgeBaseExplorer: React.FC<{
       setEntries(freshDefaults);
       setEditingId(null);
       setStatusBanner(
-        'پایگاه دانش با آخرین وضعیت ذخیره‌شده در localStorage (.agent/knowledge-base/user-state.json) همگام‌سازی شد.'
+        language === 'en'
+          ? 'Knowledge Base resynchronized with latest persisted localStorage state (.agent/knowledge-base/user-state.json).'
+          : 'پایگاه دانش با آخرین وضعیت ذخیره‌شده در localStorage (.agent/knowledge-base/user-state.json) همگام‌سازی شد.'
       );
     } catch {
       // Ignore storage errors
@@ -787,7 +807,11 @@ export const KnowledgeBaseExplorer: React.FC<{
       )
     );
     setSelectedHeatmapDateIso('2026-10-31');
-    setStatusBanner(`مدخل جدید «${created.keyPath}» به شبکه Bento پایگاه دانش اضافه شد.`);
+    setStatusBanner(
+      language === 'en'
+        ? `New entry "${created.keyPath}" added to the Knowledge Base Bento grid.`
+        : `مدخل جدید «${created.keyPath}» به شبکه Bento پایگاه دانش اضافه شد.`
+    );
   };
 
   const applyRestoredEntries = (
@@ -819,7 +843,9 @@ export const KnowledgeBaseExplorer: React.FC<{
     }
 
     setStatusBanner(
-      `پایگاه دانش با موفقیت از ${sourceLabel} بازیابی شد (${restoredEntries.length} مدخل فعال).`
+      language === 'en'
+        ? `Knowledge Base restored from ${sourceLabel} (${restoredEntries.length} active entries).`
+        : `پایگاه دانش با موفقیت از ${sourceLabel} بازیابی شد (${restoredEntries.length} مدخل فعال).`
     );
   };
 
@@ -841,7 +867,9 @@ export const KnowledgeBaseExplorer: React.FC<{
     URL.revokeObjectURL(url);
 
     setStatusBanner(
-      `کل پایگاه دانش (${entries.length} مدخل · ${telemetry.totalTokens} Tokens) در فایل antigravity-knowledge-base.json صادر و دانلود شد.`
+      language === 'en'
+        ? `Entire Knowledge Base (${entries.length} entries · ${telemetry.totalTokens} Tokens) exported and downloaded as antigravity-knowledge-base.json.`
+        : `کل پایگاه دانش (${entries.length} مدخل · ${telemetry.totalTokens} Tokens) در فایل antigravity-knowledge-base.json صادر و دانلود شد.`
     );
   };
 
@@ -864,11 +892,19 @@ export const KnowledgeBaseExplorer: React.FC<{
       setImportJsonDraft(content);
       const parsed = parseKnowledgeBaseBundleJson(content);
       if (!parsed.valid || !parsed.entries) {
-        setImportError(parsed.error || 'فایل JSON انتخاب‌شده معتبر نیست.');
+        setImportError(
+          parsed.error ||
+            (language === 'en'
+              ? 'The selected JSON file is invalid.'
+              : 'فایل JSON انتخاب‌شده معتبر نیست.')
+        );
         setShowImportDrawer(true);
         return;
       }
-      applyRestoredEntries(parsed.entries, `فایل «${file.name}»`);
+      applyRestoredEntries(
+        parsed.entries,
+        language === 'en' ? `file "${file.name}"` : `فایل «${file.name}»`
+      );
     };
     reader.readAsText(file);
     e.target.value = '';
@@ -878,10 +914,18 @@ export const KnowledgeBaseExplorer: React.FC<{
     setImportError('');
     const parsed = parseKnowledgeBaseBundleJson(importJsonDraft);
     if (!parsed.valid || !parsed.entries) {
-      setImportError(parsed.error || 'ساختار JSON واردشده معتبر نیست.');
+      setImportError(
+        parsed.error ||
+          (language === 'en'
+            ? 'The provided JSON payload is invalid.'
+            : 'ساختار JSON واردشده معتبر نیست.')
+      );
       return;
     }
-    applyRestoredEntries(parsed.entries, 'محتوای JSON واردشده');
+    applyRestoredEntries(
+      parsed.entries,
+      language === 'en' ? 'JSON editor payload' : 'محتوای JSON واردشده'
+    );
   };
 
   const handleCopyBundleJson = () => {
@@ -951,7 +995,9 @@ export const KnowledgeBaseExplorer: React.FC<{
     URL.revokeObjectURL(url);
 
     setStatusBanner(
-      `فایل پشتیبان جامع مهاجرت (antigravity-unified-learning-backup.json) شامل ${freshBackup.learningHistory.completedModulesCount} ماژول تکمیل‌شده، ${freshBackup.badgeList.totalUnlockedBadgesCount} نشان فعال، ${freshBackup.accumulatedXp.totalAccumulatedXp} XP و ${freshBackup.knowledgeBase.totalEntries} آیتم دانشی صادر و دانلود شد.`
+      language === 'en'
+        ? `Unified migration backup (antigravity-unified-learning-backup.json) with ${freshBackup.learningHistory.completedModulesCount} completed modules, ${freshBackup.badgeList.totalUnlockedBadgesCount} unlocked badges, ${freshBackup.accumulatedXp.totalAccumulatedXp} XP, and ${freshBackup.knowledgeBase.totalEntries} KB items exported and downloaded.`
+        : `فایل پشتیبان جامع مهاجرت (antigravity-unified-learning-backup.json) شامل ${freshBackup.learningHistory.completedModulesCount} ماژول تکمیل‌شده، ${freshBackup.badgeList.totalUnlockedBadgesCount} نشان فعال، ${freshBackup.accumulatedXp.totalAccumulatedXp} XP و ${freshBackup.knowledgeBase.totalEntries} آیتم دانشی صادر و دانلود شد.`
     );
   };
 
@@ -977,7 +1023,10 @@ export const KnowledgeBaseExplorer: React.FC<{
     );
     if (!parsed.valid) {
       setMigrationRestoreError(
-        parsed.error || 'فایل پشتیبان مهاجرت معتبر نیست.'
+        parsed.error ||
+          (language === 'en'
+            ? 'Invalid migration backup payload.'
+            : 'فایل پشتیبان مهاجرت معتبر نیست.')
       );
       return;
     }
@@ -1025,29 +1074,45 @@ export const KnowledgeBaseExplorer: React.FC<{
     }
 
     setStatusBanner(
-      `مهاجرت و بازیابی یکپارچه با موفقیت انجام شد: ${parsed.completedModuleIds?.length ?? 0} ماژول، پیوستگی ${parsed.currentStreakDays ?? 7} روزه و ${parsed.knowledgeEntries?.length ?? entries.length} آیتم دانشی بازیابی شدند.`
+      language === 'en'
+        ? `Unified migration and restore completed: ${parsed.completedModuleIds?.length ?? 0} modules, ${parsed.currentStreakDays ?? 7}-day streak, and ${parsed.knowledgeEntries?.length ?? entries.length} knowledge entries restored.`
+        : `مهاجرت و بازیابی یکپارچه با موفقیت انجام شد: ${parsed.completedModuleIds?.length ?? 0} ماژول، پیوستگی ${parsed.currentStreakDays ?? 7} روزه و ${parsed.knowledgeEntries?.length ?? entries.length} آیتم دانشی بازیابی شدند.`
     );
     setShowMigrationInspector(false);
   };
 
   const kbPdfPayload: PrintableDocumentPayload = {
-    titleFa: 'گزارش ممیزی پایگاه دانش (.agent/knowledge-base) و مدیریت Context Rot',
+    titleFa:
+      language === 'en'
+        ? 'Knowledge Base Explorer & Context Rot Audit Report'
+        : 'گزارش ممیزی پایگاه دانش (.agent/knowledge-base) و مدیریت Context Rot',
     titleEn: 'Knowledge Base Explorer & Context Rot Audit Report',
     subtitleOrCategory: `${telemetry.rotStatus} · ${telemetry.totalTokens}/${telemetry.tokenBudgetMax} Tokens`,
     sections: [
       {
-        headingFa: '۱. خلاصه تله‌متری Context Rot و بودجه توکن',
+        headingFa:
+          language === 'en'
+            ? '1. Context Rot Telemetry & Token Budget Summary'
+            : '۱. خلاصه تله‌متری Context Rot و بودجه توکن',
         headingEn: '1. Context Rot Telemetry & Token Budget Summary',
-        paragraphsFa: [
-          `وضعیت سلامت پنجره زمینه: ${telemetry.rotStatus} — تعداد کل آیتم‌های دانش: ${telemetry.totalEntries} — تعداد آیتم‌های دچار پوسیدگی زمینه (Stale ≥ 65%): ${telemetry.staleEntriesCount}.`,
-          `مصرف فعلی بودجه توکن پایگاه دانش: ${telemetry.totalTokens} از ${telemetry.tokenBudgetMax} توکن (${telemetry.tokenUsagePercent}%).`,
-        ],
+        paragraphsFa:
+          language === 'en'
+            ? [
+                `Context Window Health: ${telemetry.rotStatus} — Total Knowledge Entries: ${telemetry.totalEntries} — Stale Entries (≥ 65%): ${telemetry.staleEntriesCount}.`,
+                `Current Knowledge Token Budget Usage: ${telemetry.totalTokens} / ${telemetry.tokenBudgetMax} Tokens (${telemetry.tokenUsagePercent}%).`,
+              ]
+            : [
+                `وضعیت سلامت پنجره زمینه: ${telemetry.rotStatus} — تعداد کل آیتم‌های دانش: ${telemetry.totalEntries} — تعداد آیتم‌های دچار پوسیدگی زمینه (Stale ≥ 65%): ${telemetry.staleEntriesCount}.`,
+                `مصرف فعلی بودجه توکن پایگاه دانش: ${telemetry.totalTokens} از ${telemetry.tokenBudgetMax} توکن (${telemetry.tokenUsagePercent}%).`,
+              ],
       },
       ...entries.map((item, idx) => ({
-        headingFa: `${idx + 2}. ${item.titleFa}`,
+        headingFa: `${idx + 2}. ${language === 'en' ? item.titleEn : item.titleFa}`,
         headingEn: `${item.keyPath} (${item.tokenCount} Tokens · Rot: ${item.stalenessPercent}%)`,
         paragraphsFa: [
-          `دسته‌بندی: ${CATEGORY_METADATA[item.category].labelFa} — آخرین بروزرسانی: ${item.updatedAtIso}`,
+          language === 'en'
+            ? `Category: ${CATEGORY_METADATA[item.category].labelEn} — Last Updated: ${item.updatedAtIso}`
+            : `دسته‌بندی: ${CATEGORY_METADATA[item.category].labelFa} — آخرین بروزرسانی: ${item.updatedAtIso}`,
         ],
         codeBlocks: [
           {
@@ -1068,7 +1133,11 @@ export const KnowledgeBaseExplorer: React.FC<{
           <div className="flex items-center gap-2.5">
             <span className="px-3 py-1 rounded-md bg-blue-600/15 border border-blue-500/40 text-blue-600 dark:text-blue-400 text-xs font-bold flex items-center gap-1.5">
               <Database className="w-3.5 h-3.5" />
-              <span>کاوشگر پایگاه دانش و حافظه ایجنت</span>
+              <span>
+                {language === 'en'
+                  ? 'Knowledge Base & Agent Memory Explorer'
+                  : 'کاوشگر پایگاه دانش و حافظه ایجنت'}
+              </span>
             </span>
             <span
               dir="ltr"
@@ -1095,7 +1164,11 @@ export const KnowledgeBaseExplorer: React.FC<{
               className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>خروجی JSON پایگاه دانش (Export JSON)</span>
+              <span>
+                {language === 'en'
+                  ? 'Export Knowledge Base JSON'
+                  : 'خروجی JSON پایگاه دانش (Export JSON)'}
+              </span>
             </button>
 
             <button
@@ -1105,7 +1178,11 @@ export const KnowledgeBaseExplorer: React.FC<{
               className="px-3.5 py-2 rounded-xl border border-indigo-500/40 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Upload className="w-3.5 h-3.5" />
-              <span>بازیابی از فایل JSON (Import)</span>
+              <span>
+                {language === 'en'
+                  ? 'Restore from JSON (Import)'
+                  : 'بازیابی از فایل JSON (Import)'}
+              </span>
             </button>
 
             <button
@@ -1115,7 +1192,11 @@ export const KnowledgeBaseExplorer: React.FC<{
               className="px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/90 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <RefreshCw className="w-3.5 h-3.5 text-blue-500" />
-              <span>همگام‌سازی مجدد با localStorage</span>
+              <span>
+                {language === 'en'
+                  ? 'Resync with localStorage'
+                  : 'همگام‌سازی مجدد با localStorage'}
+              </span>
             </button>
 
             <button
@@ -1125,7 +1206,11 @@ export const KnowledgeBaseExplorer: React.FC<{
               className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>افزودن آیتم دانشی جدید</span>
+              <span>
+                {language === 'en'
+                  ? 'Add New Knowledge Entry'
+                  : 'افزودن آیتم دانشی جدید'}
+              </span>
             </button>
 
             <button
@@ -1145,7 +1230,15 @@ export const KnowledgeBaseExplorer: React.FC<{
               className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-extrabold flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
             >
               <HelpCircle className="w-3.5 h-3.5" />
-              <span>{showQuizSection ? 'بستن پنل آزمون' : 'آزمون دانشی پایگاه دانش'}</span>
+              <span>
+                {showQuizSection
+                  ? language === 'en'
+                    ? 'Close Quiz Panel'
+                    : 'بستن پنل آزمون'
+                  : language === 'en'
+                  ? 'Knowledge Base Quiz'
+                  : 'آزمون دانشی پایگاه دانش'}
+              </span>
               <span
                 dir="ltr"
                 className="ltr-inline font-mono text-[10px] bg-white/20 px-1.5 py-0.5 rounded font-bold"
@@ -1155,7 +1248,11 @@ export const KnowledgeBaseExplorer: React.FC<{
             </button>
 
             <ExportSectionPdfButton
-              label="دریافت PDF گزارش پایگاه دانش"
+              label={
+                language === 'en'
+                  ? 'Export KB Audit PDF'
+                  : 'دریافت PDF گزارش پایگاه دانش'
+              }
               payload={kbPdfPayload}
               onExport={onExportPdf}
             />
@@ -1163,14 +1260,34 @@ export const KnowledgeBaseExplorer: React.FC<{
         </div>
 
         <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
-          کاوشگر بصری پایگاه دانش (<code dir="ltr" className="ltr-inline">Knowledge Base Explorer</code>) و مهار دستی <code dir="ltr" className="ltr-inline">Context Rot</code>
+          {language === 'en' ? (
+            <>
+              Visual <code dir="ltr" className="ltr-inline">Knowledge Base Explorer</code> &amp; Manual{' '}
+              <code dir="ltr" className="ltr-inline">Context Rot</code> Mitigation
+            </>
+          ) : (
+            <>
+              کاوشگر بصری پایگاه دانش (<code dir="ltr" className="ltr-inline">Knowledge Base Explorer</code>) و مهار دستی <code dir="ltr" className="ltr-inline">Context Rot</code>
+            </>
+          )}
         </h1>
 
         <p className="text-xs sm:text-sm leading-7 text-slate-600 dark:text-slate-300">
-          در معماری <strong className="text-slate-900 dark:text-white">Google Antigravity</strong>، انباشت لاگ‌های قدیمی، قوانین منسوخ و وضعیت‌های تاریخ‌گذشته در دایرکتوری{' '}
-          <code dir="ltr" className="ltr-inline">.agent/knowledge-base/</code> و حافظه{' '}
-          <code dir="ltr" className="ltr-inline">localStorage</code> منجر به پدیده مخرب{' '}
-          <strong className="text-amber-600 dark:text-amber-400">پوسیدگی زمینه (Context Rot)</strong> می‌شود. در این شبکه Bento قابل جستجو، می‌توانید وضعیت پایدار کاربر و آیتم‌های دانشی را به‌صورت زنده بررسی، ویرایش یا هرس (Prune) کنید.
+          {language === 'en' ? (
+            <>
+              In the <strong className="text-slate-900 dark:text-white">Google Antigravity</strong> architecture, accumulating outdated logs, deprecated rules, and stale state inside{' '}
+              <code dir="ltr" className="ltr-inline">.agent/knowledge-base/</code> and{' '}
+              <code dir="ltr" className="ltr-inline">localStorage</code> triggers destructive{' '}
+              <strong className="text-amber-600 dark:text-amber-400">Context Rot</strong>. In this searchable Bento Grid, you can inspect, edit, or prune persistent user state and knowledge items in real time.
+            </>
+          ) : (
+            <>
+              در معماری <strong className="text-slate-900 dark:text-white">Google Antigravity</strong>، انباشت لاگ‌های قدیمی، قوانین منسوخ و وضعیت‌های تاریخ‌گذشته در دایرکتوری{' '}
+              <code dir="ltr" className="ltr-inline">.agent/knowledge-base/</code> و حافظه{' '}
+              <code dir="ltr" className="ltr-inline">localStorage</code> منجر به پدیده مخرب{' '}
+              <strong className="text-amber-600 dark:text-amber-400">پوسیدگی زمینه (Context Rot)</strong> می‌شود. در این شبکه Bento قابل جستجو، می‌توانید وضعیت پایدار کاربر و آیتم‌های دانشی را به‌صورت زنده بررسی، ویرایش یا هرس (Prune) کنید.
+            </>
+          )}
         </p>
 
         {statusBanner && (
@@ -1187,7 +1304,7 @@ export const KnowledgeBaseExplorer: React.FC<{
               onClick={() => setStatusBanner('')}
               className="text-[11px] underline cursor-pointer shrink-0"
             >
-              بستن
+              {language === 'en' ? 'Dismiss' : 'بستن'}
             </button>
           </div>
         )}
@@ -1210,7 +1327,9 @@ export const KnowledgeBaseExplorer: React.FC<{
         >
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs font-extrabold text-slate-700 dark:text-slate-200">
-              وضعیت پوسیدگی زمینه (Context Rot Status)
+              {language === 'en'
+                ? 'Context Rot Status'
+                : 'وضعیت پوسیدگی زمینه (Context Rot Status)'}
             </span>
             {telemetry.staleEntriesCount > 0 ? (
               <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
@@ -1234,7 +1353,11 @@ export const KnowledgeBaseExplorer: React.FC<{
           </div>
 
           <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-300">
-            <span>میانگین شاخص فرسودگی:</span>
+            <span>
+              {language === 'en'
+                ? 'Average Staleness Index:'
+                : 'میانگین شاخص فرسودگی:'}
+            </span>
             <span dir="ltr" className="ltr-inline font-mono font-bold tabular-nums">
               {telemetry.averageStalenessPercent}% Avg Staleness
             </span>
@@ -1245,7 +1368,9 @@ export const KnowledgeBaseExplorer: React.FC<{
         <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827]/90 shadow-md flex flex-col justify-between gap-3">
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs font-extrabold text-slate-700 dark:text-slate-200">
-              بودجه توکن حافظه پایدار (Knowledge Token Budget)
+              {language === 'en'
+                ? 'Persistent Knowledge Token Budget'
+                : 'بودجه توکن حافظه پایدار (Knowledge Token Budget)'}
             </span>
             <span
               dir="ltr"
@@ -1271,7 +1396,11 @@ export const KnowledgeBaseExplorer: React.FC<{
           </svg>
 
           <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-            <span>تعداد کل مدخل‌های فعال در Bento Grid:</span>
+            <span>
+              {language === 'en'
+                ? 'Total Active Entries in Bento Grid:'
+                : 'تعداد کل مدخل‌های فعال در Bento Grid:'}
+            </span>
             <span dir="ltr" className="ltr-inline font-mono font-bold">
               {telemetry.totalEntries} Entries
             </span>
@@ -1282,7 +1411,9 @@ export const KnowledgeBaseExplorer: React.FC<{
         <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827]/90 shadow-md flex flex-col justify-between gap-3">
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs font-extrabold text-slate-700 dark:text-slate-200">
-              پاک‌سازی آیتم‌های مسموم‌کننده (Stale Items ≥ 65%)
+              {language === 'en'
+                ? 'Prune Poisonous Items (Stale ≥ 65%)'
+                : 'پاک‌سازی آیتم‌های مسموم‌کننده (Stale Items ≥ 65%)'}
             </span>
             <span
               dir="ltr"
@@ -1294,7 +1425,9 @@ export const KnowledgeBaseExplorer: React.FC<{
           </div>
 
           <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-5">
-            آیتم‌های با فرسودگی بالای ۶۵٪ باعث خطای توهم معماری در Planning Mode می‌شوند.
+            {language === 'en'
+              ? 'Items exceeding 65% staleness induce architectural hallucinations during Planning Mode.'
+              : 'آیتم‌های با فرسودگی بالای ۶۵٪ باعث خطای توهم معماری در Planning Mode می‌شوند.'}
           </p>
 
           <button
@@ -1304,7 +1437,11 @@ export const KnowledgeBaseExplorer: React.FC<{
             className="w-full py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
           >
             <Flame className="w-3.5 h-3.5" />
-            <span>هرس خودکار آیتم‌های منقضی (Prune Stale Context Rot)</span>
+            <span>
+              {language === 'en'
+                ? 'Auto-Prune Expired Items (Prune Stale Context Rot)'
+                : 'هرس خودکار آیتم‌های منقضی (Prune Stale Context Rot)'}
+            </span>
           </button>
         </div>
       </section>
@@ -1322,14 +1459,24 @@ export const KnowledgeBaseExplorer: React.FC<{
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">
-                  مدیریت جامع داده‌ها، پشتیبان‌گیری و مهاجرت یکپارچه{' '}
+                  {language === 'en'
+                    ? 'Unified Data Management, Backup & Migration'
+                    : 'مدیریت جامع داده‌ها، پشتیبان‌گیری و مهاجرت یکپارچه'}{' '}
                   <span dir="ltr" className="ltr-inline font-mono text-xs sm:text-sm text-emerald-500">
                     (Data Management &amp; Bulk JSON Export)
                   </span>
                 </h2>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                خروجی یکجا و ساختاریافته کل تاریخچه یادگیری (<span dir="ltr" className="ltr-inline font-mono">learningHistory</span>)، فهرست نشان‌ها (<span dir="ltr" className="ltr-inline font-mono">badgeList</span>)، امتیاز انباشته (<span dir="ltr" className="ltr-inline font-mono">accumulatedXp</span>) و پایگاه دانش در یک فایل <span dir="ltr" className="ltr-inline font-mono">.json</span> استاندارد برای پشتیبان‌گیری خارجی یا مهاجرت بین سیستم‌ها
+                {language === 'en' ? (
+                  <>
+                    Structured bulk export of your full learning history (<span dir="ltr" className="ltr-inline font-mono">learningHistory</span>), unlocked badges (<span dir="ltr" className="ltr-inline font-mono">badgeList</span>), accumulated XP (<span dir="ltr" className="ltr-inline font-mono">accumulatedXp</span>), and Knowledge Base into a single <span dir="ltr" className="ltr-inline font-mono">.json</span> bundle for external backup or cross-device migration.
+                  </>
+                ) : (
+                  <>
+                    خروجی یکجا و ساختاریافته کل تاریخچه یادگیری (<span dir="ltr" className="ltr-inline font-mono">learningHistory</span>)، فهرست نشان‌ها (<span dir="ltr" className="ltr-inline font-mono">badgeList</span>)، امتیاز انباشته (<span dir="ltr" className="ltr-inline font-mono">accumulatedXp</span>) و پایگاه دانش در یک فایل <span dir="ltr" className="ltr-inline font-mono">.json</span> استاندارد برای پشتیبان‌گیری خارجی یا مهاجرت بین سیستم‌ها
+                  </>
+                )}
               </p>
             </div>
           </div>
@@ -1342,7 +1489,11 @@ export const KnowledgeBaseExplorer: React.FC<{
               className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
             >
               <Download className="w-4 h-4" />
-              <span>خروجی یکپارچه تاریخچه، نشان‌ها و XP</span>
+              <span>
+                {language === 'en'
+                  ? 'Bulk-Export History, Badges & XP'
+                  : 'خروجی یکپارچه تاریخچه، نشان‌ها و XP'}
+              </span>
               <span dir="ltr" className="ltr-inline font-mono text-[11px]">
                 (Bulk-Export JSON)
               </span>
@@ -1357,12 +1508,14 @@ export const KnowledgeBaseExplorer: React.FC<{
               {copiedMigrationJson ? (
                 <>
                   <Check className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>کپی شد (Copied)</span>
+                  <span>{language === 'en' ? 'Copied!' : 'کپی شد (Copied)'}</span>
                 </>
               ) : (
                 <>
                   <Copy className="w-3.5 h-3.5 text-blue-500" />
-                  <span>کپی JSON مهاجرت</span>
+                  <span>
+                    {language === 'en' ? 'Copy Migration JSON' : 'کپی JSON مهاجرت'}
+                  </span>
                 </>
               )}
             </button>
@@ -1376,7 +1529,11 @@ export const KnowledgeBaseExplorer: React.FC<{
               <FileCode2 className="w-3.5 h-3.5" />
               <span>
                 {showMigrationInspector
-                  ? 'بستن بازرس JSON مهاجرت'
+                  ? language === 'en'
+                    ? 'Close Migration JSON Inspector'
+                    : 'بستن بازرس JSON مهاجرت'
+                  : language === 'en'
+                  ? 'Preview & Restore Migration JSON'
                   : 'پیش‌نمایش و بازیابی JSON مهاجرت'}
               </span>
             </button>
@@ -1388,7 +1545,11 @@ export const KnowledgeBaseExplorer: React.FC<{
           {/* Pillar 1: Learning History */}
           <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/70 space-y-2">
             <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400">
-              <span>۱. تاریخچه یادگیری (Learning History)</span>
+              <span>
+                {language === 'en'
+                  ? '1. Learning History'
+                  : '۱. تاریخچه یادگیری (Learning History)'}
+              </span>
               <BookOpen className="w-4 h-4 text-blue-500 shrink-0" />
             </div>
             <div
@@ -1401,7 +1562,11 @@ export const KnowledgeBaseExplorer: React.FC<{
               {unifiedMigrationBackup.learningHistory.completionPercentage}%)
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
-              <span>پیوستگی و زمان مطالعه:</span>
+              <span>
+                {language === 'en'
+                  ? 'Streak & Study Time:'
+                  : 'پیوستگی و زمان مطالعه:'}
+              </span>
               <span
                 dir="ltr"
                 data-testid="kb-dm-streak-days"
@@ -1416,7 +1581,11 @@ export const KnowledgeBaseExplorer: React.FC<{
           {/* Pillar 2: Badge List */}
           <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/70 space-y-2">
             <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400">
-              <span>۲. فهرست نشان‌ها (Badge List)</span>
+              <span>
+                {language === 'en'
+                  ? '2. Badge List'
+                  : '۲. فهرست نشان‌ها (Badge List)'}
+              </span>
               <Award className="w-4 h-4 text-amber-500 shrink-0" />
             </div>
             <div
@@ -1441,7 +1610,11 @@ export const KnowledgeBaseExplorer: React.FC<{
           {/* Pillar 3: Accumulated XP & Level */}
           <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/70 space-y-2">
             <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400">
-              <span>۳. امتیاز انباشته (Accumulated XP)</span>
+              <span>
+                {language === 'en'
+                  ? '3. Accumulated XP'
+                  : '۳. امتیاز انباشته (Accumulated XP)'}
+              </span>
               <Zap className="w-4 h-4 text-emerald-500 shrink-0" />
             </div>
             <div
@@ -1465,7 +1638,11 @@ export const KnowledgeBaseExplorer: React.FC<{
           {/* Pillar 4: Knowledge Base & Target Schema */}
           <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/70 space-y-2">
             <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400">
-              <span>۴. بسته پایگاه دانش (KB Bundle)</span>
+              <span>
+                {language === 'en'
+                  ? '4. Knowledge Base Bundle'
+                  : '۴. بسته پایگاه دانش (KB Bundle)'}
+              </span>
               <Database className="w-4 h-4 text-indigo-400 shrink-0" />
             </div>
             <div
@@ -1493,7 +1670,9 @@ export const KnowledgeBaseExplorer: React.FC<{
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="text-xs font-bold text-slate-700 dark:text-slate-200">
-                پیش‌نمایش ساختار JSON مهاجرت و بازیابی یکپارچه (Unified Backup Payload):
+                {language === 'en'
+                  ? 'Unified Migration & Restore JSON Payload Preview:'
+                  : 'پیش‌نمایش ساختار JSON مهاجرت و بازیابی یکپارچه (Unified Backup Payload):'}
               </div>
               <span
                 dir="ltr"
@@ -1528,7 +1707,9 @@ export const KnowledgeBaseExplorer: React.FC<{
                 onClick={() => setMigrationJsonDraft(unifiedMigrationJsonString)}
                 className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 cursor-pointer"
               >
-                بازنشانی به وضعیت فعلی (Reset to Current)
+                {language === 'en'
+                  ? 'Reset to Current State'
+                  : 'بازنشانی به وضعیت فعلی (Reset to Current)'}
               </button>
               <button
                 type="button"
@@ -1537,7 +1718,11 @@ export const KnowledgeBaseExplorer: React.FC<{
                 className="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-extrabold flex items-center gap-1.5 cursor-pointer"
               >
                 <Upload className="w-3.5 h-3.5" />
-                <span>بازیابی کامل تاریخچه، نشان‌ها و XP از این JSON</span>
+                <span>
+                  {language === 'en'
+                    ? 'Restore History, Badges & XP from this JSON'
+                    : 'بازیابی کامل تاریخچه، نشان‌ها و XP از این JSON'}
+                </span>
               </button>
             </div>
           </div>
@@ -1557,7 +1742,9 @@ export const KnowledgeBaseExplorer: React.FC<{
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">
-                  هیت‌مپ تقویمی سالانه فراوانی استفاده و الگوهای پژوهش پایگاه دانش{' '}
+                  {language === 'en'
+                    ? 'Yearly Knowledge Base Usage & Research Pattern Calendar Heatmap'
+                    : 'هیت‌مپ تقویمی سالانه فراوانی استفاده و الگوهای پژوهش پایگاه دانش'}{' '}
                   <span
                     dir="ltr"
                     className="ltr-inline font-mono text-xs sm:text-sm text-emerald-500"
@@ -1567,7 +1754,15 @@ export const KnowledgeBaseExplorer: React.FC<{
                 </h2>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                تجسم ۵۲ هفته (<span dir="ltr" className="ltr-inline font-mono">364 Days</span>) فعالیت پژوهشی، ویرایش قوانین <code dir="ltr" className="ltr-inline">.agent/knowledge-base</code>، جستجوهای معنایی و چرخه‌های هرس <code dir="ltr" className="ltr-inline">Context Rot</code> در طول یک سال گذشته
+                {language === 'en' ? (
+                  <>
+                    Visualizing 52 weeks (<span dir="ltr" className="ltr-inline font-mono">364 Days</span>) of research activity, <code dir="ltr" className="ltr-inline">.agent/knowledge-base</code> rule edits, semantic lookups, and <code dir="ltr" className="ltr-inline">Context Rot</code> pruning cycles over the past year.
+                  </>
+                ) : (
+                  <>
+                    تجسم ۵۲ هفته (<span dir="ltr" className="ltr-inline font-mono">364 Days</span>) فعالیت پژوهشی، ویرایش قوانین <code dir="ltr" className="ltr-inline">.agent/knowledge-base</code>، جستجوهای معنایی و چرخه‌های هرس <code dir="ltr" className="ltr-inline">Context Rot</code> در طول یک سال گذشته
+                  </>
+                )}
               </p>
             </div>
           </div>
@@ -1610,10 +1805,12 @@ export const KnowledgeBaseExplorer: React.FC<{
                       : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  <span>{m.labelFa}</span>
-                  <span dir="ltr" className="ltr-inline font-mono text-[10px] opacity-85">
-                    ({m.labelEn})
-                  </span>
+                  <span>{language === 'en' ? m.labelEn : m.labelFa}</span>
+                  {language !== 'en' && (
+                    <span dir="ltr" className="ltr-inline font-mono text-[10px] opacity-85">
+                      ({m.labelEn})
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -1625,7 +1822,11 @@ export const KnowledgeBaseExplorer: React.FC<{
               className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-extrabold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>ثبت پالس پژوهش امروز</span>
+              <span>
+                {language === 'en'
+                  ? 'Log Research Pulse Today'
+                  : 'ثبت پالس پژوهش امروز'}
+              </span>
               <span dir="ltr" className="ltr-inline font-mono text-[11px]">
                 (+Pulse)
               </span>
@@ -1637,7 +1838,9 @@ export const KnowledgeBaseExplorer: React.FC<{
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
           <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/70 space-y-1">
             <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
-              کل تعاملات پژوهشی سالانه{' '}
+              {language === 'en'
+                ? 'Total Yearly Research Ops'
+                : 'کل تعاملات پژوهشی سالانه'}{' '}
               <span dir="ltr" className="ltr-inline font-mono">
                 (Yearly Total)
               </span>
@@ -1651,13 +1854,17 @@ export const KnowledgeBaseExplorer: React.FC<{
               {(yearlyHeatmapSummary.totalTokensProcessedYearly / 1000).toFixed(1)}k Tokens
             </div>
             <div className="text-[10px] text-slate-500 dark:text-slate-400">
-              مجموع ثبت، ویرایش، جستجو و هرس در ۵۲ هفته
+              {language === 'en'
+                ? 'Combined entries, edits, lookups & pruning over 52 weeks'
+                : 'مجموع ثبت، ویرایش، جستجو و هرس در ۵۲ هفته'}
             </div>
           </div>
 
           <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/70 space-y-1">
             <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
-              روزهای فعال پژوهش در سال{' '}
+              {language === 'en'
+                ? 'Active Research Days in Year'
+                : 'روزهای فعال پژوهش در سال'}{' '}
               <span dir="ltr" className="ltr-inline font-mono">
                 (Active Days)
               </span>
@@ -1671,7 +1878,9 @@ export const KnowledgeBaseExplorer: React.FC<{
               {yearlyHeatmapSummary.activeDaysPercent}%)
             </div>
             <div className="text-[10px] text-slate-500 dark:text-slate-400">
-              پیوستگی فعلی کاوش پایگاه دانش:{' '}
+              {language === 'en'
+                ? 'Current KB exploration streak:'
+                : 'پیوستگی فعلی کاوش پایگاه دانش:'}{' '}
               <span dir="ltr" className="ltr-inline font-mono font-bold text-amber-500">
                 {yearlyHeatmapSummary.currentResearchStreakDays}d Streak
               </span>
@@ -1680,7 +1889,9 @@ export const KnowledgeBaseExplorer: React.FC<{
 
           <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/70 space-y-1">
             <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
-              اوج فعالیت پژوهشی سال{' '}
+              {language === 'en'
+                ? 'Yearly Peak Research Activity'
+                : 'اوج فعالیت پژوهشی سال'}{' '}
               <span dir="ltr" className="ltr-inline font-mono">
                 (Peak Research Day)
               </span>
@@ -1694,7 +1905,9 @@ export const KnowledgeBaseExplorer: React.FC<{
               {yearlyHeatmapSummary.peakResearchDay.totalInteractions} Ops)
             </div>
             <div className="text-[10px] text-slate-500 dark:text-slate-400">
-              پرترافیک‌ترین ماه پژوهشی:{' '}
+              {language === 'en'
+                ? 'Busiest research month:'
+                : 'پرترافیک‌ترین ماه پژوهشی:'}{' '}
               <span dir="ltr" className="ltr-inline font-mono font-bold text-indigo-400">
                 {yearlyHeatmapSummary.peakResearchMonthEn}
               </span>
@@ -1703,7 +1916,9 @@ export const KnowledgeBaseExplorer: React.FC<{
 
           <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/70 space-y-1">
             <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
-              بهداشت سالانه حافظه{' '}
+              {language === 'en'
+                ? 'Yearly Memory Hygiene'
+                : 'بهداشت سالانه حافظه'}{' '}
               <span dir="ltr" className="ltr-inline font-mono">
                 (Yearly Hygiene)
               </span>
@@ -1717,7 +1932,9 @@ export const KnowledgeBaseExplorer: React.FC<{
               {yearlyHeatmapSummary.totalRotPrunedYearly} Pruned
             </div>
             <div className="text-[10px] text-slate-500 dark:text-slate-400">
-              جستجوهای معنایی ثبت‌شده:{' '}
+              {language === 'en'
+                ? 'Semantic lookups logged:'
+                : 'جستجوهای معنایی ثبت‌شده:'}{' '}
               <span dir="ltr" className="ltr-inline font-mono font-bold text-sky-400">
                 {yearlyHeatmapSummary.totalSearchQueriesYearly} Queries
               </span>
@@ -1779,7 +1996,9 @@ export const KnowledgeBaseExplorer: React.FC<{
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                جزئیات الگوی پژوهش در روز انتخاب‌شده:
+                {language === 'en'
+                  ? 'Selected Day Research Pattern Details:'
+                  : 'جزئیات الگوی پژوهش در روز انتخاب‌شده:'}
               </span>
               <span
                 dir="ltr"
@@ -1790,17 +2009,29 @@ export const KnowledgeBaseExplorer: React.FC<{
               </span>
               <span className="text-xs text-slate-400">·</span>
               <span className="text-xs font-extrabold text-slate-900 dark:text-white">
-                {selectedHeatmapCell.dominantResearchPatternFa}
+                {language === 'en'
+                  ? selectedHeatmapCell.dominantResearchPatternEn
+                  : selectedHeatmapCell.dominantResearchPatternFa}
               </span>
-              <span
-                dir="ltr"
-                className="ltr-inline font-mono text-[11px] text-blue-400"
-              >
-                ({selectedHeatmapCell.dominantResearchPatternEn})
-              </span>
+              {language !== 'en' && (
+                <span
+                  dir="ltr"
+                  className="ltr-inline font-mono text-[11px] text-blue-400"
+                >
+                  ({selectedHeatmapCell.dominantResearchPatternEn})
+                </span>
+              )}
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              با کلیک روی هر خانه از ماتریس ۵۲ هفته‌ای بالا، تفکیک دقیق عملیات ثبت دانش، جستجوی معنایی و پاک‌سازی <span dir="ltr" className="ltr-inline font-mono">Context Rot</span> آن روز نمایش داده می‌شود.
+              {language === 'en' ? (
+                <>
+                  Click any cell in the 52-week matrix above to inspect the exact breakdown of knowledge edits, semantic lookups, and <span dir="ltr" className="ltr-inline font-mono">Context Rot</span> pruning for that day.
+                </>
+              ) : (
+                <>
+                  با کلیک روی هر خانه از ماتریس ۵۲ هفته‌ای بالا، تفکیک دقیق عملیات ثبت دانش، جستجوی معنایی و پاک‌سازی <span dir="ltr" className="ltr-inline font-mono">Context Rot</span> آن روز نمایش داده می‌شود.
+                </>
+              )}
             </p>
           </div>
 
@@ -1871,7 +2102,9 @@ export const KnowledgeBaseExplorer: React.FC<{
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">
-                  نمودار حبابی تگ‌های دانشی و گراف هم‌رخدادی مفاهیم معماری (D3.js Tag Bubble Chart)
+                  {language === 'en'
+                    ? 'Knowledge Tag Bubble Chart & Concept Co-Occurrence Graph (D3.js Tag Bubble Chart)'
+                    : 'نمودار حبابی تگ‌های دانشی و گراف هم‌رخدادی مفاهیم معماری (D3.js Tag Bubble Chart)'}
                 </h2>
                 <span
                   dir="ltr"
@@ -1882,7 +2115,15 @@ export const KnowledgeBaseExplorer: React.FC<{
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                شعاع هر حباب بر اساس فراوانی تکرار (<span dir="ltr" className="ltr-inline">Frequency</span>) و وزن توکن در <code dir="ltr" className="ltr-inline">d3.pack()</code> محاسبه شده و خطوط منحنی هم‌رخدادی مفاهیم در آیتم‌های وضعیت کاربر را نمایش می‌دهند.
+                {language === 'en' ? (
+                  <>
+                    Each bubble radius is scaled by tag frequency (<span dir="ltr" className="ltr-inline">Frequency</span>) and token weight inside <code dir="ltr" className="ltr-inline">d3.pack()</code>, while curved links reveal co-occurring concepts across user state entries.
+                  </>
+                ) : (
+                  <>
+                    شعاع هر حباب بر اساس فراوانی تکرار (<span dir="ltr" className="ltr-inline">Frequency</span>) و وزن توکن در <code dir="ltr" className="ltr-inline">d3.pack()</code> محاسبه شده و خطوط منحنی هم‌رخدادی مفاهیم در آیتم‌های وضعیت کاربر را نمایش می‌دهند.
+                  </>
+                )}
               </p>
             </div>
           </div>
@@ -1895,7 +2136,11 @@ export const KnowledgeBaseExplorer: React.FC<{
               className="px-3.5 py-1.5 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-500 hover:bg-rose-500/25 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
-              <span>حذف فیلتر تگ ({activeTagFilterId})</span>
+              <span>
+                {language === 'en'
+                  ? `Clear Tag Filter (${activeTagFilterId})`
+                  : `حذف فیلتر تگ (${activeTagFilterId})`}
+              </span>
             </button>
           )}
         </div>
@@ -1961,10 +2206,14 @@ export const KnowledgeBaseExplorer: React.FC<{
                 <div className="flex items-start justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
                   <div>
                     <div className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                      مفهوم مهندسی انتخاب‌شده در گراف D3:
+                      {language === 'en'
+                        ? 'Selected Engineering Concept in D3 Graph:'
+                        : 'مفهوم مهندسی انتخاب‌شده در گراف D3:'}
                     </div>
                     <div className="text-base font-extrabold text-slate-900 dark:text-white mt-0.5">
-                      {selectedBubbleTag.labelFa}
+                      {language === 'en'
+                        ? selectedBubbleTag.labelEn
+                        : selectedBubbleTag.labelFa}
                     </div>
                     <div
                       dir="ltr"
@@ -1995,7 +2244,9 @@ export const KnowledgeBaseExplorer: React.FC<{
                     >
                       {selectedBubbleTag.frequency}
                     </div>
-                    <div className="text-[10px] text-slate-500 mt-0.5">تکرار در مدخل‌ها</div>
+                    <div className="text-[10px] text-slate-500 mt-0.5">
+                      {language === 'en' ? 'Entry Frequency' : 'تکرار در مدخل‌ها'}
+                    </div>
                   </div>
 
                   <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
@@ -2006,7 +2257,9 @@ export const KnowledgeBaseExplorer: React.FC<{
                     >
                       {selectedBubbleTag.totalTokens}
                     </div>
-                    <div className="text-[10px] text-slate-500 mt-0.5">حجم توکن مرتبط</div>
+                    <div className="text-[10px] text-slate-500 mt-0.5">
+                      {language === 'en' ? 'Associated Tokens' : 'حجم توکن مرتبط'}
+                    </div>
                   </div>
 
                   <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
@@ -2017,14 +2270,18 @@ export const KnowledgeBaseExplorer: React.FC<{
                     >
                       {selectedBubbleTag.relatedTagIds.length}
                     </div>
-                    <div className="text-[10px] text-slate-500 mt-0.5">مفاهیم هم‌بسته</div>
+                    <div className="text-[10px] text-slate-500 mt-0.5">
+                      {language === 'en' ? 'Linked Concepts' : 'مفاهیم هم‌بسته'}
+                    </div>
                   </div>
                 </div>
 
                 {/* Co-Occurring Related Concept Tags */}
                 <div className="space-y-1.5">
                   <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    مفاهیم مرتبط و هم‌رخداد در وضعیت کاربر (Connected Concepts):
+                    {language === 'en'
+                      ? 'Co-Occurring Connected Concepts:'
+                      : 'مفاهیم مرتبط و هم‌رخداد در وضعیت کاربر (Connected Concepts):'}
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5">
                     {selectedBubbleTag.relatedTagIds.map((relId) => {
@@ -2068,7 +2325,11 @@ export const KnowledgeBaseExplorer: React.FC<{
                 <Search className="w-3.5 h-3.5" />
                 <span>
                   {activeTagFilterId === selectedBubbleTag.tagId
-                    ? `نمایش همه مدخل‌ها (لغو فیلتر ${selectedBubbleTag.labelEn})`
+                    ? language === 'en'
+                      ? `Show All Entries (Clear ${selectedBubbleTag.labelEn} Filter)`
+                      : `نمایش همه مدخل‌ها (لغو فیلتر ${selectedBubbleTag.labelEn})`
+                    : language === 'en'
+                    ? `Filter Bento Cards by ${selectedBubbleTag.labelEn} (${selectedBubbleTag.frequency} cards)`
                     : `فیلتر کارت‌های Bento بر اساس ${selectedBubbleTag.labelEn} (${selectedBubbleTag.frequency} کارت)`}
                 </span>
               </button>
@@ -2087,10 +2348,22 @@ export const KnowledgeBaseExplorer: React.FC<{
             <div>
               <h2 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                 <Upload className="w-4 h-4 text-indigo-500" />
-                <span>بازیابی و درون‌ریزی پایگاه دانش از فایل JSON (Import &amp; Restore Knowledge Base)</span>
+                <span>
+                  {language === 'en'
+                    ? 'Import & Restore Knowledge Base from JSON'
+                    : 'بازیابی و درون‌ریزی پایگاه دانش از فایل JSON (Import & Restore Knowledge Base)'}
+                </span>
               </h2>
               <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                می‌توانید فایل پشتیبان <code dir="ltr" className="ltr-inline">antigravity-knowledge-base.json</code> را مستقیماً از سیستم بارگذاری کنید یا ساختار JSON آن را در کادر زیر ویرایش و اعمال نمایید.
+                {language === 'en' ? (
+                  <>
+                    Upload a backup <code dir="ltr" className="ltr-inline">antigravity-knowledge-base.json</code> file directly from your computer or edit and apply its JSON payload below.
+                  </>
+                ) : (
+                  <>
+                    می‌توانید فایل پشتیبان <code dir="ltr" className="ltr-inline">antigravity-knowledge-base.json</code> را مستقیماً از سیستم بارگذاری کنید یا ساختار JSON آن را در کادر زیر ویرایش و اعمال نمایید.
+                  </>
+                )}
               </p>
             </div>
 
@@ -2102,7 +2375,11 @@ export const KnowledgeBaseExplorer: React.FC<{
                 className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Upload className="w-3.5 h-3.5" />
-                <span>انتخاب فایل .json از سیستم (Upload File)</span>
+                <span>
+                  {language === 'en'
+                    ? 'Select .json File (Upload File)'
+                    : 'انتخاب فایل .json از سیستم (Upload File)'}
+                </span>
               </button>
 
               <button
@@ -2114,12 +2391,12 @@ export const KnowledgeBaseExplorer: React.FC<{
                 {copiedBundle ? (
                   <>
                     <Check className="w-3.5 h-3.5 text-emerald-500" />
-                    <span>کپی شد!</span>
+                    <span>{language === 'en' ? 'Copied!' : 'کپی شد!'}</span>
                   </>
                 ) : (
                   <>
                     <Copy className="w-3.5 h-3.5 text-blue-500" />
-                    <span>کپی JSON</span>
+                    <span>{language === 'en' ? 'Copy JSON' : 'کپی JSON'}</span>
                   </>
                 )}
               </button>
@@ -2147,7 +2424,15 @@ export const KnowledgeBaseExplorer: React.FC<{
 
           <div>
             <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1.5">
-              محتوای بسته JSON پایگاه دانش (<code dir="ltr" className="ltr-inline">google-antigravity-knowledge-base-export</code>):
+              {language === 'en' ? (
+                <>
+                  Knowledge Base JSON Bundle Payload (<code dir="ltr" className="ltr-inline">google-antigravity-knowledge-base-export</code>):
+                </>
+              ) : (
+                <>
+                  محتوای بسته JSON پایگاه دانش (<code dir="ltr" className="ltr-inline">google-antigravity-knowledge-base-export</code>):
+                </>
+              )}
             </label>
             <textarea
               dir="ltr"
@@ -2166,7 +2451,7 @@ export const KnowledgeBaseExplorer: React.FC<{
               onClick={() => setShowImportDrawer(false)}
               className="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold cursor-pointer"
             >
-              انصراف
+              {language === 'en' ? 'Cancel' : 'انصراف'}
             </button>
             <button
               type="button"
@@ -2175,7 +2460,11 @@ export const KnowledgeBaseExplorer: React.FC<{
               className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
             >
               <Check className="w-3.5 h-3.5" />
-              <span>اعمال و بازیابی پایگاه دانش (Restore State)</span>
+              <span>
+                {language === 'en'
+                  ? 'Apply & Restore Knowledge Base (Restore State)'
+                  : 'اعمال و بازیابی پایگاه دانش (Restore State)'}
+              </span>
             </button>
           </div>
         </section>
@@ -2190,7 +2479,9 @@ export const KnowledgeBaseExplorer: React.FC<{
         >
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-extrabold text-slate-900 dark:text-white">
-              افزودن مدخل جدید به پایگاه دانش (.agent/knowledge-base)
+              {language === 'en'
+                ? 'Add New Entry to Knowledge Base (.agent/knowledge-base)'
+                : 'افزودن مدخل جدید به پایگاه دانش (.agent/knowledge-base)'}
             </h2>
             <button
               type="button"
@@ -2204,7 +2495,9 @@ export const KnowledgeBaseExplorer: React.FC<{
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
               <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                مسیر کلید یا فایل (Key Path):
+                {language === 'en'
+                  ? 'Key or File Path (Key Path):'
+                  : 'مسیر کلید یا فایل (Key Path):'}
               </label>
               <input
                 type="text"
@@ -2217,7 +2510,9 @@ export const KnowledgeBaseExplorer: React.FC<{
 
             <div>
               <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                عنوان فارسی (Persian Title):
+                {language === 'en'
+                  ? 'Entry Title:'
+                  : 'عنوان فارسی (Persian Title):'}
               </label>
               <input
                 type="text"
@@ -2229,7 +2524,7 @@ export const KnowledgeBaseExplorer: React.FC<{
 
             <div>
               <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                دسته‌بندی (Category):
+                {language === 'en' ? 'Category:' : 'دسته‌بندی (Category):'}
               </label>
               <select
                 value={newCategory}
@@ -2238,18 +2533,40 @@ export const KnowledgeBaseExplorer: React.FC<{
                 }
                 className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-xs text-slate-900 dark:text-slate-100"
               >
-                <option value="user-state">وضعیت پایدار نشست (user-state)</option>
-                <option value="architecture-rule">قانون معماری (architecture-rule)</option>
-                <option value="workflow-sop">پروتکل ورک‌فلو (workflow-sop)</option>
-                <option value="pr-review-directive">ممیزی PR-Style (pr-review-directive)</option>
-                <option value="mcp-schema">طرحواره MCP (mcp-schema)</option>
+                <option value="user-state">
+                  {language === 'en'
+                    ? 'Persistent Session State (user-state)'
+                    : 'وضعیت پایدار نشست (user-state)'}
+                </option>
+                <option value="architecture-rule">
+                  {language === 'en'
+                    ? 'Architecture Rule (architecture-rule)'
+                    : 'قانون معماری (architecture-rule)'}
+                </option>
+                <option value="workflow-sop">
+                  {language === 'en'
+                    ? 'Workflow SOP (workflow-sop)'
+                    : 'پروتکل ورک‌فلو (workflow-sop)'}
+                </option>
+                <option value="pr-review-directive">
+                  {language === 'en'
+                    ? 'PR-Style Review Directive (pr-review-directive)'
+                    : 'ممیزی PR-Style (pr-review-directive)'}
+                </option>
+                <option value="mcp-schema">
+                  {language === 'en'
+                    ? 'MCP Schema (mcp-schema)'
+                    : 'طرحواره MCP (mcp-schema)'}
+                </option>
               </select>
             </div>
           </div>
 
           <div>
             <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-              محتوای دانش یا JSON وضعیت (Knowledge Content Snippet):
+              {language === 'en'
+                ? 'Knowledge Content Snippet or State JSON:'
+                : 'محتوای دانش یا JSON وضعیت (Knowledge Content Snippet):'}
             </label>
             <textarea
               dir="ltr"
@@ -2266,14 +2583,16 @@ export const KnowledgeBaseExplorer: React.FC<{
               onClick={() => setShowAddForm(false)}
               className="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold cursor-pointer"
             >
-              انصراف
+              {language === 'en' ? 'Cancel' : 'انصراف'}
             </button>
             <button
               type="submit"
               data-testid="kb-submit-new-entry-btn"
               className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer"
             >
-              ثبت در پایگاه دانش
+              {language === 'en'
+                ? 'Save to Knowledge Base'
+                : 'ثبت در پایگاه دانش'}
             </button>
           </div>
         </form>
@@ -2291,7 +2610,9 @@ export const KnowledgeBaseExplorer: React.FC<{
             </div>
             <div>
               <h2 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
-                جستجوی تمام‌متن در لحظه و فیلتر تگ‌های مهندسی{' '}
+                {language === 'en'
+                  ? 'Real-Time Full-Text Search & Engineering Tag Filter'
+                  : 'جستجوی تمام‌متن در لحظه و فیلتر تگ‌های مهندسی'}{' '}
                 <span
                   dir="ltr"
                   className="ltr-inline font-mono text-xs text-blue-500"
@@ -2300,7 +2621,15 @@ export const KnowledgeBaseExplorer: React.FC<{
                 </span>
               </h2>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                جستجوی بلادرنگ در عنوان فارسی/انگلیسی، مسیر <code dir="ltr" className="ltr-inline">.agent/knowledge-base</code> و محتوای کامل آیتم‌ها به همراه جداسازی فوری دسته‌های مهندسی با منوی <span dir="ltr" className="ltr-inline font-mono">Filter by Tag</span>
+                {language === 'en' ? (
+                  <>
+                    Instant full-text search across titles, <code dir="ltr" className="ltr-inline">.agent/knowledge-base</code> key paths, and full item snippets paired with instant engineering domain filtering via the <span dir="ltr" className="ltr-inline font-mono">Filter by Tag</span> dropdown.
+                  </>
+                ) : (
+                  <>
+                    جستجوی بلادرنگ در عنوان فارسی/انگلیسی، مسیر <code dir="ltr" className="ltr-inline">.agent/knowledge-base</code> و محتوای کامل آیتم‌ها به همراه جداسازی فوری دسته‌های مهندسی با منوی <span dir="ltr" className="ltr-inline font-mono">Filter by Tag</span>
+                  </>
+                )}
               </p>
             </div>
           </div>
@@ -2353,7 +2682,9 @@ export const KnowledgeBaseExplorer: React.FC<{
                 htmlFor="kb-fulltext-search-input"
                 className="text-[11px] font-bold text-slate-600 dark:text-slate-300"
               >
-                جستجوی تمام‌متن در عنوان و محتوا{' '}
+                {language === 'en'
+                  ? 'Full-Text Search across Title & Content'
+                  : 'جستجوی تمام‌متن در عنوان و محتوا'}{' '}
                 <span dir="ltr" className="ltr-inline font-mono text-[10px] text-slate-400">
                   (Full-Text Search by Title &amp; Content)
                 </span>
@@ -2383,7 +2714,7 @@ export const KnowledgeBaseExplorer: React.FC<{
                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
-                    {sc.labelFa}
+                    {language === 'en' ? sc.labelEn : sc.labelFa}
                   </button>
                 ))}
               </div>
@@ -2397,7 +2728,11 @@ export const KnowledgeBaseExplorer: React.FC<{
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 data-testid="kb-search-input"
-                placeholder="جستجوی زنده در عنوان یا متن آیتم‌ها (مثلاً: SQLAlchemy، Redis، implementation_plan، vendor.bundle.js)..."
+                placeholder={
+                  language === 'en'
+                    ? 'Live search across entry titles or snippets (e.g. SQLAlchemy, Redis, implementation_plan, vendor.bundle.js)...'
+                    : 'جستجوی زنده در عنوان یا متن آیتم‌ها (مثلاً: SQLAlchemy، Redis، implementation_plan، vendor.bundle.js)...'
+                }
                 className="w-full pr-10 pl-9 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
               />
               {searchQuery && (
@@ -2405,7 +2740,9 @@ export const KnowledgeBaseExplorer: React.FC<{
                   type="button"
                   onClick={() => setSearchQuery('')}
                   data-testid="kb-clear-search-btn"
-                  aria-label="پاک کردن عبارت جستجو"
+                  aria-label={
+                    language === 'en' ? 'Clear search query' : 'پاک کردن عبارت جستجو'
+                  }
                   className="absolute left-2.5 top-1/2 -translate-y-1/2 p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -2420,7 +2757,9 @@ export const KnowledgeBaseExplorer: React.FC<{
               htmlFor="kb-filter-by-tag-select"
               className="block text-[11px] font-bold text-slate-600 dark:text-slate-300"
             >
-              فیلتر بر اساس تگ مهندسی{' '}
+              {language === 'en'
+                ? 'Filter by Engineering Tag'
+                : 'فیلتر بر اساس تگ مهندسی'}{' '}
               <span dir="ltr" className="ltr-inline font-mono text-[10px] text-indigo-400">
                 (Filter by Tag Dropdown)
               </span>
@@ -2442,11 +2781,15 @@ export const KnowledgeBaseExplorer: React.FC<{
               className="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
             >
               <option value="all">
-                همه تگ‌های مهندسی ({entries.length} مدخل)
+                {language === 'en'
+                  ? `All Engineering Tags (${entries.length} entries)`
+                  : `همه تگ‌های مهندسی (${entries.length} مدخل)`}
               </option>
               {fullTextSearchSummary.availableTagOptions.map((tagOpt) => (
                 <option key={tagOpt.tagId} value={tagOpt.tagId}>
-                  {tagOpt.labelFa} ({tagOpt.labelEn}) — {tagOpt.count} مدخل
+                  {language === 'en'
+                    ? `${tagOpt.labelEn} — ${tagOpt.count} entries`
+                    : `${tagOpt.labelFa} (${tagOpt.labelEn}) — ${tagOpt.count} مدخل`}
                 </option>
               ))}
             </select>
@@ -2465,7 +2808,9 @@ export const KnowledgeBaseExplorer: React.FC<{
               }`}
             >
               <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-              <span>فقط Stale (≥65%)</span>
+              <span>
+                {language === 'en' ? 'Stale Only (≥65%)' : 'فقط Stale (≥65%)'}
+              </span>
             </button>
           </div>
         </div>
@@ -2475,12 +2820,36 @@ export const KnowledgeBaseExplorer: React.FC<{
           <div className="flex flex-wrap items-center gap-2">
             {(
               [
-                { id: 'all', labelFa: 'همه مدخل‌ها (All Entries)' },
-                { id: 'user-state', labelFa: 'وضعیت کاربر (User State)' },
-                { id: 'architecture-rule', labelFa: 'قوانین معماری (Rules)' },
-                { id: 'workflow-sop', labelFa: 'ورک‌فلوها (Workflows)' },
-                { id: 'pr-review-directive', labelFa: 'ممیزی PR-Style' },
-                { id: 'mcp-schema', labelFa: 'تله‌متری و MCP' },
+                {
+                  id: 'all',
+                  labelFa: 'همه مدخل‌ها (All Entries)',
+                  labelEn: 'All Entries',
+                },
+                {
+                  id: 'user-state',
+                  labelFa: 'وضعیت کاربر (User State)',
+                  labelEn: 'User State',
+                },
+                {
+                  id: 'architecture-rule',
+                  labelFa: 'قوانین معماری (Rules)',
+                  labelEn: 'Architecture Rules',
+                },
+                {
+                  id: 'workflow-sop',
+                  labelFa: 'ورک‌فلوها (Workflows)',
+                  labelEn: 'Workflows',
+                },
+                {
+                  id: 'pr-review-directive',
+                  labelFa: 'ممیزی PR-Style',
+                  labelEn: 'PR-Style Review',
+                },
+                {
+                  id: 'mcp-schema',
+                  labelFa: 'تله‌متری و MCP',
+                  labelEn: 'MCP & Telemetry',
+                },
               ] as const
             ).map((cat) => (
               <button
@@ -2494,7 +2863,7 @@ export const KnowledgeBaseExplorer: React.FC<{
                     : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800'
                 }`}
               >
-                {cat.labelFa}
+                {language === 'en' ? cat.labelEn : cat.labelFa}
               </button>
             ))}
           </div>
@@ -2517,7 +2886,11 @@ export const KnowledgeBaseExplorer: React.FC<{
               className="px-3 py-1.5 rounded-lg border border-rose-500/40 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
-              <span>پاک کردن تمام فیلترها (Reset Filters)</span>
+              <span>
+                {language === 'en'
+                  ? 'Reset All Filters'
+                  : 'پاک کردن تمام فیلترها (Reset Filters)'}
+              </span>
             </button>
           )}
         </div>
@@ -2544,7 +2917,9 @@ export const KnowledgeBaseExplorer: React.FC<{
           className="p-10 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827]/70 text-center space-y-3"
         >
           <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
-            هیچ آیتم دانشی منطبق با فیلتر تگ یا عبارت جستجوی تمام‌متن شما یافت نشد.
+            {language === 'en'
+              ? 'No knowledge entries matched your active tag filter or full-text search query.'
+              : 'هیچ آیتم دانشی منطبق با فیلتر تگ یا عبارت جستجوی تمام‌متن شما یافت نشد.'}
           </p>
           <button
             type="button"
@@ -2557,7 +2932,9 @@ export const KnowledgeBaseExplorer: React.FC<{
             }}
             className="px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold cursor-pointer"
           >
-            نمایش تمام آیتم‌های پایگاه دانش
+            {language === 'en'
+              ? 'Show All Knowledge Base Entries'
+              : 'نمایش تمام آیتم‌های پایگاه دانش'}
           </button>
         </div>
       ) : (
@@ -2639,7 +3016,7 @@ export const KnowledgeBaseExplorer: React.FC<{
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         <div>
                           <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
-                            عنوان فارسی:
+                            {language === 'en' ? 'Persian Title:' : 'عنوان فارسی:'}
                           </label>
                           <input
                             type="text"
@@ -2651,7 +3028,9 @@ export const KnowledgeBaseExplorer: React.FC<{
                         </div>
                         <div>
                           <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
-                            عنوان انگلیسی (English Title):
+                            {language === 'en'
+                              ? 'English Title:'
+                              : 'عنوان انگلیسی (English Title):'}
                           </label>
                           <input
                             type="text"
@@ -2666,7 +3045,9 @@ export const KnowledgeBaseExplorer: React.FC<{
 
                       <div>
                         <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
-                          مسیر کلید (Artifact / Storage Key Path):
+                          {language === 'en'
+                            ? 'Artifact / Storage Key Path:'
+                            : 'مسیر کلید (Artifact / Storage Key Path):'}
                         </label>
                         <input
                           type="text"
@@ -2680,7 +3061,9 @@ export const KnowledgeBaseExplorer: React.FC<{
 
                       <div>
                         <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
-                          محتوای دانش / وضعیت ذخیره‌شده (Content Snippet):
+                          {language === 'en'
+                            ? 'Stored Knowledge / State Content Snippet:'
+                            : 'محتوای دانش / وضعیت ذخیره‌شده (Content Snippet):'}
                         </label>
                         <textarea
                           dir="ltr"
@@ -2699,7 +3082,7 @@ export const KnowledgeBaseExplorer: React.FC<{
                           data-testid={`kb-cancel-edit-btn-${item.id}`}
                           className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 cursor-pointer"
                         >
-                          انصراف
+                          {language === 'en' ? 'Cancel' : 'انصراف'}
                         </button>
                         <button
                           type="button"
@@ -2708,7 +3091,11 @@ export const KnowledgeBaseExplorer: React.FC<{
                           className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
                         >
                           <Check className="w-3.5 h-3.5" />
-                          <span>ذخیره و رفع Context Rot</span>
+                          <span>
+                            {language === 'en'
+                              ? 'Save & Resolve Context Rot'
+                              : 'ذخیره و رفع Context Rot'}
+                          </span>
                         </button>
                       </div>
                     </div>
@@ -2719,7 +3106,7 @@ export const KnowledgeBaseExplorer: React.FC<{
                           data-testid={`kb-title-fa-${item.id}`}
                           className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white leading-6"
                         >
-                          {item.titleFa}
+                          {language === 'en' ? item.titleEn : item.titleFa}
                         </h3>
                         <div
                           dir="ltr"
@@ -2806,7 +3193,9 @@ export const KnowledgeBaseExplorer: React.FC<{
                       className="px-2.5 py-1.5 rounded-lg border border-indigo-500/35 bg-indigo-500/10 hover:bg-indigo-600 hover:text-white text-indigo-600 dark:text-indigo-400 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <HelpCircle className="w-3.5 h-3.5" />
-                      <span>آزمون سند (Quiz)</span>
+                      <span>
+                        {language === 'en' ? 'Doc Quiz' : 'آزمون سند (Quiz)'}
+                      </span>
                     </button>
 
                     <button
@@ -2816,7 +3205,9 @@ export const KnowledgeBaseExplorer: React.FC<{
                       className="px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/90 hover:bg-blue-600 hover:text-white hover:border-blue-500 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
-                      <span>ویرایش دستی (Edit)</span>
+                      <span>
+                        {language === 'en' ? 'Manual Edit' : 'ویرایش دستی (Edit)'}
+                      </span>
                     </button>
 
                     <button
@@ -2826,7 +3217,7 @@ export const KnowledgeBaseExplorer: React.FC<{
                       className="px-2.5 py-1.5 rounded-lg border border-rose-500/35 bg-rose-500/10 hover:bg-rose-600 hover:text-white text-rose-600 dark:text-rose-400 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
-                      <span>حذف (Delete)</span>
+                      <span>{language === 'en' ? 'Delete' : 'حذف (Delete)'}</span>
                     </button>
                   </div>
                 </div>

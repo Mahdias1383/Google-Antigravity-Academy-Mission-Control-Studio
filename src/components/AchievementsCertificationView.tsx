@@ -72,6 +72,60 @@ import {
   ExportSectionPdfButton,
   PrintableDocumentPayload,
 } from './CodeAndPdfTools';
+import { useLanguage } from '../context/LanguageContext';
+
+const DAY_LABEL_EN_MAP: Record<string, string> = {
+  'یکشنبه': 'Sun',
+  'دوشنبه': 'Mon',
+  'سه‌شنبه': 'Tue',
+  'چهارشنبه': 'Wed',
+  'پنج‌شنبه': 'Thu',
+  'جمعه': 'Fri',
+  'شنبه': 'Sat',
+  'امروز (سه‌شنبه)': 'Today (Tue)',
+  'امروز': 'Today',
+};
+
+function translateDayLabel(labelFa: string, language: 'fa' | 'en'): string {
+  if (language === 'fa') return labelFa;
+  return DAY_LABEL_EN_MAP[labelFa] || labelFa;
+}
+
+const GOAL_TITLE_EN_MAP: Record<string, string> = {
+  'goal-1': 'Audit Artifact architecture & test PR-Style Review on implementation_plan.md',
+  'goal-2': 'Author & test .agent/rules/backend-sqlalchemy.md with Glob activation',
+  'goal-3': 'Implement FastMCP server with @mcp.tool() decorator for Read-Only query',
+};
+
+const RANK_DESC_EN_MAP: Record<string, string> = {
+  trainee:
+    'Foundational familiarity with dual Editor View & Agent Manager architecture, Supercomplete, and core Artifact lifecycle.',
+  specialist:
+    'Mastery of PR-Style review on implementation_plan.md, terminal governance policies, and authoring .agent/rules guardrails.',
+  architect:
+    'Architecting // turbo pipelines, inspecting Browser Subagent telemetry, and building secure FastMCP tool servers.',
+  principal:
+    'Commanding multi-agent orchestration in isolated Git Worktrees, eliminating Context Rot, and holding Principal certification.',
+};
+
+const STREAK_DESC_EN_MAP: Record<number, string> = {
+  7: '7 consecutive days of uninterrupted study and hands-on practice across Antigravity architecture modules and studios.',
+  30: '30 consecutive days of engineering consistency, artifact auditing, and autonomous pipeline mastery.',
+  100: '100 days of absolute consistency in agentic systems engineering, zero Context Rot, and technical leadership.',
+};
+
+const TROPHY_DESC_EN_MAP: Record<string, string> = {
+  'trophy-omni-mastery':
+    'Awarded to architects who have completed all 8 specialized modules of Google Antigravity Academy with 100% mastery.',
+  'scenario-zero-downtime-alembic':
+    'Completed the high-traffic database migration scenario using Expand-and-Contract strategy and // turbo pipeline.',
+  'scenario-worktree-isolation':
+    'Prevented working tree conflicts and executed 3 independent parallel agents on isolated Git Worktree branches in Mission Control.',
+  'scenario-fastmcp-security':
+    'Implemented an isolated FastMCP server with Read-Only transactions and blocked destructive commands in the terminal deny-list.',
+  'scenario-browser-subagent-e2e':
+    'Used the Browser Subagent to automatically trace console and network errors and record WebP video proof in walkthrough.md.',
+};
 
 const INITIAL_STUDY_DAYS: StudySessionDay[] = [
   { dateIso: '2026-10-21', dayLabelFa: 'چهارشنبه', minutesStudied: 35, modulesTouched: 1, active: true },
@@ -153,7 +207,12 @@ export const AchievementsCertificationView: React.FC<{
   onNavigateToModule,
   onExportPdf,
 }) => {
+  const { language } = useLanguage();
   const [architectName, setArchitectName] = useState<string>('آریا رستمی (Aria Rostami)');
+  const displayArchitectName =
+    language === 'en' && architectName === 'آریا رستمی (Aria Rostami)'
+      ? 'Aria Rostami'
+      : architectName;
   const [roleTitle, setRoleTitle] = useState<string>('Principal AI Systems Architect');
   const [organization, setOrganization] = useState<string>('Enterprise Cloud Engineering');
   const [initialPersistedStreak] = useState(() => {
@@ -238,17 +297,29 @@ export const AchievementsCertificationView: React.FC<{
             setCompletedScenarioIds(saved.completedScenarioIds);
             setDailyTargetMinutes(saved.dailyTargetMinutes);
             setCloudSyncStatus('synced');
-            setCloudSyncMessage('اطلاعات کارنامه از پایگاه داده ابری بازیابی شد (Loaded from Firestore)');
+            setCloudSyncMessage(
+              language === 'en'
+                ? 'Report card restored from Cloud Firestore'
+                : 'اطلاعات کارنامه از پایگاه داده ابری بازیابی شد (Loaded from Firestore)'
+            );
           } else {
             if (user.displayName) {
               setArchitectName(user.displayName);
             }
             setCloudSyncStatus('idle');
-            setCloudSyncMessage('آماده ذخیره اولین نسخه کارنامه در Firestore');
+            setCloudSyncMessage(
+              language === 'en'
+                ? 'Ready to save your first report card to Firestore'
+                : 'آماده ذخیره اولین نسخه کارنامه در Firestore'
+            );
           }
         } catch {
           setCloudSyncStatus('error');
-          setCloudSyncMessage('خطا در بازیابی اطلاعات ابری');
+          setCloudSyncMessage(
+            language === 'en'
+              ? 'Error loading cloud data'
+              : 'خطا در بازیابی اطلاعات ابری'
+          );
         }
       } else {
         setCloudSyncStatus('idle');
@@ -256,7 +327,7 @@ export const AchievementsCertificationView: React.FC<{
       }
     });
     return () => unsubscribe();
-  }, []);
+  }, [language]);
 
   useEffect(() => {
     if (!timerRunning) return;
@@ -266,7 +337,7 @@ export const AchievementsCertificationView: React.FC<{
     return () => window.clearInterval(interval);
   }, [timerRunning]);
 
-  const metrics = calculateCertificationMetrics(allModules, completedModules, architectName);
+  const metrics = calculateCertificationMetrics(allModules, completedModules, displayArchitectName);
   const rawStripStreakStats = calculateStreakSummary(studyDays);
   const effectiveCurrentStreak = Math.max(
     0,
@@ -525,7 +596,7 @@ export const AchievementsCertificationView: React.FC<{
       .append('title')
       .text(
         (d) =>
-          `${d.dateIso} (${d.dayLabelFa}) — ${
+          `${d.dateIso} (${translateDayLabel(d.dayLabelFa, language)}) — ${
             d.active
               ? `${d.minutesStudied}m Academy · ${d.studioRuns} Studio Runs · +${d.xpEarned} XP [${d.activitySource.toUpperCase()}]`
               : 'Rest Day (0m)'
@@ -551,7 +622,7 @@ export const AchievementsCertificationView: React.FC<{
       .attr('fill', '#ffffff')
       .attr('fill-opacity', 0.85)
       .attr('pointer-events', 'none');
-  }, [heatmapSummary, heatmapFilterSource, selectedHeatmapDateIso]);
+  }, [heatmapSummary, heatmapFilterSource, selectedHeatmapDateIso, language]);
 
   const handleToggleScenarioTrophy = (scenarioId: string) => {
     setCompletedScenarioIds((prev) =>
@@ -575,7 +646,7 @@ export const AchievementsCertificationView: React.FC<{
   const totalPlannedGoalMinutes = dailyGoals.reduce((sum, g) => sum + g.targetMinutes, 0);
 
   const shareableText = formatShareableReportCardText(
-    architectName,
+    displayArchitectName,
     roleTitle,
     organization,
     metrics,
@@ -741,7 +812,7 @@ export const AchievementsCertificationView: React.FC<{
 
   const shareBundle = buildShareableProgressCardBundle({
     baseUrl: typeof window !== 'undefined' ? window.location.origin : undefined,
-    architectName,
+    architectName: displayArchitectName,
     roleTitle,
     organization,
     metrics,
@@ -793,7 +864,9 @@ export const AchievementsCertificationView: React.FC<{
     }
     void navigator.clipboard
       ?.writeText(
-        `${shareBundle.shareMessageFa}\n\n${shareBundle.shareMessageEn}\n\n${shareBundle.publicCardUrl}`
+        language === 'en'
+          ? `${shareBundle.shareMessageEn}\n\n${shareBundle.publicCardUrl}`
+          : `${shareBundle.shareMessageFa}\n\n${shareBundle.shareMessageEn}\n\n${shareBundle.publicCardUrl}`
       )
       .catch(() => {});
     setPublicLinkStatus('copied');
@@ -805,7 +878,7 @@ export const AchievementsCertificationView: React.FC<{
       if (navigator.share) {
         try {
           await navigator.share({
-            title: `Google Antigravity Progress Report — ${architectName}`,
+            title: `Google Antigravity Progress Report — ${displayArchitectName}`,
             text: shareableText,
           });
         } catch {
@@ -823,29 +896,51 @@ export const AchievementsCertificationView: React.FC<{
   };
 
   const certificationPdfPayload: PrintableDocumentPayload = {
-    titleFa: `کارنامه پیشرفت و گواهینامه معماری: ${architectName}`,
+    titleFa:
+      language === 'en'
+        ? `Architect Progress Report & Certification: ${displayArchitectName}`
+        : `کارنامه پیشرفت و گواهینامه معماری: ${displayArchitectName}`,
     titleEn: `Google Antigravity Architect Progress Report & Certification (${metrics.certificateSerial})`,
     subtitleOrCategory: `Level ${xpProgression.currentLevel} (${xpProgression.levelTitleEn}) · ${xpProgression.totalCombinedXp} Total XP`,
     sections: [
       {
-        headingFa: '۱. مشخصات معمار و خلاصه امتیازات (Architect Standing & Level)',
+        headingFa:
+          language === 'en'
+            ? '1. Architect Standing & Level Summary'
+            : '۱. مشخصات معمار و خلاصه امتیازات (Architect Standing & Level)',
         headingEn: `Certificate Serial: ${metrics.certificateSerial}`,
-        paragraphsFa: [
-          `نام معمار: ${architectName} | سمت: ${roleTitle} | سازمان: ${organization}`,
-          `سطح فعلی (Architect Level): Level ${xpProgression.currentLevel} — ${xpProgression.levelTitleFa} با مجموع ${xpProgression.totalCombinedXp} امتیاز کل (Module XP: ${xpProgression.moduleXp} | Reading XP: ${xpProgression.readingTimeXp} | Studio XP: ${xpProgression.studioUsageXp}).`,
-          `رکورد پیوستگی مطالعه (Study Streak): ${streakStats.currentStreakDays} روز متوالی فعال (مجموعاً ${streakStats.totalMinutesStudied} دقیقه مطالعه ثبت‌شده).`,
-        ],
+        paragraphsFa:
+          language === 'en'
+            ? [
+                `Architect Name: ${displayArchitectName} | Role: ${roleTitle} | Organization: ${organization}`,
+                `Current Level: Level ${xpProgression.currentLevel} — ${xpProgression.levelTitleEn} with ${xpProgression.totalCombinedXp} Total XP (Module XP: ${xpProgression.moduleXp} | Reading XP: ${xpProgression.readingTimeXp} | Studio XP: ${xpProgression.studioUsageXp}).`,
+                `Study Streak: ${streakStats.currentStreakDays} consecutive active days (${streakStats.totalMinutesStudied} total minutes logged).`,
+              ]
+            : [
+                `نام معمار: ${displayArchitectName} | سمت: ${roleTitle} | سازمان: ${organization}`,
+                `سطح فعلی (Architect Level): Level ${xpProgression.currentLevel} — ${xpProgression.levelTitleFa} با مجموع ${xpProgression.totalCombinedXp} امتیاز کل (Module XP: ${xpProgression.moduleXp} | Reading XP: ${xpProgression.readingTimeXp} | Studio XP: ${xpProgression.studioUsageXp}).`,
+                `رکورد پیوستگی مطالعه (Study Streak): ${streakStats.currentStreakDays} روز متوالی فعال (مجموعاً ${streakStats.totalMinutesStudied} دقیقه مطالعه ثبت‌شده).`,
+              ],
       },
       {
-        headingFa: '۲. نشان‌های مهارت کسب‌شده (Earned Competency Badges)',
+        headingFa:
+          language === 'en'
+            ? '2. Earned Competency Badges'
+            : '۲. نشان‌های مهارت کسب‌شده (Earned Competency Badges)',
         headingEn: `${metrics.completedCount} / ${metrics.totalModules} Module Badges Unlocked`,
         bullets: metrics.badges.map((b) => ({
           termEn: `${b.unlocked ? 'UNLOCKED' : 'LOCKED'} · [${b.badgeCode}] (${b.xpValue} XP)`,
-          descFa: `${b.badgeTitleFa} (${b.badgeTitleEn}) — ${b.competencyDomain}`,
+          descFa:
+            language === 'en'
+              ? `${b.badgeTitleEn} — ${b.competencyDomain}`
+              : `${b.badgeTitleFa} (${b.badgeTitleEn}) — ${b.competencyDomain}`,
         })),
       },
       {
-        headingFa: '۳. نسخه متنی قابل اشتراک‌گذاری (Verified Shareable Transcript)',
+        headingFa:
+          language === 'en'
+            ? '3. Verified Shareable Transcript'
+            : '۳. نسخه متنی قابل اشتراک‌گذاری (Verified Shareable Transcript)',
         headingEn: 'Cryptographic Verification Block',
         codeBlocks: [
           {
@@ -870,7 +965,11 @@ export const AchievementsCertificationView: React.FC<{
             <div className="flex flex-wrap items-center gap-2.5">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold">
                 <Globe className="w-3.5 h-3.5" />
-                <span>کارت عمومی تاییدشده پیشرفت معمار (Verified Public Mastery Card)</span>
+                <span>
+                  {language === 'en'
+                    ? 'Verified Public Mastery Progress Card'
+                    : 'کارت عمومی تاییدشده پیشرفت معمار (Verified Public Mastery Card)'}
+                </span>
               </span>
               <span
                 dir="ltr"
@@ -888,7 +987,9 @@ export const AchievementsCertificationView: React.FC<{
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
-              <span>بستن پیش‌نمایش کارت عمومی</span>
+              <span>
+                {language === 'en' ? 'Close Public Card Preview' : 'بستن پیش‌نمایش کارت عمومی'}
+              </span>
             </button>
           </div>
 
@@ -905,9 +1006,15 @@ export const AchievementsCertificationView: React.FC<{
                 {sharedCardPreview.roleTitle} @ {sharedCardPreview.organization}
               </div>
               <div className="p-3.5 rounded-xl border border-slate-800 bg-slate-950/70 space-y-1">
-                <div className="text-xs text-slate-400">درجه تخصصی ثبت‌شده در لینک عمومی:</div>
+                <div className="text-xs text-slate-400">
+                  {language === 'en'
+                    ? 'Verified Standing Rank in Public Link:'
+                    : 'درجه تخصصی ثبت‌شده در لینک عمومی:'}
+                </div>
                 <div className="text-sm font-bold text-emerald-400">
-                  {sharedCardPreview.rankTitleFa}
+                  {language === 'en'
+                    ? sharedCardPreview.rankTitleEn
+                    : sharedCardPreview.rankTitleFa}
                 </div>
                 <div dir="ltr" className="ltr-inline text-xs font-mono text-slate-300">
                   {sharedCardPreview.rankTitleEn}
@@ -921,7 +1028,9 @@ export const AchievementsCertificationView: React.FC<{
                   {sharedCardPreview.completedCount}/{sharedCardPreview.totalModules}
                 </div>
                 <div className="text-[11px] text-slate-400 mt-1">
-                  ماژول‌های تکمیل‌شده ({sharedCardPreview.completionPercentage}٪)
+                  {language === 'en'
+                    ? `Modules Mastered (${sharedCardPreview.completionPercentage}%)`
+                    : `ماژول‌های تکمیل‌شده (${sharedCardPreview.completionPercentage}٪)`}
                 </div>
               </div>
               <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/80">
@@ -929,14 +1038,18 @@ export const AchievementsCertificationView: React.FC<{
                   {sharedCardPreview.totalCombinedXp} XP
                 </div>
                 <div className="text-[11px] text-slate-400 mt-1">
-                  امتیاز کل (Level {sharedCardPreview.currentLevel})
+                  {language === 'en'
+                    ? `Total XP (Level ${sharedCardPreview.currentLevel})`
+                    : `امتیاز کل (Level ${sharedCardPreview.currentLevel})`}
                 </div>
               </div>
               <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/80">
                 <div dir="ltr" className="ltr-inline text-xl font-mono font-black text-amber-400 tabular-nums">
                   {sharedCardPreview.currentStreakDays}d
                 </div>
-                <div className="text-[11px] text-slate-400 mt-1">پیوستگی مطالعه</div>
+                <div className="text-[11px] text-slate-400 mt-1">
+                  {language === 'en' ? 'Study Streak' : 'پیوستگی مطالعه'}
+                </div>
               </div>
             </div>
           </div>
@@ -951,7 +1064,9 @@ export const AchievementsCertificationView: React.FC<{
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <span className="font-bold text-blue-600 dark:text-blue-400">
-              آکادمی مهندسی · دستاوردها، رتبه مهارت (Mastery Rank) و گواهینامه رسمی
+              {language === 'en'
+                ? 'Engineering Academy · Achievements, Mastery Rank & Official Certification'
+                : 'آکادمی مهندسی · دستاوردها، رتبه مهارت (Mastery Rank) و گواهینامه رسمی'}
             </span>
             <span aria-hidden="true">·</span>
             <span dir="ltr" className="ltr-inline font-mono">
@@ -965,7 +1080,11 @@ export const AchievementsCertificationView: React.FC<{
 
           <div className="flex flex-wrap items-center gap-2.5">
             <ExportSectionPdfButton
-              label="دریافت PDF کارنامه و گواهینامه"
+              label={
+                language === 'en'
+                  ? 'Export Report Card & Certificate PDF'
+                  : 'دریافت PDF کارنامه و گواهینامه'
+              }
               payload={certificationPdfPayload}
               onExport={onExportPdf}
             />
@@ -976,7 +1095,9 @@ export const AchievementsCertificationView: React.FC<{
                 data-testid="achievements-unlock-all-modules-btn"
                 className="px-3.5 py-2 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors cursor-pointer whitespace-nowrap"
               >
-                تکمیل تمام ۸ فصل (Unlock Full Certification)
+                {language === 'en'
+                  ? 'Unlock All 8 Modules (Full Certification)'
+                  : 'تکمیل تمام ۸ فصل (Unlock Full Certification)'}
               </button>
             )}
           </div>
@@ -1001,13 +1122,13 @@ export const AchievementsCertificationView: React.FC<{
             <div className="space-y-1">
               <div className="flex flex-wrap items-center gap-2.5">
                 <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                  معمار سیستم:
+                  {language === 'en' ? 'Systems Architect:' : 'معمار سیستم:'}
                 </span>
                 <span
                   data-testid="achievements-header-architect-name"
                   className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white"
                 >
-                  {architectName}
+                  {displayArchitectName}
                 </span>
                 {/* Assigned Mastery Rank Badge directly next to User's Name */}
                 <span
@@ -1026,7 +1147,9 @@ export const AchievementsCertificationView: React.FC<{
                   data-testid="achievements-header-mastery-rank-fa"
                   className="px-2.5 py-0.5 rounded-md bg-slate-200/80 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs font-bold"
                 >
-                  {masteryRankStanding.currentRank.rankTitleFa}
+                  {language === 'en'
+                    ? masteryRankStanding.currentRank.rankTitleEn
+                    : masteryRankStanding.currentRank.rankTitleFa}
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
@@ -1034,14 +1157,25 @@ export const AchievementsCertificationView: React.FC<{
                   {roleTitle} · {organization}
                 </span>
                 <span aria-hidden="true">·</span>
-                <span>
-                  نقاط عطف تکمیل‌شده:{' '}
-                  <strong dir="ltr" className="ltr-inline font-mono text-emerald-500">
-                    {masteryRankStanding.totalMilestonesCompleted} Milestones
-                  </strong>{' '}
-                  ({metrics.completedCount} ماژول + {streakMilestoneEval.unlockedMilestoneCount} نشان پیوستگی +{' '}
-                  {trophyCase.unlockedCount} جام)
-                </span>
+                {language === 'en' ? (
+                  <span>
+                    Completed Milestones:{' '}
+                    <strong dir="ltr" className="ltr-inline font-mono text-emerald-500">
+                      {masteryRankStanding.totalMilestonesCompleted} Milestones
+                    </strong>{' '}
+                    ({metrics.completedCount} Modules + {streakMilestoneEval.unlockedMilestoneCount} Streak Badges +{' '}
+                    {trophyCase.unlockedCount} Trophies)
+                  </span>
+                ) : (
+                  <span>
+                    نقاط عطف تکمیل‌شده:{' '}
+                    <strong dir="ltr" className="ltr-inline font-mono text-emerald-500">
+                      {masteryRankStanding.totalMilestonesCompleted} Milestones
+                    </strong>{' '}
+                    ({metrics.completedCount} ماژول + {streakMilestoneEval.unlockedMilestoneCount} نشان پیوستگی +{' '}
+                    {trophyCase.unlockedCount} جام)
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -1051,16 +1185,16 @@ export const AchievementsCertificationView: React.FC<{
               htmlFor="header-architect-name-input"
               className="text-[11px] font-semibold text-slate-500 dark:text-slate-400"
             >
-              ویرایش سریع نام در هدر:
+              {language === 'en' ? 'Quick Edit Name:' : 'ویرایش سریع نام در هدر:'}
             </label>
             <input
               id="header-architect-name-input"
               type="text"
-              value={architectName}
+              value={displayArchitectName}
               onChange={(e) => setArchitectName(e.target.value)}
               data-testid="achievements-header-name-input"
               className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 w-52"
-              placeholder="نام معمار..."
+              placeholder={language === 'en' ? 'Architect Name...' : 'نام معمار...'}
             />
           </div>
         </div>
@@ -1068,17 +1202,35 @@ export const AchievementsCertificationView: React.FC<{
         <div className="space-y-5">
           <div className="space-y-2">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              دستاوردها، رتبه مهارت (<span dir="ltr" className="ltr-inline">Mastery Rank</span>)، سیستم <span dir="ltr" className="ltr-inline">XP</span> و کارنامه معماری
+              {language === 'en' ? (
+                'Achievements, Mastery Rank, XP Progression & Architect Report Card'
+              ) : (
+                <>
+                  دستاوردها، رتبه مهارت (<span dir="ltr" className="ltr-inline">Mastery Rank</span>)، سیستم <span dir="ltr" className="ltr-inline">XP</span> و کارنامه معماری
+                </>
+              )}
             </h1>
             <div dir="ltr" className="ltr-inline text-sm font-mono text-blue-600 dark:text-blue-400">
               Mastery Rank System (Trainee · Specialist · Architect · Principal), XP Progression &amp; Report Card
             </div>
             <p className="text-xs sm:text-sm leading-7 text-slate-600 dark:text-slate-300 max-w-4xl">
-              بر اساس مجموع امتیاز تجربه (<span dir="ltr" className="ltr-inline">Accumulated XP</span>) و نقاط عطف تکمیل‌شده (<span dir="ltr" className="ltr-inline">Milestones</span>)، رتبه رسمی شما از{' '}
-              <span dir="ltr" className="ltr-inline font-mono font-bold">Trainee</span> تا{' '}
-              <span dir="ltr" className="ltr-inline font-mono font-bold">Specialist</span>،{' '}
-              <span dir="ltr" className="ltr-inline font-mono font-bold">Architect</span> و{' '}
-              <span dir="ltr" className="ltr-inline font-mono font-bold">Principal</span> محاسبه و در کنار نام شما در هدر نمایش داده می‌شود.
+              {language === 'en' ? (
+                <>
+                  Based on your total accumulated experience (<span dir="ltr" className="ltr-inline">Accumulated XP</span>) and completed engineering milestones (<span dir="ltr" className="ltr-inline">Milestones</span>), your official standing rank from{' '}
+                  <span dir="ltr" className="ltr-inline font-mono font-bold">Trainee</span> to{' '}
+                  <span dir="ltr" className="ltr-inline font-mono font-bold">Specialist</span>,{' '}
+                  <span dir="ltr" className="ltr-inline font-mono font-bold">Architect</span>, and{' '}
+                  <span dir="ltr" className="ltr-inline font-mono font-bold">Principal</span> is computed in real time and displayed beside your name in the header.
+                </>
+              ) : (
+                <>
+                  بر اساس مجموع امتیاز تجربه (<span dir="ltr" className="ltr-inline">Accumulated XP</span>) و نقاط عطف تکمیل‌شده (<span dir="ltr" className="ltr-inline">Milestones</span>)، رتبه رسمی شما از{' '}
+                  <span dir="ltr" className="ltr-inline font-mono font-bold">Trainee</span> تا{' '}
+                  <span dir="ltr" className="ltr-inline font-mono font-bold">Specialist</span>،{' '}
+                  <span dir="ltr" className="ltr-inline font-mono font-bold">Architect</span> و{' '}
+                  <span dir="ltr" className="ltr-inline font-mono font-bold">Principal</span> محاسبه و در کنار نام شما در هدر نمایش داده می‌شود.
+                </>
+              )}
             </p>
           </div>
 
@@ -1096,7 +1248,9 @@ export const AchievementsCertificationView: React.FC<{
                 {masteryRankStanding.currentRank.rankNameEn}
               </div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                رتبه مهارت ({masteryRankStanding.currentRank.rankTitleFa})
+                {language === 'en'
+                  ? `Mastery Rank (${masteryRankStanding.currentRank.rankTitleEn})`
+                  : `رتبه مهارت (${masteryRankStanding.currentRank.rankTitleFa})`}
               </div>
             </div>
             <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/70 text-center">
@@ -1104,7 +1258,7 @@ export const AchievementsCertificationView: React.FC<{
                 LVL {xpProgression.currentLevel}
               </div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                سطح فعلی معمار
+                {language === 'en' ? 'Current Architect Level' : 'سطح فعلی معمار'}
               </div>
             </div>
             <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/70 text-center">
@@ -1112,7 +1266,7 @@ export const AchievementsCertificationView: React.FC<{
                 {streakStats.currentStreakDays}d
               </div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                پیوستگی فعلی (Streak)
+                {language === 'en' ? 'Current Streak' : 'پیوستگی فعلی (Streak)'}
               </div>
             </div>
             <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/70 text-center">
@@ -1120,7 +1274,7 @@ export const AchievementsCertificationView: React.FC<{
                 {xpProgression.totalCombinedXp}
               </div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                مجموع امتیاز (Total XP)
+                {language === 'en' ? 'Total Experience (XP)' : 'مجموع امتیاز (Total XP)'}
               </div>
             </div>
           </div>
@@ -1138,7 +1292,9 @@ export const AchievementsCertificationView: React.FC<{
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-bold text-slate-900 dark:text-white">
-                  پایگاه داده ابری و احراز هویت (Firebase Firestore &amp; Google Auth)
+                  {language === 'en'
+                    ? 'Cloud Database & Authentication (Firebase Firestore & Google Auth)'
+                    : 'پایگاه داده ابری و احراز هویت (Firebase Firestore & Google Auth)'}
                 </span>
                 <span
                   dir="ltr"
@@ -1149,9 +1305,15 @@ export const AchievementsCertificationView: React.FC<{
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                 {firebaseUser
-                  ? `متصل به حساب ${firebaseUser.email || firebaseUser.displayName} — ${
-                      cloudSyncMessage || 'آماده همگام‌سازی امتیازات، جام‌ها و کارنامه در فضای ابری'
-                    }`
+                  ? language === 'en'
+                    ? `Connected as ${firebaseUser.email || firebaseUser.displayName} — ${
+                        cloudSyncMessage || 'Ready to sync XP, trophies, and report card to the cloud'
+                      }`
+                    : `متصل به حساب ${firebaseUser.email || firebaseUser.displayName} — ${
+                        cloudSyncMessage || 'آماده همگام‌سازی امتیازات، جام‌ها و کارنامه در فضای ابری'
+                      }`
+                  : language === 'en'
+                  ? 'Sign in with Google to permanently sync your XP, digital trophies, and engineering report card across devices.'
                   : 'برای ذخیره‌سازی دائمی امتیازات XP، جام‌های کلکسیونی و کارنامه مهندسی بین دستگاه‌ها، با حساب گوگل وارد شوید.'}
               </p>
             </div>
@@ -1167,14 +1329,20 @@ export const AchievementsCertificationView: React.FC<{
                     await signInWithGooglePopup();
                   } catch {
                     setCloudSyncStatus('error');
-                    setCloudSyncMessage('پنجره ورود گوگل بسته شد یا در محیط پیش‌نمایش محدود شد');
+                    setCloudSyncMessage(
+                      language === 'en'
+                        ? 'Google Sign-In popup was closed or restricted in preview frame'
+                        : 'پنجره ورود گوگل بسته شد یا در محیط پیش‌نمایش محدود شد'
+                    );
                   }
                 }}
                 data-testid="firebase-google-signin-btn"
                 className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white transition-colors cursor-pointer"
               >
                 <LogIn className="w-3.5 h-3.5" />
-                <span>ورود با گوگل (Google Sign-In)</span>
+                <span>
+                  {language === 'en' ? 'Google Sign-In' : 'ورود با گوگل (Google Sign-In)'}
+                </span>
               </button>
             ) : (
               <>
@@ -1186,7 +1354,7 @@ export const AchievementsCertificationView: React.FC<{
                     try {
                       setCloudSyncStatus('syncing');
                       await syncArchitectProgressToCloud(firebaseUser.uid, {
-                        architectName,
+                        architectName: displayArchitectName,
                         roleTitle,
                         organization,
                         completedModules,
@@ -1197,10 +1365,16 @@ export const AchievementsCertificationView: React.FC<{
                         currentLevel: xpProgression.currentLevel,
                       });
                       setCloudSyncStatus('synced');
-                      setCloudSyncMessage('ذخیره‌سازی در Cloud Firestore با موفقیت انجام شد ✓');
+                      setCloudSyncMessage(
+                        language === 'en'
+                          ? 'Successfully synced to Cloud Firestore ✓'
+                          : 'ذخیره‌سازی در Cloud Firestore با موفقیت انجام شد ✓'
+                      );
                     } catch {
                       setCloudSyncStatus('error');
-                      setCloudSyncMessage('خطا در ذخیره‌سازی ابری');
+                      setCloudSyncMessage(
+                        language === 'en' ? 'Cloud sync failed' : 'خطا در ذخیره‌سازی ابری'
+                      );
                     }
                   }}
                   data-testid="firebase-cloud-sync-btn"
@@ -1209,9 +1383,15 @@ export const AchievementsCertificationView: React.FC<{
                   <RefreshCw className={`w-3.5 h-3.5 ${cloudSyncStatus === 'syncing' ? 'animate-spin' : ''}`} />
                   <span>
                     {cloudSyncStatus === 'syncing'
-                      ? 'در حال همگام‌سازی...'
+                      ? language === 'en'
+                        ? 'Syncing...'
+                        : 'در حال همگام‌سازی...'
                       : cloudSyncStatus === 'synced'
-                      ? 'همگام‌سازی شد (Synced to Firestore)'
+                      ? language === 'en'
+                        ? 'Synced to Firestore'
+                        : 'همگام‌سازی شد (Synced to Firestore)'
+                      : language === 'en'
+                      ? 'Sync to Cloud'
                       : 'ذخیره در فضای ابری (Sync to Cloud)'}
                   </span>
                 </button>
@@ -1221,7 +1401,7 @@ export const AchievementsCertificationView: React.FC<{
                   className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   <LogOut className="w-3.5 h-3.5" />
-                  <span>خروج</span>
+                  <span>{language === 'en' ? 'Sign Out' : 'خروج'}</span>
                 </button>
               </>
             )}
@@ -1249,7 +1429,9 @@ export const AchievementsCertificationView: React.FC<{
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
-                  سیستم رتبه‌بندی مهارت مهندسی (Mastery Rank Progression System)
+                  {language === 'en'
+                    ? 'Engineering Mastery Rank Progression System'
+                    : 'سیستم رتبه‌بندی مهارت مهندسی (Mastery Rank Progression System)'}
                 </h2>
                 <span
                   dir="ltr"
@@ -1265,7 +1447,15 @@ export const AchievementsCertificationView: React.FC<{
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                رتبه شما به‌صورت بلادرنگ بر اساس مجموع امتیاز (<span dir="ltr" className="ltr-inline font-mono">{masteryRankStanding.totalCombinedXp} XP</span>) و نقاط عطف تکمیل‌شده (<span dir="ltr" className="ltr-inline font-mono">{masteryRankStanding.totalMilestonesCompleted} Milestones</span>) تعیین شده و در هدر کنار نام <strong className="text-slate-800 dark:text-slate-200">{architectName}</strong> نمایش داده می‌شود.
+                {language === 'en' ? (
+                  <>
+                    Your rank is evaluated in real time from your combined experience (<span dir="ltr" className="ltr-inline font-mono">{masteryRankStanding.totalCombinedXp} XP</span>) and completed milestones (<span dir="ltr" className="ltr-inline font-mono">{masteryRankStanding.totalMilestonesCompleted} Milestones</span>) and shown beside <strong className="text-slate-800 dark:text-slate-200">{displayArchitectName}</strong> in the header.
+                  </>
+                ) : (
+                  <>
+                    رتبه شما به‌صورت بلادرنگ بر اساس مجموع امتیاز (<span dir="ltr" className="ltr-inline font-mono">{masteryRankStanding.totalCombinedXp} XP</span>) و نقاط عطف تکمیل‌شده (<span dir="ltr" className="ltr-inline font-mono">{masteryRankStanding.totalMilestonesCompleted} Milestones</span>) تعیین شده و در هدر کنار نام <strong className="text-slate-800 dark:text-slate-200">{displayArchitectName}</strong> نمایش داده می‌شود.
+                  </>
+                )}
               </p>
             </div>
           </div>
@@ -1273,26 +1463,51 @@ export const AchievementsCertificationView: React.FC<{
           <div className="flex flex-wrap items-center gap-2">
             {masteryRankStanding.nextRank ? (
               <div className="px-3.5 py-2 rounded-lg border border-blue-500/30 bg-blue-500/10 text-xs text-blue-600 dark:text-blue-300">
-                <span>رتبه بعدی: </span>
-                <strong dir="ltr" className="ltr-inline font-mono">
-                  {masteryRankStanding.nextRank.rankNameEn}
-                </strong>
-                <span>
-                  {' '}
-                  (نیاز به{' '}
-                  <span dir="ltr" className="ltr-inline font-mono font-bold">
-                    {masteryRankStanding.xpNeededForNextRank} XP
-                  </span>{' '}
-                  و{' '}
-                  <span dir="ltr" className="ltr-inline font-mono font-bold">
-                    {masteryRankStanding.milestonesNeededForNextRank}
-                  </span>{' '}
-                  نقطه عطف دیگر)
-                </span>
+                {language === 'en' ? (
+                  <>
+                    <span>Next Rank: </span>
+                    <strong dir="ltr" className="ltr-inline font-mono">
+                      {masteryRankStanding.nextRank.rankNameEn}
+                    </strong>
+                    <span>
+                      {' '}
+                      (Requires{' '}
+                      <span dir="ltr" className="ltr-inline font-mono font-bold">
+                        {masteryRankStanding.xpNeededForNextRank} XP
+                      </span>{' '}
+                      &amp;{' '}
+                      <span dir="ltr" className="ltr-inline font-mono font-bold">
+                        {masteryRankStanding.milestonesNeededForNextRank}
+                      </span>{' '}
+                      more milestones)
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span>رتبه بعدی: </span>
+                    <strong dir="ltr" className="ltr-inline font-mono">
+                      {masteryRankStanding.nextRank.rankNameEn}
+                    </strong>
+                    <span>
+                      {' '}
+                      (نیاز به{' '}
+                      <span dir="ltr" className="ltr-inline font-mono font-bold">
+                        {masteryRankStanding.xpNeededForNextRank} XP
+                      </span>{' '}
+                      و{' '}
+                      <span dir="ltr" className="ltr-inline font-mono font-bold">
+                        {masteryRankStanding.milestonesNeededForNextRank}
+                      </span>{' '}
+                      نقطه عطف دیگر)
+                    </span>
+                  </>
+                )}
               </div>
             ) : (
               <div className="px-3.5 py-2 rounded-lg border border-amber-500/40 bg-amber-500/10 text-xs font-bold text-amber-600 dark:text-amber-300">
-                بالاترین رتبه معماری بازگشایی شد (Maximum Principal Rank Achieved ★)
+                {language === 'en'
+                  ? 'Maximum Principal Rank Achieved ★'
+                  : 'بالاترین رتبه معماری بازگشایی شد (Maximum Principal Rank Achieved ★)'}
               </div>
             )}
           </div>
@@ -1302,7 +1517,7 @@ export const AchievementsCertificationView: React.FC<{
         <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 space-y-2.5">
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
             <span className="font-bold text-slate-700 dark:text-slate-200">
-              پیشرفت به سمت رتبه بعدی (
+              {language === 'en' ? 'Progress Toward Next Rank (' : 'پیشرفت به سمت رتبه بعدی ('}
               <span dir="ltr" className="ltr-inline font-mono">
                 {masteryRankStanding.currentRank.rankNameEn} →{' '}
                 {masteryRankStanding.nextRank ? masteryRankStanding.nextRank.rankNameEn : 'MAX RANK'}
@@ -1363,24 +1578,24 @@ export const AchievementsCertificationView: React.FC<{
                   </span>
                   {tier.isCurrent ? (
                     <span className="px-2 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-bold">
-                      رتبه فعلی شما
+                      {language === 'en' ? 'Current Rank' : 'رتبه فعلی شما'}
                     </span>
                   ) : tier.unlocked ? (
                     <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-500">
                       <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>باز شده</span>
+                      <span>{language === 'en' ? 'Unlocked' : 'باز شده'}</span>
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-400">
                       <Lock className="w-3.5 h-3.5" />
-                      <span>قفل</span>
+                      <span>{language === 'en' ? 'Locked' : 'قفل'}</span>
                     </span>
                   )}
                 </div>
 
                 <div>
                   <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">
-                    {tier.rankTitleFa}
+                    {language === 'en' ? tier.rankTitleEn : tier.rankTitleFa}
                   </h3>
                   <div dir="ltr" className="ltr-inline text-[11px] font-mono text-slate-500 dark:text-slate-400">
                     {tier.rankTitleEn}
@@ -1388,19 +1603,25 @@ export const AchievementsCertificationView: React.FC<{
                 </div>
 
                 <p className="text-xs leading-6 text-slate-600 dark:text-slate-300">
-                  {tier.descriptionFa}
+                  {language === 'en'
+                    ? RANK_DESC_EN_MAP[tier.rankId] || tier.descriptionFa
+                    : tier.descriptionFa}
                 </p>
               </div>
 
               <div className="pt-3 border-t border-slate-200 dark:border-slate-800/80 space-y-1.5 text-[11px]">
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500 dark:text-slate-400">حداقل امتیاز لازم:</span>
+                  <span className="text-slate-500 dark:text-slate-400">
+                    {language === 'en' ? 'Min Required XP:' : 'حداقل امتیاز لازم:'}
+                  </span>
                   <span dir="ltr" className="ltr-inline font-mono font-bold text-slate-800 dark:text-slate-200">
                     {tier.minXp.toLocaleString('en-US')} XP
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500 dark:text-slate-400">حداقل نقاط عطف:</span>
+                  <span className="text-slate-500 dark:text-slate-400">
+                    {language === 'en' ? 'Min Milestones:' : 'حداقل نقاط عطف:'}
+                  </span>
                   <span dir="ltr" className="ltr-inline font-mono font-bold text-slate-800 dark:text-slate-200">
                     {tier.minMilestones} Milestones
                   </span>
@@ -1424,7 +1645,9 @@ export const AchievementsCertificationView: React.FC<{
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
-                  سیستم امتیاز تجربه و ارتقای سطح (XP &amp; Level Progression)
+                  {language === 'en'
+                    ? 'Experience Points (XP) & Level Progression System'
+                    : 'سیستم امتیاز تجربه و ارتقای سطح (XP & Level Progression)'}
                 </h2>
                 <span
                   dir="ltr"
@@ -1436,7 +1659,7 @@ export const AchievementsCertificationView: React.FC<{
               </div>
               <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 <span className="font-semibold text-slate-700 dark:text-slate-200">
-                  {xpProgression.levelTitleFa}
+                  {language === 'en' ? xpProgression.levelTitleEn : xpProgression.levelTitleFa}
                 </span>
                 <span aria-hidden="true">·</span>
                 <span dir="ltr" className="ltr-inline font-mono text-blue-500">
@@ -1463,7 +1686,7 @@ export const AchievementsCertificationView: React.FC<{
             <div className="flex flex-wrap items-center gap-2">
               <Zap className="w-4 h-4 text-amber-500" />
               <span className="font-bold text-slate-800 dark:text-slate-100">
-                پیشرفت تا ارتقای سطح بعدی:
+                {language === 'en' ? 'Progress to Next Level-Up:' : 'پیشرفت تا ارتقای سطح بعدی:'}
               </span>
               <span dir="ltr" className="ltr-inline font-mono text-slate-600 dark:text-slate-300 font-bold">
                 Level {xpProgression.currentLevel} → Level {Math.min(7, xpProgression.currentLevel + 1)}
@@ -1488,7 +1711,9 @@ export const AchievementsCertificationView: React.FC<{
 
           <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400">
             <span>
-              منابع کسب امتیاز: تکمیل ماژول‌های آموزشی + زمان مطالعه روزانه + استفاده از استودیوهای تعاملی
+              {language === 'en'
+                ? 'XP Sources: Curriculum Module Mastery + Daily Study Minutes + Interactive Studio Runs'
+                : 'منابع کسب امتیاز: تکمیل ماژول‌های آموزشی + زمان مطالعه روزانه + استفاده از استودیوهای تعاملی'}
             </span>
             <span dir="ltr" className="ltr-inline font-mono text-amber-500 font-semibold tabular-nums">
               {xpProgression.xpNeededForNextLevel > 0
@@ -1506,7 +1731,7 @@ export const AchievementsCertificationView: React.FC<{
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-blue-500" />
-                  <span>۱. تکمیل فصل‌ها</span>
+                  <span>{language === 'en' ? '1. Module Completion' : '۱. تکمیل فصل‌ها'}</span>
                 </span>
                 <span dir="ltr" className="ltr-inline text-xs font-mono font-bold text-blue-500 tabular-nums">
                   +{xpProgression.moduleXp} XP
@@ -1516,13 +1741,17 @@ export const AchievementsCertificationView: React.FC<{
                 Module Completion ({metrics.completedCount}/{metrics.totalModules} Modules)
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-5">
-                هر فصل بین ۱۵۰ تا ۲۵۰ امتیاز تجربه به کارنامه شما اضافه می‌کند.
+                {language === 'en'
+                  ? 'Each curriculum module awards between 150 and 250 XP toward your architect standing.'
+                  : 'هر فصل بین ۱۵۰ تا ۲۵۰ امتیاز تجربه به کارنامه شما اضافه می‌کند.'}
               </p>
             </div>
 
             <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
               <div className="flex items-center justify-between text-[11px]">
-                <span className="text-slate-500">سهم از سقف ماژول‌ها:</span>
+                <span className="text-slate-500">
+                  {language === 'en' ? 'Module XP Cap:' : 'سهم از سقف ماژول‌ها:'}
+                </span>
                 <span dir="ltr" className="ltr-inline font-mono font-bold text-slate-700 dark:text-slate-200 tabular-nums">
                   {xpProgression.moduleXp} / {metrics.maxXp} XP
                 </span>
@@ -1533,7 +1762,7 @@ export const AchievementsCertificationView: React.FC<{
                   onClick={onCompleteAllModules}
                   className="w-full py-2 px-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                 >
-                  <span>تکمیل تمام فصول</span>
+                  <span>{language === 'en' ? 'Complete All Modules' : 'تکمیل تمام فصول'}</span>
                   <span dir="ltr" className="ltr-inline font-mono">+{metrics.maxXp - xpProgression.moduleXp} XP</span>
                 </button>
               )}
@@ -1546,7 +1775,7 @@ export const AchievementsCertificationView: React.FC<{
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                   <BookOpen className="w-4 h-4 text-emerald-500" />
-                  <span>۲. زمان مطالعه و بررسی</span>
+                  <span>{language === 'en' ? '2. Deep Study Time' : '۲. زمان مطالعه و بررسی'}</span>
                 </span>
                 <span dir="ltr" className="ltr-inline text-xs font-mono font-bold text-emerald-500 tabular-nums">
                   +{xpProgression.readingTimeXp} XP
@@ -1556,13 +1785,17 @@ export const AchievementsCertificationView: React.FC<{
                 Reading Time ({streakStats.totalMinutesStudied}m × 4 XP/min)
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-5">
-                به ازای هر دقیقه مطالعه عمیق مستندات و کدهای آکادمی، ۴ امتیاز تجربه دریافت می‌کنید.
+                {language === 'en'
+                  ? 'Earn 4 XP for every minute spent studying documentation and reviewing architecture code.'
+                  : 'به ازای هر دقیقه مطالعه عمیق مستندات و کدهای آکادمی، ۴ امتیاز تجربه دریافت می‌کنید.'}
               </p>
             </div>
 
             <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
               <div className="flex items-center justify-between text-[11px]">
-                <span className="text-slate-500">زمان ثبت‌شده کل:</span>
+                <span className="text-slate-500">
+                  {language === 'en' ? 'Total Logged Time:' : 'زمان ثبت‌شده کل:'}
+                </span>
                 <span dir="ltr" className="ltr-inline font-mono font-bold text-slate-700 dark:text-slate-200 tabular-nums">
                   {streakStats.totalMinutesStudied} mins
                 </span>
@@ -1572,7 +1805,7 @@ export const AchievementsCertificationView: React.FC<{
                 onClick={() => handleQuickAddReadingTimeXp(15)}
                 className="w-full py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
               >
-                <span>ثبت ۱۵ دقیقه مطالعه</span>
+                <span>{language === 'en' ? 'Log 15m Study' : 'ثبت ۱۵ دقیقه مطالعه'}</span>
                 <span dir="ltr" className="ltr-inline font-mono">+60 XP</span>
               </button>
             </div>
@@ -1584,7 +1817,11 @@ export const AchievementsCertificationView: React.FC<{
               <div>
                 <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                   <Cpu className="w-4 h-4 text-indigo-500" />
-                  <span>۳. امتیاز کار با استودیوهای عملی</span>
+                  <span>
+                    {language === 'en'
+                      ? '3. Hands-On Studio Lab XP'
+                      : '۳. امتیاز کار با استودیوهای عملی'}
+                  </span>
                 </span>
                 <div dir="ltr" className="ltr-inline text-[11px] font-mono text-slate-500">
                   Interactive Studio Usage XP · Simulator, Guardrails &amp; FastMCP
@@ -1603,7 +1840,7 @@ export const AchievementsCertificationView: React.FC<{
                 >
                   <div className="space-y-0.5 min-w-0">
                     <div className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">
-                      {studio.titleFa}
+                      {language === 'en' ? studio.titleEn : studio.titleFa}
                     </div>
                     <div dir="ltr" className="ltr-inline text-[10px] font-mono text-slate-500 block truncate">
                       {studio.actionsLogged} runs · +{studio.actionsLogged * studio.xpPerAction} XP
@@ -1633,7 +1870,9 @@ export const AchievementsCertificationView: React.FC<{
             <Target className="w-5 h-5 text-blue-500 shrink-0" />
             <div>
               <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
-                برنامه‌ریز روزانه مطالعه و پایش هدف هفتگی
+                {language === 'en'
+                  ? 'Daily Study Planner & Weekly Target Telemetry'
+                  : 'برنامه‌ریز روزانه مطالعه و پایش هدف هفتگی'}
               </h2>
               <div dir="ltr" className="ltr-inline text-xs font-mono text-slate-500 dark:text-slate-400">
                 Daily Study Planner · Active Session Telemetry &amp; Weekly Target Progress Chart
@@ -1644,7 +1883,7 @@ export const AchievementsCertificationView: React.FC<{
           {/* Daily Target Selector */}
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-              هدف مطالعه روزانه:
+              {language === 'en' ? 'Daily Study Target:' : 'هدف مطالعه روزانه:'}
             </span>
             <div dir="ltr" className="inline-flex rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 p-1 gap-1">
               {[30, 45, 60, 90].map((targetMins) => (
@@ -1671,7 +1910,9 @@ export const AchievementsCertificationView: React.FC<{
             <div className="space-y-3.5">
               <div className="flex items-center justify-between gap-2">
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                  اهداف مطالعه امروز (Daily Study Goals)
+                  {language === 'en'
+                    ? "Today's Study Goals (Daily Study Goals)"
+                    : 'اهداف مطالعه امروز (Daily Study Goals)'}
                 </h3>
                 <span dir="ltr" className="ltr-inline text-xs font-mono font-semibold text-blue-500 tabular-nums">
                   {completedGoalsCount}/{dailyGoals.length} Done · {totalPlannedGoalMinutes}m Planned
@@ -1691,7 +1932,9 @@ export const AchievementsCertificationView: React.FC<{
                     <button
                       type="button"
                       onClick={() => handleToggleDailyGoal(goal.id)}
-                      className="flex items-start gap-2.5 text-right flex-1 cursor-pointer"
+                      className={`flex items-start gap-2.5 ${
+                        language === 'en' ? 'text-left' : 'text-right'
+                      } flex-1 cursor-pointer`}
                     >
                       <div
                         className={`w-4 h-4 rounded mt-0.5 flex items-center justify-center border shrink-0 ${
@@ -1710,7 +1953,9 @@ export const AchievementsCertificationView: React.FC<{
                               : 'text-slate-800 dark:text-slate-100'
                           }`}
                         >
-                          {goal.titleFa}
+                          {language === 'en'
+                            ? GOAL_TITLE_EN_MAP[goal.id] || goal.titleFa
+                            : goal.titleFa}
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                           <span dir="ltr" className="ltr-inline text-[10px] font-mono text-blue-600 dark:text-blue-400">
@@ -1726,7 +1971,7 @@ export const AchievementsCertificationView: React.FC<{
                     <button
                       type="button"
                       onClick={() => handleDeleteDailyGoal(goal.id)}
-                      aria-label="حذف هدف مطالعه"
+                      aria-label={language === 'en' ? 'Delete study goal' : 'حذف هدف مطالعه'}
                       className="p-1 text-slate-400 hover:text-rose-500 transition-colors cursor-pointer shrink-0"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -1739,18 +1984,24 @@ export const AchievementsCertificationView: React.FC<{
             {/* Add New Daily Goal Form */}
             <form onSubmit={handleAddDailyGoal} className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2.5">
               <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                تعریف هدف جدید برای جلسه امروز:
+                {language === 'en'
+                  ? "Define a new goal for today's session:"
+                  : 'تعریف هدف جدید برای جلسه امروز:'}
               </div>
               <input
                 type="text"
-                placeholder="عنوان هدف (مثلاً: تمرین دستور // turbo-all در پایپ‌لاین)..."
+                placeholder={
+                  language === 'en'
+                    ? 'Goal title (e.g., Practice // turbo-all directive in pipeline)...'
+                    : 'عنوان هدف (مثلاً: تمرین دستور // turbo-all در پایپ‌لاین)...'
+                }
                 value={newGoalTitle}
                 onChange={(e) => setNewGoalTitle(e.target.value)}
                 className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
               />
               <div className="flex flex-wrap items-center gap-2">
                 <select
-                  aria-label="انتخاب ماژول هدف"
+                  aria-label={language === 'en' ? 'Select target module' : 'انتخاب ماژول هدف'}
                   dir="ltr"
                   value={newGoalModuleRef}
                   onChange={(e) => setNewGoalModuleRef(e.target.value)}
@@ -1764,7 +2015,7 @@ export const AchievementsCertificationView: React.FC<{
                 </select>
                 <input
                   type="number"
-                  aria-label="زمان هدف به دقیقه"
+                  aria-label={language === 'en' ? 'Target time in minutes' : 'زمان هدف به دقیقه'}
                   dir="ltr"
                   min={5}
                   max={180}
@@ -1777,7 +2028,7 @@ export const AchievementsCertificationView: React.FC<{
                   type="submit"
                   className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold cursor-pointer whitespace-nowrap"
                 >
-                  + افزودن هدف
+                  {language === 'en' ? '+ Add Goal' : '+ افزودن هدف'}
                 </button>
               </div>
             </form>
@@ -1789,7 +2040,7 @@ export const AchievementsCertificationView: React.FC<{
               <div className="flex items-center justify-between">
                 <span className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                   <Timer className="w-4 h-4 text-emerald-500" />
-                  <span>تایمر جلسه فعال</span>
+                  <span>{language === 'en' ? 'Active Session Timer' : 'تایمر جلسه فعال'}</span>
                 </span>
                 <span
                   dir="ltr"
@@ -1803,7 +2054,9 @@ export const AchievementsCertificationView: React.FC<{
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-5">
-                زمان مطالعه فعلی خود را اندازه‌گیری کرده و مستقیماً در نمودار پیشرفت امروز ثبت کنید.
+                {language === 'en'
+                  ? "Track your current study session and commit it directly to today's progress chart."
+                  : 'زمان مطالعه فعلی خود را اندازه‌گیری کرده و مستقیماً در نمودار پیشرفت امروز ثبت کنید.'}
               </p>
             </div>
 
@@ -1834,7 +2087,15 @@ export const AchievementsCertificationView: React.FC<{
                   }`}
                 >
                   {timerRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-                  <span>{timerRunning ? 'توقف' : 'شروع'}</span>
+                  <span>
+                    {timerRunning
+                      ? language === 'en'
+                        ? 'Pause'
+                        : 'توقف'
+                      : language === 'en'
+                      ? 'Start'
+                      : 'شروع'}
+                  </span>
                 </button>
 
                 <button
@@ -1851,11 +2112,11 @@ export const AchievementsCertificationView: React.FC<{
                     setTimerRunning(false);
                     setElapsedSeconds(0);
                   }}
-                  aria-label="ریست تایمر"
+                  aria-label={language === 'en' ? 'Reset timer' : 'ریست تایمر'}
                   className="py-2 px-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300 flex items-center justify-center gap-1 cursor-pointer"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
-                  <span>صفر</span>
+                  <span>{language === 'en' ? 'Reset' : 'صفر'}</span>
                 </button>
               </div>
 
@@ -1865,7 +2126,11 @@ export const AchievementsCertificationView: React.FC<{
                 className="w-full py-2.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >
                 <CheckCircle2 className="w-4 h-4" />
-                <span>ثبت زمان تایمر در آمار امروز</span>
+                <span>
+                  {language === 'en'
+                    ? "Commit Timer to Today's Stats"
+                    : 'ثبت زمان تایمر در آمار امروز'}
+                </span>
               </button>
             </div>
           </div>
@@ -1876,7 +2141,7 @@ export const AchievementsCertificationView: React.FC<{
               <div className="flex items-center justify-between gap-2">
                 <span className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                   <BarChart3 className="w-4 h-4 text-blue-500" />
-                  <span>نمودار پیشرفت هفتگی</span>
+                  <span>{language === 'en' ? 'Weekly Progress Chart' : 'نمودار پیشرفت هفتگی'}</span>
                 </span>
                 <span dir="ltr" className="ltr-inline text-xs font-mono font-bold text-emerald-500 tabular-nums">
                   {plannerAnalytics.weeklyActualMinutes} / {plannerAnalytics.weeklyTargetMinutes}m ({plannerAnalytics.weeklyCompletionPercent}%)
@@ -1892,7 +2157,11 @@ export const AchievementsCertificationView: React.FC<{
                   />
                 </div>
                 <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-                  <span>روزهای منطبق با هدف ({dailyTargetMinutes}m+):</span>
+                  <span>
+                    {language === 'en'
+                      ? `Days Meeting Target (${dailyTargetMinutes}m+):`
+                      : `روزهای منطبق با هدف (${dailyTargetMinutes}m+):`}
+                  </span>
                   <span dir="ltr" className="ltr-inline font-mono font-bold text-slate-700 dark:text-slate-200 tabular-nums">
                     {plannerAnalytics.daysMetTargetCount} / 7 Days Met
                   </span>
@@ -1939,7 +2208,10 @@ export const AchievementsCertificationView: React.FC<{
                       />
                     </div>
                     <div className="text-[10px] font-semibold text-slate-600 dark:text-slate-300 truncate max-w-full">
-                      {bar.dayLabelFa.replace('امروز (سه‌شنبه)', 'امروز')}
+                      {translateDayLabel(
+                        bar.dayLabelFa.replace('امروز (سه‌شنبه)', 'امروز'),
+                        language
+                      )}
                     </div>
                   </div>
                 ))}
@@ -1949,11 +2221,11 @@ export const AchievementsCertificationView: React.FC<{
             <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
               <span className="inline-flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block" />
-                <span>تحقق هدف روزانه</span>
+                <span>{language === 'en' ? 'Target Met' : 'تحقق هدف روزانه'}</span>
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-sm bg-blue-500 inline-block" />
-                <span>در حال پیشرفت</span>
+                <span>{language === 'en' ? 'In Progress' : 'در حال پیشرفت'}</span>
               </span>
               <span dir="ltr" className="ltr-inline font-mono text-slate-600 dark:text-slate-300 tabular-nums">
                 Today: {plannerAnalytics.todayActualMinutes}/{plannerAnalytics.todayTargetMinutes}m
@@ -1976,13 +2248,27 @@ export const AchievementsCertificationView: React.FC<{
               </div>
               <div>
                 <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
-                  شمارنده بصری پیوستگی روزانه و نشان‌های ۷، ۳۰ و ۱۰۰ روزه{' '}
-                  <span dir="ltr" className="ltr-inline font-mono text-xs sm:text-sm text-amber-500">
-                    (Daily Streak Counter)
-                  </span>
+                  {language === 'en' ? (
+                    'Visual Daily Streak Counter & 7, 30 & 100-Day Milestone Badges'
+                  ) : (
+                    <>
+                      شمارنده بصری پیوستگی روزانه و نشان‌های ۷، ۳۰ و ۱۰۰ روزه{' '}
+                      <span dir="ltr" className="ltr-inline font-mono text-xs sm:text-sm text-amber-500">
+                        (Daily Streak Counter)
+                      </span>
+                    </>
+                  )}
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  ذخیره خودکار در <span dir="ltr" className="ltr-inline font-mono">localStorage</span> · کسب نشان‌های ویژه در نقاط عطف ۷، ۳۰ و ۱۰۰ روز مطالعه متوالی
+                  {language === 'en' ? (
+                    <>
+                      Auto-persisted in <span dir="ltr" className="ltr-inline font-mono">localStorage</span> · Unlock milestone badges at 7, 30, and 100 consecutive study days
+                    </>
+                  ) : (
+                    <>
+                      ذخیره خودکار در <span dir="ltr" className="ltr-inline font-mono">localStorage</span> · کسب نشان‌های ویژه در نقاط عطف ۷، ۳۰ و ۱۰۰ روز مطالعه متوالی
+                    </>
+                  )}
                 </p>
               </div>
             </div>
@@ -2008,7 +2294,9 @@ export const AchievementsCertificationView: React.FC<{
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">
-                      {streakStats.currentStreakDays} روز مطالعه متوالی
+                      {language === 'en'
+                        ? `${streakStats.currentStreakDays} Consecutive Study Days`
+                        : `${streakStats.currentStreakDays} روز مطالعه متوالی`}
                     </span>
                     <span
                       dir="ltr"
@@ -2021,14 +2309,20 @@ export const AchievementsCertificationView: React.FC<{
                   <div className="text-xs text-slate-600 dark:text-slate-300">
                     {streakMilestoneEval.highestUnlockedBadge ? (
                       <>
-                        بالاترین نشان فعال:{' '}
+                        {language === 'en' ? 'Highest Active Badge: ' : 'بالاترین نشان فعال: '}
                         <span className="font-bold text-amber-400">
-                          {streakMilestoneEval.highestUnlockedBadge.titleFa}
+                          {language === 'en'
+                            ? streakMilestoneEval.highestUnlockedBadge.titleEn
+                            : streakMilestoneEval.highestUnlockedBadge.titleFa}
                         </span>{' '}
                         <span dir="ltr" className="ltr-inline font-mono text-[11px] text-emerald-400">
                           [{streakMilestoneEval.highestUnlockedBadge.badgeCode}]
                         </span>
                       </>
+                    ) : language === 'en' ? (
+                      <span>
+                        {streakMilestoneEval.daysToNextMilestone} days until your first 7-Day Streak Badge (<span dir="ltr" className="ltr-inline font-mono">AG-STRK-007</span>)
+                      </span>
                     ) : (
                       <span>
                         {streakMilestoneEval.daysToNextMilestone} روز دیگر تا کسب اولین نشان پیوستگی ۷ روزه (<span dir="ltr" className="ltr-inline font-mono">AG-STRK-007</span>)
@@ -2050,7 +2344,9 @@ export const AchievementsCertificationView: React.FC<{
                   className="px-3.5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold flex items-center justify-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
                 >
                   <PlusCircle className="w-4 h-4" />
-                  <span>ثبت روز متوالی جدید</span>
+                  <span>
+                    {language === 'en' ? 'Log Consecutive Day' : 'ثبت روز متوالی جدید'}
+                  </span>
                   <span dir="ltr" className="ltr-inline font-mono text-[11px]">
                     (+1 Day Streak)
                   </span>
@@ -2097,7 +2393,11 @@ export const AchievementsCertificationView: React.FC<{
               <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-600 dark:text-slate-300 font-semibold">
                   {streakMilestoneEval.nextMilestoneDays
-                    ? `پیشرفت تا نقطه عطف ${streakMilestoneEval.nextMilestoneDays} روزه (${streakMilestoneEval.daysToNextMilestone} روز باقی‌مانده)`
+                    ? language === 'en'
+                      ? `Progress to ${streakMilestoneEval.nextMilestoneDays}-Day Milestone (${streakMilestoneEval.daysToNextMilestone} days remaining)`
+                      : `پیشرفت تا نقطه عطف ${streakMilestoneEval.nextMilestoneDays} روزه (${streakMilestoneEval.daysToNextMilestone} روز باقی‌مانده)`
+                    : language === 'en'
+                    ? 'All 7, 30, and 100-Day Streak Milestones Unlocked!'
                     : 'تمامی نقاط عطف ۷، ۳۰ و ۱۰۰ روزه با موفقیت فتح شدند!'}
                 </span>
                 <span
@@ -2174,7 +2474,7 @@ export const AchievementsCertificationView: React.FC<{
                       </div>
                       <div className="min-w-0">
                         <div className="text-xs font-extrabold text-slate-900 dark:text-white leading-5">
-                          {badge.titleFa}
+                          {language === 'en' ? badge.titleEn : badge.titleFa}
                         </div>
                         <div
                           dir="ltr"
@@ -2186,7 +2486,9 @@ export const AchievementsCertificationView: React.FC<{
                     </div>
 
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-5">
-                      {badge.descriptionFa}
+                      {language === 'en'
+                        ? STREAK_DESC_EN_MAP[badge.thresholdDays] || badge.descriptionFa
+                        : badge.descriptionFa}
                     </p>
                   </div>
 
@@ -2235,7 +2537,9 @@ export const AchievementsCertificationView: React.FC<{
                     : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 text-slate-400 opacity-75 hover:opacity-100'
                 }`}
               >
-                <div className="text-[11px] font-bold truncate">{day.dayLabelFa}</div>
+                <div className="text-[11px] font-bold truncate">
+                  {translateDayLabel(day.dayLabelFa, language)}
+                </div>
                 <div dir="ltr" className="ltr-inline text-[10px] font-mono text-slate-500 block">
                   {day.dateIso.slice(5)}
                 </div>
@@ -2258,16 +2562,28 @@ export const AchievementsCertificationView: React.FC<{
             <div className="space-y-0.5">
               <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5 text-blue-500" />
-                <span>ثبت جلسه مطالعه جدید در کارنامه امروز:</span>
+                <span>
+                  {language === 'en'
+                    ? "Log a New Study Session into Today's Report:"
+                    : 'ثبت جلسه مطالعه جدید در کارنامه امروز:'}
+                </span>
               </div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                مجموع زمان مطالعه هفتگی: <span dir="ltr" className="ltr-inline font-mono font-bold text-slate-700 dark:text-slate-200">{streakStats.totalMinutesStudied} mins</span> در <span dir="ltr" className="ltr-inline font-mono font-bold text-slate-700 dark:text-slate-200">{streakStats.activeDaysCount}</span> روز فعال
+                {language === 'en' ? (
+                  <>
+                    Weekly Study Total: <span dir="ltr" className="ltr-inline font-mono font-bold text-slate-700 dark:text-slate-200">{streakStats.totalMinutesStudied} mins</span> across <span dir="ltr" className="ltr-inline font-mono font-bold text-slate-700 dark:text-slate-200">{streakStats.activeDaysCount}</span> active days
+                  </>
+                ) : (
+                  <>
+                    مجموع زمان مطالعه هفتگی: <span dir="ltr" className="ltr-inline font-mono font-bold text-slate-700 dark:text-slate-200">{streakStats.totalMinutesStudied} mins</span> در <span dir="ltr" className="ltr-inline font-mono font-bold text-slate-700 dark:text-slate-200">{streakStats.activeDaysCount}</span> روز فعال
+                  </>
+                )}
               </div>
             </div>
 
             <div className="flex items-center gap-2">
               <label htmlFor="session-minutes-input" className="sr-only">
-                مدت زمان مطالعه به دقیقه
+                {language === 'en' ? 'Study duration in minutes' : 'مدت زمان مطالعه به دقیقه'}
               </label>
               <input
                 id="session-minutes-input"
@@ -2280,14 +2596,16 @@ export const AchievementsCertificationView: React.FC<{
                 onChange={(e) => setSessionMinutesInput(Number(e.target.value))}
                 className="ltr-code w-20 px-2.5 py-1.5 text-xs font-mono rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
               />
-              <span className="text-xs text-slate-500">دقیقه</span>
+              <span className="text-xs text-slate-500">
+                {language === 'en' ? 'mins' : 'دقیقه'}
+              </span>
               <button
                 type="button"
                 onClick={handleLogStudySession}
                 className="px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
               >
                 <PlusCircle className="w-3.5 h-3.5" />
-                <span>ثبت جلسه مطالعه</span>
+                <span>{language === 'en' ? 'Log Study Session' : 'ثبت جلسه مطالعه'}</span>
               </button>
             </div>
           </div>
@@ -2299,10 +2617,14 @@ export const AchievementsCertificationView: React.FC<{
             <UserCheck className="w-5 h-5 text-blue-500 shrink-0" />
             <div>
               <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
-                شخصی‌سازی کارنامه و گواهینامه
+                {language === 'en'
+                  ? 'Personalize Report Card & Certificate'
+                  : 'شخصی‌سازی کارنامه و گواهینامه'}
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                اطلاعات شما به صورت زنده روی کارت گواهینامه و خروجی اشتراک‌گذاری درج می‌شود
+                {language === 'en'
+                  ? 'Your profile details are rendered live on the official certificate card and shareable transcript'
+                  : 'اطلاعات شما به صورت زنده روی کارت گواهینامه و خروجی اشتراک‌گذاری درج می‌شود'}
               </p>
             </div>
           </div>
@@ -2310,13 +2632,15 @@ export const AchievementsCertificationView: React.FC<{
           <div className="space-y-3">
             <div>
               <label htmlFor="architect-name-input" className="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                <span>نام و نام خانوادگی معمار:</span>
+                <span>
+                  {language === 'en' ? 'Architect Full Name:' : 'نام و نام خانوادگی معمار:'}
+                </span>
                 <span dir="ltr" className="ltr-inline font-mono text-[11px] text-slate-500">Candidate Name</span>
               </label>
               <input
                 id="architect-name-input"
                 type="text"
-                value={architectName}
+                value={displayArchitectName}
                 onChange={(e) => setArchitectName(e.target.value)}
                 className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white"
               />
@@ -2324,7 +2648,9 @@ export const AchievementsCertificationView: React.FC<{
 
             <div>
               <label htmlFor="architect-role-input" className="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                <span>عنوان شغلی و تخصصی:</span>
+                <span>
+                  {language === 'en' ? 'Engineering Role & Title:' : 'عنوان شغلی و تخصصی:'}
+                </span>
                 <span dir="ltr" className="ltr-inline font-mono text-[11px] text-slate-500">Engineering Title</span>
               </label>
               <input
@@ -2339,7 +2665,7 @@ export const AchievementsCertificationView: React.FC<{
 
             <div>
               <label htmlFor="architect-org-input" className="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                <span>تیم یا سازمان:</span>
+                <span>{language === 'en' ? 'Team or Organization:' : 'تیم یا سازمان:'}</span>
                 <span dir="ltr" className="ltr-inline font-mono text-[11px] text-slate-500">Organization / Team</span>
               </label>
               <input
@@ -2368,7 +2694,9 @@ export const AchievementsCertificationView: React.FC<{
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
-                  نقشه حرارتی تقویم پیوستگی مطالعه و فعالیت استودیوها (D3.js Calendar Heatmap)
+                  {language === 'en'
+                    ? 'Study Streak & Studio Activity Calendar Heatmap (D3.js Calendar Heatmap)'
+                    : 'نقشه حرارتی تقویم پیوستگی مطالعه و فعالیت استودیوها (D3.js Calendar Heatmap)'}
                 </h2>
                 <span
                   dir="ltr"
@@ -2426,10 +2754,12 @@ export const AchievementsCertificationView: React.FC<{
                       : 'bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
                   }`}
                 >
-                  <span>{tab.labelFa}</span>
-                  <span dir="ltr" className="ltr-inline font-mono text-[10px] opacity-80">
-                    ({tab.labelEn})
-                  </span>
+                  <span>{language === 'en' ? tab.labelEn : tab.labelFa}</span>
+                  {language === 'fa' && (
+                    <span dir="ltr" className="ltr-inline font-mono text-[10px] opacity-80">
+                      ({tab.labelEn})
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -2440,7 +2770,9 @@ export const AchievementsCertificationView: React.FC<{
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60">
             <div className="text-[11px] text-slate-500 dark:text-slate-400">
-              روزهای تلفیقی (Academy + Studios)
+              {language === 'en'
+                ? 'Combined Days (Academy + Studios)'
+                : 'روزهای تلفیقی (Academy + Studios)'}
             </div>
             <div dir="ltr" className="ltr-inline text-lg font-mono font-extrabold text-emerald-500 mt-0.5 tabular-nums">
               {heatmapSummary.bothActiveDaysCount} Days
@@ -2449,7 +2781,9 @@ export const AchievementsCertificationView: React.FC<{
 
           <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60">
             <div className="text-[11px] text-slate-500 dark:text-slate-400">
-              روزهای مطالعه ماژول‌های آکادمی
+              {language === 'en'
+                ? 'Academy Curriculum Study Days'
+                : 'روزهای مطالعه ماژول‌های آکادمی'}
             </div>
             <div dir="ltr" className="ltr-inline text-lg font-mono font-extrabold text-blue-500 mt-0.5 tabular-nums">
               {heatmapSummary.academyOnlyDaysCount} Days
@@ -2458,7 +2792,9 @@ export const AchievementsCertificationView: React.FC<{
 
           <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60">
             <div className="text-[11px] text-slate-500 dark:text-slate-400">
-              روزهای تمرین در استودیوهای عملی
+              {language === 'en'
+                ? 'Hands-On Studio Practice Days'
+                : 'روزهای تمرین در استودیوهای عملی'}
             </div>
             <div dir="ltr" className="ltr-inline text-lg font-mono font-extrabold text-indigo-400 mt-0.5 tabular-nums">
               {heatmapSummary.studiosOnlyDaysCount} Days
@@ -2467,7 +2803,9 @@ export const AchievementsCertificationView: React.FC<{
 
           <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60">
             <div className="text-[11px] text-slate-500 dark:text-slate-400">
-              مجموع فعالیت ۱۲ هفته اخیر
+              {language === 'en'
+                ? `Total ${heatmapWeeksCount}-Week Window Activity`
+                : 'مجموع فعالیت ۱۲ هفته اخیر'}
             </div>
             <div dir="ltr" className="ltr-inline text-lg font-mono font-extrabold text-amber-500 mt-0.5 tabular-nums">
               {heatmapSummary.totalMinutesInWindow}m · {heatmapSummary.totalStudioRunsInWindow} Runs
@@ -2503,19 +2841,21 @@ export const AchievementsCertificationView: React.FC<{
               <div className="flex flex-wrap items-center gap-3">
                 <span className="inline-flex items-center gap-1.5">
                   <span className="w-3 h-3 rounded-sm bg-slate-800 border border-slate-700 inline-block" />
-                  <span>بدون فعالیت (Rest)</span>
+                  <span>{language === 'en' ? 'Rest (No Activity)' : 'بدون فعالیت (Rest)'}</span>
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   <span className="w-3 h-3 rounded-sm bg-blue-500 inline-block" />
-                  <span>آکادمی (Academy)</span>
+                  <span>{language === 'en' ? 'Academy' : 'آکادمی (Academy)'}</span>
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   <span className="w-3 h-3 rounded-sm bg-indigo-500 inline-block" />
-                  <span>استودیو (Studios)</span>
+                  <span>{language === 'en' ? 'Studios' : 'استودیو (Studios)'}</span>
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   <span className="w-3 h-3 rounded-sm bg-emerald-400 inline-block" />
-                  <span>تلفیقی (Academy + Studios)</span>
+                  <span>
+                    {language === 'en' ? 'Combined (Academy + Studios)' : 'تلفیقی (Academy + Studios)'}
+                  </span>
                 </span>
               </div>
               <div dir="ltr" className="ltr-inline font-mono text-[10px] text-slate-500">
@@ -2533,11 +2873,13 @@ export const AchievementsCertificationView: React.FC<{
               <div className="flex items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
                 <div>
                   <div className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                    بازرس تله‌متری روز انتخاب‌شده در نقشه D3:
+                    {language === 'en'
+                      ? 'Selected Day Telemetry Inspector in D3 Map:'
+                      : 'بازرس تله‌متری روز انتخاب‌شده در نقشه D3:'}
                   </div>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-base font-extrabold text-slate-900 dark:text-white">
-                      {selectedHeatmapCell.dayLabelFa}
+                      {translateDayLabel(selectedHeatmapCell.dayLabelFa, language)}
                     </span>
                     <span
                       dir="ltr"
@@ -2581,7 +2923,9 @@ export const AchievementsCertificationView: React.FC<{
                   >
                     {selectedHeatmapCell.minutesStudied}m
                   </div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">مطالعه آکادمی</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">
+                    {language === 'en' ? 'Academy Study' : 'مطالعه آکادمی'}
+                  </div>
                 </div>
 
                 <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
@@ -2592,7 +2936,9 @@ export const AchievementsCertificationView: React.FC<{
                   >
                     {selectedHeatmapCell.studioRuns}
                   </div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">اجرای استودیو</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">
+                    {language === 'en' ? 'Studio Runs' : 'اجرای استودیو'}
+                  </div>
                 </div>
 
                 <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
@@ -2603,20 +2949,28 @@ export const AchievementsCertificationView: React.FC<{
                   >
                     +{selectedHeatmapCell.xpEarned} XP
                   </div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">امتیاز روز</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">
+                    {language === 'en' ? 'Day XP' : 'امتیاز روز'}
+                  </div>
                 </div>
               </div>
 
               <p className="text-xs text-slate-600 dark:text-slate-300 leading-6">
                 {selectedHeatmapCell.active
-                  ? `در تاریخ ${selectedHeatmapCell.dateIso}، شما به مدت ${selectedHeatmapCell.minutesStudied} دقیقه در ماژول‌های آکادمی مطالعه داشته و ${selectedHeatmapCell.studioRuns} بار سناریوهای استودیو را اجرا کرده‌اید.`
+                  ? language === 'en'
+                    ? `On ${selectedHeatmapCell.dateIso}, you logged ${selectedHeatmapCell.minutesStudied} minutes of Academy module study and executed ${selectedHeatmapCell.studioRuns} interactive studio runs.`
+                    : `در تاریخ ${selectedHeatmapCell.dateIso}، شما به مدت ${selectedHeatmapCell.minutesStudied} دقیقه در ماژول‌های آکادمی مطالعه داشته و ${selectedHeatmapCell.studioRuns} بار سناریوهای استودیو را اجرا کرده‌اید.`
+                  : language === 'en'
+                  ? `No activity logged on ${selectedHeatmapCell.dateIso}. Use the controls below to assign an activity domain (Academy, Studios, or Both) for this day.`
                   : `در تاریخ ${selectedHeatmapCell.dateIso} فعالیتی ثبت نشده است. با دکمه‌های زیر می‌توانید نوع فعالیت (آکادمی، استودیو یا تلفیقی) را برای این روز ثبت کنید.`}
               </p>
 
               {/* Quick Activity Mode Selector for Selected Day */}
               <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-2">
                 <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                  تنظیم مستقیم نوع فعالیت برای این روز (Set Day Activity Domain):
+                  {language === 'en'
+                    ? 'Set Day Activity Domain Directly:'
+                    : 'تنظیم مستقیم نوع فعالیت برای این روز (Set Day Activity Domain):'}
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                   {[
@@ -2656,10 +3010,12 @@ export const AchievementsCertificationView: React.FC<{
                           : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-blue-500/40'
                       }`}
                     >
-                      <span>{item.labelFa}</span>
-                      <span dir="ltr" className="ltr-inline text-[9px] font-mono opacity-80">
-                        {item.labelEn}
-                      </span>
+                      <span>{language === 'en' ? item.labelEn : item.labelFa}</span>
+                      {language === 'fa' && (
+                        <span dir="ltr" className="ltr-inline text-[9px] font-mono opacity-80">
+                          {item.labelEn}
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -2679,7 +3035,11 @@ export const AchievementsCertificationView: React.FC<{
               <Flame className="w-4 h-4" />
               <span>
                 {selectedHeatmapCell.active
-                  ? 'پاک کردن فعالیت این روز در نقشه حرارتی (Clear Day Activity)'
+                  ? language === 'en'
+                    ? 'Clear Day Activity in Heatmap'
+                    : 'پاک کردن فعالیت این روز در نقشه حرارتی (Clear Day Activity)'
+                  : language === 'en'
+                  ? 'Log Active Academy + Studio Day'
                   : 'ثبت فعالیت آکادمی و استودیو برای این روز (Log Active Day)'}
               </span>
             </button>
@@ -2700,7 +3060,9 @@ export const AchievementsCertificationView: React.FC<{
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
-                  ویترین تندیس‌های نادر دیجیتال
+                  {language === 'en'
+                    ? 'Rare Digital Trophy Case'
+                    : 'ویترین تندیس‌های نادر دیجیتال'}
                 </h2>
                 <span
                   dir="ltr"
@@ -2727,7 +3089,9 @@ export const AchievementsCertificationView: React.FC<{
                 className="px-3.5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1.5"
               >
                 <Trophy className="w-3.5 h-3.5" />
-                <span>فتح تمام تندیس‌های نادر</span>
+                <span>
+                  {language === 'en' ? 'Unlock All Rare Trophies' : 'فتح تمام تندیس‌های نادر'}
+                </span>
               </button>
             )}
           </div>
@@ -2806,9 +3170,14 @@ export const AchievementsCertificationView: React.FC<{
 
                     <div className="space-y-1 min-w-0 flex-1">
                       <h3 className="text-sm font-extrabold text-slate-900 dark:text-white leading-5">
-                        {trophy.titleFa}
+                        {language === 'en' ? trophy.titleEn : trophy.titleFa}
                       </h3>
-                      <div dir="ltr" className="text-[11px] font-mono text-blue-500 truncate text-right">
+                      <div
+                        dir="ltr"
+                        className={`text-[11px] font-mono text-blue-500 truncate ${
+                          language === 'en' ? 'text-left' : 'text-right'
+                        }`}
+                      >
                         {trophy.titleEn}
                       </div>
                     </div>
@@ -2823,7 +3192,9 @@ export const AchievementsCertificationView: React.FC<{
                   </div>
 
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-6">
-                    {trophy.descriptionFa}
+                    {language === 'en'
+                      ? TROPHY_DESC_EN_MAP[trophy.trophyId] || trophy.descriptionFa
+                      : trophy.descriptionFa}
                   </p>
                 </div>
 
@@ -2849,7 +3220,13 @@ export const AchievementsCertificationView: React.FC<{
                           : 'bg-amber-500 hover:bg-amber-400 text-slate-950 cursor-pointer'
                       }`}
                     >
-                      {trophy.unlocked ? 'تسلط ۱۰۰٪ احراز شد' : 'تکمیل ۱۰۰٪ کل ماژول‌ها'}
+                      {trophy.unlocked
+                        ? language === 'en'
+                          ? '100% Mastery Verified'
+                          : 'تسلط ۱۰۰٪ احراز شد'
+                        : language === 'en'
+                        ? 'Complete 100% Modules'
+                        : 'تکمیل ۱۰۰٪ کل ماژول‌ها'}
                     </button>
                   ) : (
                     <button
@@ -2862,7 +3239,15 @@ export const AchievementsCertificationView: React.FC<{
                       }`}
                     >
                       <ShieldCheck className="w-3.5 h-3.5" />
-                      <span>{trophy.unlocked ? 'سناریو فتح شد' : 'ثبت تکمیل سناریو'}</span>
+                      <span>
+                        {trophy.unlocked
+                          ? language === 'en'
+                            ? 'Scenario Mastered'
+                            : 'سناریو فتح شد'
+                          : language === 'en'
+                          ? 'Log Scenario Mastery'
+                          : 'ثبت تکمیل سناریو'}
+                      </span>
                     </button>
                   )}
                 </div>
@@ -2877,10 +3262,14 @@ export const AchievementsCertificationView: React.FC<{
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
             <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
-              نشان‌های مهارت ماژول‌های ۸گانه (Module Competency Badges)
+              {language === 'en'
+                ? '8-Module Competency Badges'
+                : 'نشان‌های مهارت ماژول‌های ۸گانه (Module Competency Badges)'}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              تکمیل هر فصل، نشان تخصصی مربوط به آن معماری و امتیاز XP آن را در کارنامه شما فعال می‌کند
+              {language === 'en'
+                ? 'Completing each module unlocks its specialized architecture competency badge and XP in your report card'
+                : 'تکمیل هر فصل، نشان تخصصی مربوط به آن معماری و امتیاز XP آن را در کارنامه شما فعال می‌کند'}
             </p>
           </div>
           <div dir="ltr" className="ltr-inline text-xs font-mono text-blue-500 font-semibold">
@@ -2923,7 +3312,7 @@ export const AchievementsCertificationView: React.FC<{
                   )}
                   <div>
                     <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-5">
-                      {badge.badgeTitleFa}
+                      {language === 'en' ? badge.badgeTitleEn : badge.badgeTitleFa}
                     </h3>
                     <div dir="ltr" className="text-[11px] font-mono text-blue-600 dark:text-blue-400 mt-0.5">
                       {badge.badgeTitleEn}
@@ -2949,14 +3338,24 @@ export const AchievementsCertificationView: React.FC<{
                       : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-blue-600 hover:text-white'
                   }`}
                 >
-                  {badge.unlocked ? 'کسب‌شده (Unlocked)' : 'فعالسازی نشان'}
+                  {badge.unlocked
+                    ? language === 'en'
+                      ? 'Unlocked'
+                      : 'کسب‌شده (Unlocked)'
+                    : language === 'en'
+                    ? 'Unlock Badge'
+                    : 'فعالسازی نشان'}
                 </button>
                 <button
                   type="button"
                   onClick={() => onNavigateToModule(badge.moduleId)}
                   className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                 >
-                  <span>مشاهده فصل {badge.moduleNumber}</span>
+                  <span>
+                    {language === 'en'
+                      ? `View Module ${badge.moduleNumber}`
+                      : `مشاهده فصل ${badge.moduleNumber}`}
+                  </span>
                   <ArrowUpRight className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -2976,10 +3375,14 @@ export const AchievementsCertificationView: React.FC<{
               OFFICIAL ARCHITECT PROGRESS REPORT CARD · {metrics.certificateSerial}
             </div>
             <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-              کارنامه رسمی پیشرفت، لینک عمومی یکتا و اشتراک‌گذاری در شبکه‌های اجتماعی
+              {language === 'en'
+                ? 'Official Progress Report Card, Unique Public Link & Social Sharing'
+                : 'کارنامه رسمی پیشرفت، لینک عمومی یکتا و اشتراک‌گذاری در شبکه‌های اجتماعی'}
             </h2>
             <p className="text-xs text-slate-300">
-              لینک عمومی یکتای کارت مهارت خود را تولید کنید و مستقیماً از طریق APIهای اشتراک‌گذاری شبکه‌های اجتماعی منتشر نمایید
+              {language === 'en'
+                ? 'Generate your unique public mastery card URL and publish it directly via social sharing APIs'
+                : 'لینک عمومی یکتای کارت مهارت خود را تولید کنید و مستقیماً از طریق APIهای اشتراک‌گذاری شبکه‌های اجتماعی منتشر نمایید'}
             </p>
           </div>
 
@@ -2993,12 +3396,20 @@ export const AchievementsCertificationView: React.FC<{
               {copiedReportState === 'text' ? (
                 <>
                   <Check className="w-4 h-4 text-emerald-300" />
-                  <span>کارنامه در کلیپ‌بورد کپی شد!</span>
+                  <span>
+                    {language === 'en'
+                      ? 'Report Card Copied to Clipboard!'
+                      : 'کارنامه در کلیپ‌بورد کپی شد!'}
+                  </span>
                 </>
               ) : (
                 <>
                   <Copy className="w-4 h-4" />
-                  <span>کپی متن کارنامه (Copy Report Card)</span>
+                  <span>
+                    {language === 'en'
+                      ? 'Copy Report Card'
+                      : 'کپی متن کارنامه (Copy Report Card)'}
+                  </span>
                 </>
               )}
             </button>
@@ -3012,12 +3423,20 @@ export const AchievementsCertificationView: React.FC<{
               {publicLinkStatus === 'generated' ? (
                 <>
                   <Check className="w-4 h-4 text-white" />
-                  <span>لینک عمومی یکتا ساخته و کپی شد!</span>
+                  <span>
+                    {language === 'en'
+                      ? 'Unique Public Link Generated & Copied!'
+                      : 'لینک عمومی یکتا ساخته و کپی شد!'}
+                  </span>
                 </>
               ) : (
                 <>
                   <Link2 className="w-4 h-4" />
-                  <span>تولید لینک عمومی کارنامه (Share Progress Link)</span>
+                  <span>
+                    {language === 'en'
+                      ? 'Share Progress Link'
+                      : 'تولید لینک عمومی کارنامه (Share Progress Link)'}
+                  </span>
                 </>
               )}
             </button>
@@ -3028,9 +3447,13 @@ export const AchievementsCertificationView: React.FC<{
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
           <div className="lg:col-span-7 space-y-4">
             <div className="space-y-1">
-              <div className="text-xs text-slate-400">اعطاشده به معمار سیستم (Presented To):</div>
+              <div className="text-xs text-slate-400">
+                {language === 'en'
+                  ? 'Presented to Systems Architect:'
+                  : 'اعطاشده به معمار سیستم (Presented To):'}
+              </div>
               <div className="text-2xl sm:text-3xl font-black text-white">
-                {architectName || 'Principal Engineer'}
+                {displayArchitectName || 'Principal Engineer'}
               </div>
               <div dir="ltr" className="ltr-inline text-xs sm:text-sm font-mono text-blue-300">
                 {roleTitle} · {organization}
@@ -3038,8 +3461,14 @@ export const AchievementsCertificationView: React.FC<{
             </div>
 
             <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/70 space-y-2">
-              <div className="text-xs text-slate-400">درجه تخصصی کسب‌شده (Standing Rank):</div>
-              <div className="text-base font-bold text-emerald-400">{metrics.rankTitleFa}</div>
+              <div className="text-xs text-slate-400">
+                {language === 'en'
+                  ? 'Earned Standing Rank:'
+                  : 'درجه تخصصی کسب‌شده (Standing Rank):'}
+              </div>
+              <div className="text-base font-bold text-emerald-400">
+                {language === 'en' ? metrics.rankTitleEn : metrics.rankTitleFa}
+              </div>
               <div dir="ltr" className="ltr-inline text-xs font-mono text-slate-300">
                 {metrics.rankTitleEn}
               </div>
@@ -3048,7 +3477,11 @@ export const AchievementsCertificationView: React.FC<{
             {/* Progress Bar */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-300">درصد تکمیل سرفصل‌های مهندسی Antigravity:</span>
+                <span className="text-slate-300">
+                  {language === 'en'
+                    ? 'Antigravity Engineering Curriculum Mastery:'
+                    : 'درصد تکمیل سرفصل‌های مهندسی Antigravity:'}
+                </span>
                 <span dir="ltr" className="ltr-inline font-mono font-bold text-blue-400 tabular-nums">
                   {metrics.completedCount} / {metrics.totalModules} Modules ({metrics.completionPercentage}%)
                 </span>
@@ -3080,7 +3513,9 @@ export const AchievementsCertificationView: React.FC<{
               <div className="flex flex-wrap items-center gap-2">
                 <Share2 className="w-4 h-4 text-emerald-400" />
                 <h3 className="text-sm sm:text-base font-extrabold text-white">
-                  اشتراک‌گذاری کارت پیشرفت و لینک عمومی یکتا (Share Mastery Progress Card)
+                  {language === 'en'
+                    ? 'Share Mastery Progress Card & Unique Public Link'
+                    : 'اشتراک‌گذاری کارت پیشرفت و لینک عمومی یکتا (Share Mastery Progress Card)'}
                 </h3>
                 <span
                   dir="ltr"
@@ -3091,7 +3526,9 @@ export const AchievementsCertificationView: React.FC<{
                 </span>
               </div>
               <p className="text-xs text-slate-400">
-                لینک زیر شامل پارامترهای رمزنگاری‌شده سطح، امتیاز XP، تعداد فصول تکمیل‌شده و کد گواهینامه شماست و برای هر بازدیدکننده کارت مهارت شما را بازسازی می‌کند.
+                {language === 'en'
+                  ? 'The URL below encodes your verified level, XP, mastered modules, and certificate serial to reconstruct your mastery card for any visitor.'
+                  : 'لینک زیر شامل پارامترهای رمزنگاری‌شده سطح، امتیاز XP، تعداد فصول تکمیل‌شده و کد گواهینامه شماست و برای هر بازدیدکننده کارت مهارت شما را بازسازی می‌کند.'}
               </p>
             </div>
 
@@ -3107,7 +3544,11 @@ export const AchievementsCertificationView: React.FC<{
                 <Eye className="w-3.5 h-3.5 text-blue-400" />
                 <span>
                   {sharedCardPreview
-                    ? 'بستن پیش‌نمایش کارت عمومی'
+                    ? language === 'en'
+                      ? 'Close Public Card Preview'
+                      : 'بستن پیش‌نمایش کارت عمومی'
+                    : language === 'en'
+                    ? 'Preview Public Card'
                     : 'پیش‌نمایش کارت عمومی (Preview Public Card)'}
                 </span>
               </button>
@@ -3121,7 +3562,11 @@ export const AchievementsCertificationView: React.FC<{
                 <Share2 className="w-3.5 h-3.5" />
                 <span>
                   {publicLinkStatus === 'shared'
-                    ? 'منتشر شد (Shared via Web API)!'
+                    ? language === 'en'
+                      ? 'Shared via Web API!'
+                      : 'منتشر شد (Shared via Web API)!'
+                    : language === 'en'
+                    ? 'Quick Share (Web Share API)'
                     : 'اشتراک‌گذاری سریع (Web Share API)'}
                 </span>
               </button>
@@ -3134,7 +3579,11 @@ export const AchievementsCertificationView: React.FC<{
               htmlFor="public-progress-card-url-input"
               className="flex items-center justify-between text-xs text-slate-300 font-semibold"
             >
-              <span>آدرس عمومی یکتای کارنامه مهارت (Unique Public Mastery Progress Link):</span>
+              <span>
+                {language === 'en'
+                  ? 'Unique Public Mastery Progress Link:'
+                  : 'آدرس عمومی یکتای کارنامه مهارت (Unique Public Mastery Progress Link):'}
+              </span>
               <span dir="ltr" className="ltr-inline font-mono text-[11px] text-emerald-400">
                 Direct Verification URL
               </span>
@@ -3159,12 +3608,18 @@ export const AchievementsCertificationView: React.FC<{
                 {publicLinkStatus === 'copied' ? (
                   <>
                     <Check className="w-4 h-4 text-emerald-300" />
-                    <span>لینک عمومی کپی شد!</span>
+                    <span>
+                      {language === 'en' ? 'Public Link Copied!' : 'لینک عمومی کپی شد!'}
+                    </span>
                   </>
                 ) : (
                   <>
                     <Copy className="w-4 h-4" />
-                    <span>کپی لینک عمومی (Copy Unique Link)</span>
+                    <span>
+                      {language === 'en'
+                        ? 'Copy Unique Link'
+                        : 'کپی لینک عمومی (Copy Unique Link)'}
+                    </span>
                   </>
                 )}
               </button>
@@ -3175,7 +3630,9 @@ export const AchievementsCertificationView: React.FC<{
           <div className="space-y-2.5 pt-2">
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
               <span className="font-semibold text-slate-200">
-                انتشار مستقیم با API شبکه‌های اجتماعی (Social Media Sharing APIs):
+                {language === 'en'
+                  ? 'Direct Social Media Sharing APIs:'
+                  : 'انتشار مستقیم با API شبکه‌های اجتماعی (Social Media Sharing APIs):'}
               </span>
               <span dir="ltr" className="ltr-inline font-mono text-[11px] text-slate-400">
                 LinkedIn · X (Twitter) · Telegram · WhatsApp
@@ -3195,7 +3652,7 @@ export const AchievementsCertificationView: React.FC<{
               >
                 <div className="space-y-0.5">
                   <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <span>اشتراک در لینکدین</span>
+                    <span>{language === 'en' ? 'Share on LinkedIn' : 'اشتراک در لینکدین'}</span>
                   </div>
                   <div dir="ltr" className="ltr-inline text-[11px] font-mono text-blue-300">
                     LinkedIn Share Offsite API
@@ -3213,7 +3670,9 @@ export const AchievementsCertificationView: React.FC<{
               >
                 <div className="space-y-0.5">
                   <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <span>انتشار در شبکه X (توییتر)</span>
+                    <span>
+                      {language === 'en' ? 'Post on X (Twitter)' : 'انتشار در شبکه X (توییتر)'}
+                    </span>
                   </div>
                   <div dir="ltr" className="ltr-inline text-[11px] font-mono text-slate-300">
                     X / Twitter Intent Tweet API
@@ -3232,7 +3691,7 @@ export const AchievementsCertificationView: React.FC<{
                 <div className="space-y-0.5">
                   <div className="text-xs font-bold text-white flex items-center gap-1.5">
                     <Send className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>ارسال در تلگرام</span>
+                    <span>{language === 'en' ? 'Share on Telegram' : 'ارسال در تلگرام'}</span>
                   </div>
                   <div dir="ltr" className="ltr-inline text-[11px] font-mono text-cyan-300">
                     Telegram Share URL API
@@ -3251,7 +3710,7 @@ export const AchievementsCertificationView: React.FC<{
                 <div className="space-y-0.5">
                   <div className="text-xs font-bold text-white flex items-center gap-1.5">
                     <MessageCircle className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>ارسال در واتساپ</span>
+                    <span>{language === 'en' ? 'Share on WhatsApp' : 'ارسال در واتساپ'}</span>
                   </div>
                   <div dir="ltr" className="ltr-inline text-[11px] font-mono text-emerald-300">
                     WhatsApp Send API

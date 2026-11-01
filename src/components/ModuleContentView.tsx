@@ -21,10 +21,22 @@ import {
 } from './CodeAndPdfTools';
 import { useLanguage } from '../context/LanguageContext';
 import { getEnglishModuleContent } from '../utils/curriculumEnglishContent';
+import {
+  getEditorVsManagerContent,
+  getArtifactAuditorContent,
+  getAutonomyMatrixContent,
+  getRuleActivationContent,
+  getWorkflowPipelineContent,
+  getBrowserTelemetryContent,
+  getMcpTopologyContent,
+  getWorktreeIsolationContent,
+} from '../utils/interactiveDiagramContent';
 
 const InteractiveModuleDiagram: React.FC<{
   widgetType: CurriculumModule['interactiveWidgetType'];
 }> = ({ widgetType }) => {
+  const { language, isRTL } = useLanguage();
+
   // Module 1 State: Editor View vs Agent Manager + Engine Step-through
   const [m1ViewMode, setM1ViewMode] = useState<'editor' | 'manager'>('editor');
   const [m1JumpStep, setM1JumpStep] = useState<number>(0);
@@ -55,36 +67,17 @@ const InteractiveModuleDiagram: React.FC<{
   const [m8Isolated, setM8Isolated] = useState<boolean>(true);
 
   if (widgetType === 'editor-vs-manager') {
-    const jumpStages = [
-      {
-        layer: '1. SQLAlchemy 2.0 Model',
-        file: 'src/models/settlement.py:21',
-        diff: '+ risk_score_bps: Mapped[int] = mapped_column(Integer, default=0)',
-        descFa: 'گام اول: شما ستون جدید را در مدل ORM تعریف می‌کنید. موتور LSP تغییر اسکیما را تشخیص می‌دهد.',
-      },
-      {
-        layer: '2. Pydantic v2 Request/Response Schema',
-        file: 'src/schemas/settlement.py:16',
-        diff: '+ risk_score_bps: Annotated[int, Field(ge=0, le=10000)] = 0',
-        descFa: 'گام دوم (با فشردن Tab): کرسر به فایل اسکیما پریده و Supercomplete فیلد متناظر با اعتبارسنجی Annotated را پیشنهاد می‌دهد.',
-      },
-      {
-        layer: '3. FastAPI Async Router Guard',
-        file: 'src/api/routers/settlements.py:39',
-        diff: '+ if payload.risk_score_bps >= 8500:\n+     raise HTTPException(status_code=422, detail="High risk")',
-        descFa: 'گام سوم (با فشردن مجدد Tab): کرسر به روتر FastAPI پریده و شرط گاردریل دامنه را تکمیل می‌کند.',
-      },
-    ];
+    const c1 = getEditorVsManagerContent(language);
 
     return (
       <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 p-5 space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
             <h3 className="text-base font-bold text-slate-900 dark:text-white">
-              شبیه‌ساز تعاملی معماری دوگانه و زنجیره Tab-to-Jump
+              {c1.title}
             </h3>
             <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
-              مقایسه زنده محیط سنکرون Editor View و محیط ناهمگام Agent Manager / Mission Control
+              {c1.subtitle}
             </p>
           </div>
           <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-200/80 dark:bg-slate-800">
@@ -97,7 +90,7 @@ const InteractiveModuleDiagram: React.FC<{
                   : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              Editor View (Synchronous)
+              {c1.editorTab}
             </button>
             <button
               type="button"
@@ -108,7 +101,7 @@ const InteractiveModuleDiagram: React.FC<{
                   : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              Agent Manager (Mission Control)
+              {c1.managerTab}
             </button>
           </div>
         </div>
@@ -117,20 +110,21 @@ const InteractiveModuleDiagram: React.FC<{
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                شبیه‌ساز گام‌به‌گام پرش کرسر با <code dir="ltr" className="ltr-inline px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800">Tab-to-Jump</code> و <code dir="ltr" className="ltr-inline px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800">Supercomplete</code>:
+                {c1.subHeader}
               </span>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setM1JumpStep((prev) => (prev + 1) % jumpStages.length)}
+                  onClick={() => setM1JumpStep((prev) => (prev + 1) % c1.jumpStages.length)}
                   className="px-3 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg flex items-center gap-1.5 cursor-pointer"
                 >
                   <Play className="w-3.5 h-3.5" />
-                  <span>فشردن کلید Tab (گام بعدی)</span>
+                  <span>{c1.tabBtn}</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setM1JumpStep(0)}
+                  aria-label="Reset Jump Step"
                   className="px-2.5 py-1.5 text-xs font-medium border border-slate-300 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
@@ -139,12 +133,12 @@ const InteractiveModuleDiagram: React.FC<{
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {jumpStages.map((st, idx) => (
+              {c1.jumpStages.map((st, idx) => (
                 <button
                   key={st.layer}
                   type="button"
                   onClick={() => setM1JumpStep(idx)}
-                  className={`text-right p-3.5 rounded-lg border transition-all cursor-pointer ${
+                  className={`${isRTL ? 'text-right' : 'text-left'} p-3.5 rounded-lg border transition-all cursor-pointer ${
                     m1JumpStep === idx
                       ? 'border-blue-500 bg-blue-500/10 dark:bg-blue-500/15'
                       : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/60 opacity-75 hover:opacity-100'
@@ -157,7 +151,7 @@ const InteractiveModuleDiagram: React.FC<{
                     {st.file}
                   </div>
                   <p className="text-xs text-slate-700 dark:text-slate-300 mt-2 leading-5">
-                    {st.descFa}
+                    {st.desc}
                   </p>
                 </button>
               ))}
@@ -165,46 +159,44 @@ const InteractiveModuleDiagram: React.FC<{
 
             <div dir="ltr" className="ltr-code p-3.5 rounded-lg bg-slate-950 border border-slate-800 text-xs font-mono text-emerald-400">
               <div className="text-slate-400 mb-1">
-                Active Cursor Target: {jumpStages[m1JumpStep].file}
+                {c1.activeTargetLabel} {c1.jumpStages[m1JumpStep].file}
               </div>
-              <pre className="overflow-x-auto"><code>{jumpStages[m1JumpStep].diff}</code></pre>
+              <pre className="overflow-x-auto"><code>{c1.jumpStages[m1JumpStep].diff}</code></pre>
             </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/80 space-y-2">
-              <div dir="ltr" className="ltr-inline text-xs font-mono text-emerald-500 font-semibold">
-                Agent #1 · wt-settlement · RUNNING
+            {c1.agentCards.map((ag) => (
+              <div
+                key={ag.id}
+                className={`p-4 rounded-lg border space-y-2 ${
+                  ag.variant === 'emerald'
+                    ? 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/80'
+                    : ag.variant === 'amber'
+                    ? 'border-amber-500/40 bg-amber-500/5'
+                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/80'
+                }`}
+              >
+                <div
+                  dir="ltr"
+                  className={`ltr-inline text-xs font-mono font-semibold ${
+                    ag.variant === 'emerald'
+                      ? 'text-emerald-500'
+                      : ag.variant === 'amber'
+                      ? 'text-amber-500'
+                      : 'text-blue-400'
+                  }`}
+                >
+                  {ag.badge}
+                </div>
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                  {ag.title}
+                </h4>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-5">
+                  {ag.desc}
+                </p>
               </div>
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                پیاده‌سازی موتور تسویه Idempotent
-              </h4>
-              <p className="text-xs text-slate-600 dark:text-slate-400">
-                در حال اجرای خودکار تست‌های <code dir="ltr" className="ltr-inline">pytest-asyncio</code> در پس‌زمینه.
-              </p>
-            </div>
-            <div className="p-4 rounded-lg border border-amber-500/40 bg-amber-500/5 space-y-2">
-              <div dir="ltr" className="ltr-inline text-xs font-mono text-amber-500 font-semibold">
-                Agent #2 · wt-audit · AWAITING REVIEW
-              </div>
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                مایگریشن جدول لاگ‌های ممیزی
-              </h4>
-              <p className="text-xs text-slate-600 dark:text-slate-400">
-                منتظر تایید شما روی آرتیفکت <code dir="ltr" className="ltr-inline">implementation_plan.md</code> در صندوق ورودی (Inbox).
-              </p>
-            </div>
-            <div className="p-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/80 space-y-2">
-              <div dir="ltr" className="ltr-inline text-xs font-mono text-blue-400 font-semibold">
-                Agent #3 · wt-reporting · COMPLETED
-              </div>
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                رفع مشکل N+1 کوئری گزارش‌ها
-              </h4>
-              <p className="text-xs text-slate-600 dark:text-slate-400">
-                فایل <code dir="ltr" className="ltr-inline">walkthrough.md</code> به همراه ویدیوی WebP آماده تحویل است.
-              </p>
-            </div>
+            ))}
           </div>
         )}
       </div>
@@ -212,6 +204,7 @@ const InteractiveModuleDiagram: React.FC<{
   }
 
   if (widgetType === 'artifact-auditor') {
+    const c2 = getArtifactAuditorContent(language);
     const cycleStatus = (id: string) => {
       setM2Tasks((prev) =>
         prev.map((t) => {
@@ -227,16 +220,17 @@ const InteractiveModuleDiagram: React.FC<{
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h3 className="text-base font-bold text-slate-900 dark:text-white">
-              ماشین وضعیت زنده آرتیفکت <code dir="ltr" className="ltr-inline text-blue-500">task.md</code>
+              {c2.title}
             </h3>
             <p className="text-xs text-slate-600 dark:text-slate-400">
-              روی هر آیتم کلیک کنید تا چرخه انتقال وضعیت <code dir="ltr" className="ltr-inline">[ ] -&gt; [/] -&gt; [x]</code> را مشاهده نمایید.
+              {c2.subtitle}
             </p>
           </div>
         </div>
         <div className="space-y-2">
           {m2Tasks.map((t) => {
             const badge = t.status === 'done' ? '[x]' : t.status === 'progress' ? '[/]' : '[ ]';
+            const matchedLabel = c2.tasks.find((x) => x.id === t.id)?.label || t.label;
             return (
               <button
                 key={t.id}
@@ -257,10 +251,10 @@ const InteractiveModuleDiagram: React.FC<{
                   >
                     - {badge}
                   </span>
-                  <span className="text-slate-800 dark:text-slate-200">{t.label}</span>
+                  <span className="text-slate-800 dark:text-slate-200">{matchedLabel}</span>
                 </div>
                 <span className="text-[11px] font-mono text-slate-500">
-                  {t.status === 'done' ? 'Completed' : t.status === 'progress' ? 'In-Progress' : 'Pending'}
+                  {c2.statusLabels[t.status]}
                 </span>
               </button>
             );
@@ -271,31 +265,15 @@ const InteractiveModuleDiagram: React.FC<{
   }
 
   if (widgetType === 'autonomy-matrix') {
-    const sampleCommands = [
-      {
-        cmd: 'poetry run pytest tests/ -v',
-        verdict: 'ALLOW LIST MATCH -> Auto-Executed in Auto & Turbo Modes',
-        risk: 'Safe (Read/Test Only)',
-      },
-      {
-        cmd: 'poetry run alembic upgrade head',
-        verdict: 'STATE MUTATION -> Prompts User in Auto Mode, Runs in Turbo Mode',
-        risk: 'Medium (Schema Modification)',
-      },
-      {
-        cmd: 'git push --force origin main',
-        verdict: 'HARD DENY LIST MATCH -> Blocked in ALL Modes (Even Turbo)',
-        risk: 'Critical (Destructive History Rewrite)',
-      },
-    ];
+    const c3 = getAutonomyMatrixContent(language);
 
     return (
       <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 p-5 space-y-4">
         <h3 className="text-base font-bold text-slate-900 dark:text-white">
-          آزمایشگاه طبقه‌بندی‌کننده ایمنی دستورات (Command Safety Classifier)
+          {c3.title}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
-          {sampleCommands.map((item, idx) => (
+          {c3.commands.map((item, idx) => (
             <button
               key={item.cmd}
               type="button"
@@ -312,41 +290,25 @@ const InteractiveModuleDiagram: React.FC<{
           ))}
         </div>
         <div dir="ltr" className="ltr-code p-4 rounded-lg bg-slate-950 border border-slate-800 text-xs font-mono space-y-1.5">
-          <div className="text-slate-400">Classifier Evaluation Result:</div>
-          <div className="text-emerald-400 font-bold">{sampleCommands[m3SelectedCmd].verdict}</div>
-          <div className="text-slate-300">Risk Classification: {sampleCommands[m3SelectedCmd].risk}</div>
+          <div className="text-slate-400">{c3.evalHeader}</div>
+          <div className="text-emerald-400 font-bold">{c3.commands[m3SelectedCmd]?.verdict}</div>
+          <div className="text-slate-300">{c3.riskHeader} {c3.commands[m3SelectedCmd]?.risk}</div>
         </div>
       </div>
     );
   }
 
   if (widgetType === 'rule-activation') {
-    const files = [
-      {
-        path: 'tests/test_settlement.py',
-        activeRules: ['01-fastapi-sqlalchemy-async.md (Always On)', '02-pytest-qa-standards.md (Glob Match: tests/**/*.py)'],
-        savedTokens: '650 tokens saved (Security rule stays dormant)',
-      },
-      {
-        path: 'src/middleware/auth_jwt.py',
-        activeRules: ['01-fastapi-sqlalchemy-async.md (Always On)', '03-security-and-telemetry.md (Model Decision Match)'],
-        savedTokens: '820 tokens saved (Pytest rule stays dormant)',
-      },
-      {
-        path: 'README.md',
-        activeRules: ['01-fastapi-sqlalchemy-async.md (Always On)'],
-        savedTokens: '1,470 tokens saved (Both Glob & Model Decision rules stay dormant)',
-      },
-    ];
-    const current = files.find((f) => f.path === m4SelectedFile) || files[0];
+    const c4 = getRuleActivationContent(language);
+    const current = c4.files.find((f) => f.path === m4SelectedFile) || c4.files[0];
 
     return (
       <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 p-5 space-y-4">
         <h3 className="text-base font-bold text-slate-900 dark:text-white">
-          شبیه‌ساز بارگذاری شرطی قوانین (<code dir="ltr" className="ltr-inline">.agent/rules/</code> Context Router)
+          {c4.title}
         </h3>
         <div className="flex flex-wrap gap-2">
-          {files.map((f) => (
+          {c4.files.map((f) => (
             <button
               key={f.path}
               type="button"
@@ -363,14 +325,14 @@ const InteractiveModuleDiagram: React.FC<{
           ))}
         </div>
         <div dir="ltr" className="ltr-code p-4 rounded-lg bg-slate-950 border border-slate-800 text-xs font-mono space-y-2">
-          <div className="text-slate-400">Active Rules Loaded into Context Window for {current.path}:</div>
+          <div className="text-slate-400">{c4.activeRulesLabel} {current.path}:</div>
           {current.activeRules.map((r) => (
             <div key={r} className="text-emerald-400">
               ✓ {r}
             </div>
           ))}
           <div className="text-blue-400 pt-1 border-t border-slate-800">
-            Token Efficiency: {current.savedTokens}
+            {c4.tokenEfficiencyLabel} {current.savedTokens}
           </div>
         </div>
       </div>
@@ -378,29 +340,24 @@ const InteractiveModuleDiagram: React.FC<{
   }
 
   if (widgetType === 'workflow-pipeline') {
-    const wfSteps = [
-      { step: 'Step 1: alembic heads', mode: '// turbo (Auto)', detail: 'بررسی تک‌هد بودن گراف مایگریشن بدون توقف' },
-      { step: 'Step 2: alembic revision --autogenerate', mode: 'Supervised Gate', detail: 'تولید فایل مایگریشن و بررسی عدم وجود drop_column ناخواسته' },
-      { step: 'Step 3: upgrade head -> downgrade -1 -> upgrade head', mode: '// turbo (Auto)', detail: 'اثبات خودکار برگشت‌پذیری کامل مایگریشن روی دیتابیس تست' },
-      { step: 'Step 4: pytest tests/integration/', mode: '// turbo (Auto)', detail: 'اجرای تست‌های یکپارچگی ناهمگام و تایید سلامت ORM' },
-    ];
+    const c5 = getWorkflowPipelineContent(language);
 
     return (
       <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 p-5 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-base font-bold text-slate-900 dark:text-white">
-            پایپ‌لاین تعاملی ورک‌فلو <code dir="ltr" className="ltr-inline text-blue-500">/safe-migration</code>
+            {c5.title}
           </h3>
           <button
             type="button"
-            onClick={() => setM5ActiveStep((prev) => (prev + 1) % wfSteps.length)}
+            onClick={() => setM5ActiveStep((prev) => (prev + 1) % c5.steps.length)}
             className="px-3 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-lg cursor-pointer"
           >
-            اجرای گام بعدی پایپ‌لاین
+            {c5.nextBtn}
           </button>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {wfSteps.map((s, idx) => (
+          {c5.steps.map((s, idx) => (
             <div
               key={s.step}
               onClick={() => setM5ActiveStep(idx)}
@@ -425,15 +382,16 @@ const InteractiveModuleDiagram: React.FC<{
   }
 
   if (widgetType === 'browser-telemetry') {
+    const c6 = getBrowserTelemetryContent(language);
     return (
       <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 p-5 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h3 className="text-base font-bold text-slate-900 dark:text-white">
-              رهگیر زنده تله‌متری Browser Subagent (شکار و ترمیم خطای 422)
+              {c6.title}
             </h3>
             <p className="text-xs text-slate-600 dark:text-slate-400">
-              مشاهده نحوه شکار خطای عدم تطابق پارامتر Query در شبکه و اصلاح خودکار روتر FastAPI
+              {c6.subtitle}
             </p>
           </div>
           <button
@@ -443,7 +401,7 @@ const InteractiveModuleDiagram: React.FC<{
               m6Fixed422 ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-amber-600 hover:bg-amber-500'
             }`}
           >
-            {m6Fixed422 ? 'وضعیت: پچ خودکار اعمال شد (HTTP 200 OK)' : 'اجرای Auto-Patch توسط ایجنت روی روتر FastAPI'}
+            {m6Fixed422 ? c6.patchBtnActive : c6.patchBtnInactive}
           </button>
         </div>
         <div dir="ltr" className="ltr-code p-4 rounded-lg bg-slate-950 border border-slate-800 text-xs font-mono space-y-1.5">
@@ -467,11 +425,12 @@ const InteractiveModuleDiagram: React.FC<{
   }
 
   if (widgetType === 'mcp-topology') {
+    const c7 = getMcpTopologyContent(language);
     return (
       <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 p-5 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-base font-bold text-slate-900 dark:text-white">
-            توپولوژی ارتباطی کلاینت MCP: مقایسه <code dir="ltr" className="ltr-inline">stdio</code> و <code dir="ltr" className="ltr-inline">sse</code>
+            {c7.title}
           </h3>
           <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-200 dark:bg-slate-800">
             <button
@@ -482,7 +441,7 @@ const InteractiveModuleDiagram: React.FC<{
                 m7Transport === 'stdio' ? 'bg-blue-600 text-white' : 'text-slate-600 dark:text-slate-300'
               }`}
             >
-              stdio Transport (Local Process)
+              {c7.stdioBtn}
             </button>
             <button
               type="button"
@@ -492,20 +451,20 @@ const InteractiveModuleDiagram: React.FC<{
                 m7Transport === 'sse' ? 'bg-blue-600 text-white' : 'text-slate-600 dark:text-slate-300'
               }`}
             >
-              sse Transport (Remote HTTP Stream)
+              {c7.sseBtn}
             </button>
           </div>
         </div>
         <div dir="ltr" className="ltr-code p-4 rounded-lg bg-slate-950 border border-slate-800 text-xs font-mono">
           {m7Transport === 'stdio' ? (
             <div className="space-y-1 text-slate-200">
-              <div className="text-blue-400">Antigravity IDE Host &lt;==[stdin/stdout JSON-RPC 2.0]==&gt; Local Subprocess (poetry run python telemetry_mcp.py)</div>
-              <div className="text-slate-400">• Zero network port exposure on workstation · Lifecycle managed directly by Antigravity</div>
+              <div className="text-blue-400">{c7.stdioSubtitle}</div>
+              <div className="text-slate-400">{c7.stdioDetail}</div>
             </div>
           ) : (
             <div className="space-y-1 text-slate-200">
-              <div className="text-emerald-400">Antigravity IDE Host &lt;==[HTTPS Server-Sent Events + POST]==&gt; Enterprise Internal MCP Gateway</div>
-              <div className="text-slate-400">• Centralized VPC deployment · Shared across engineering teams with mTLS / Bearer Auth</div>
+              <div className="text-emerald-400">{c7.sseSubtitle}</div>
+              <div className="text-slate-400">{c7.sseDetail}</div>
             </div>
           )}
         </div>
@@ -513,11 +472,12 @@ const InteractiveModuleDiagram: React.FC<{
     );
   }
 
+  const c8 = getWorktreeIsolationContent(language);
   return (
     <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 p-5 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-base font-bold text-slate-900 dark:text-white">
-          شبیه‌ساز هم‌زمانی ایجنت‌ها: پوشه واحد در برابر <code dir="ltr" className="ltr-inline">Git Worktrees</code>
+          {c8.title}
         </h3>
         <button
           type="button"
@@ -526,7 +486,7 @@ const InteractiveModuleDiagram: React.FC<{
             m8Isolated ? 'bg-emerald-600' : 'bg-rose-600'
           }`}
         >
-          {m8Isolated ? 'حالت فعلی: ایزوله با ۳ Git Worktree مجزا (ایمن)' : 'حالت فعلی: ۳ ایجنت روی یک پوشه واحد (Race Condition!)'}
+          {m8Isolated ? c8.isolatedBtn : c8.collidingBtn}
         </button>
       </div>
       <div dir="ltr" className="ltr-code p-4 rounded-lg bg-slate-950 border border-slate-800 text-xs font-mono space-y-1">
@@ -641,12 +601,14 @@ export const ModuleContentView: React.FC<{
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
             {displayTitle}
           </h1>
-          <div
-            dir={language === 'en' ? 'rtl' : 'ltr'}
-            className="text-sm sm:text-base font-mono text-blue-600 dark:text-blue-400"
-          >
-            {displaySubtitle}
-          </div>
+          {language !== 'en' && (
+            <div
+              dir="ltr"
+              className="text-sm sm:text-base font-mono text-blue-600 dark:text-blue-400"
+            >
+              {displaySubtitle}
+            </div>
+          )}
           <p className="text-sm sm:text-base leading-7 text-slate-600 dark:text-slate-300 max-w-4xl">
             {displaySummary}
           </p>
@@ -738,12 +700,14 @@ export const ModuleContentView: React.FC<{
                   <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
                     {subTitlePrimary}
                   </h2>
-                  <div
-                    dir={language === 'en' ? 'rtl' : 'ltr'}
-                    className="text-xs font-mono text-slate-500 dark:text-slate-400 mt-1 opacity-80"
-                  >
-                    {subTitleSecondary}
-                  </div>
+                  {language !== 'en' && (
+                    <div
+                      dir="ltr"
+                      className="text-xs font-mono text-slate-500 dark:text-slate-400 mt-1 opacity-80"
+                    >
+                      {subTitleSecondary}
+                    </div>
+                  )}
                 </div>
                 <ExportSectionPdfButton
                   label={language === 'en' ? 'Export Section PDF' : 'دریافت PDF این بخش'}
@@ -770,7 +734,7 @@ export const ModuleContentView: React.FC<{
               {/* Technical Bullet Points with Strict LTR Isolation */}
               {sub.bulletPoints && sub.bulletPoints.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
-                  {sub.bulletPoints.map((bp) => (
+                  {sub.bulletPoints.map((bp, bpIdx) => (
                     <div
                       key={bp.termEn}
                       className="p-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/50 space-y-1.5"
@@ -783,7 +747,9 @@ export const ModuleContentView: React.FC<{
                       </code>
                       <p className="text-xs sm:text-sm leading-6 text-slate-700 dark:text-slate-300">
                         {language === 'en'
-                          ? (enSub?.bulletPoints?.find((b) => b.termEn === bp.termEn)?.descEn || bp.descFa)
+                          ? (enSub?.bulletPoints?.[bpIdx]?.descEn ||
+                              enSub?.bulletPoints?.find((b) => b.termEn === bp.termEn)?.descEn ||
+                              bp.descFa)
                           : bp.descFa}
                       </p>
                     </div>
@@ -797,7 +763,12 @@ export const ModuleContentView: React.FC<{
                   <table className={`w-full ${isRTL ? 'text-right' : 'text-left'} border-collapse text-xs sm:text-sm`}>
                     <thead>
                       <tr className="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-200 border-b border-slate-200 dark:border-slate-800">
-                        {sub.comparisonTable.headers.map((h) => (
+                        {(language === 'en' && enSub?.comparisonTable?.headers
+                          ? enSub.comparisonTable.headers
+                          : language === 'en'
+                          ? [t('tableColCriterion'), t('tableColTraditional'), t('tableColAntigravity'), t('tableColVerdict')]
+                          : sub.comparisonTable.headers
+                        ).map((h) => (
                           <th key={h} className="py-3 px-4 font-bold">
                             {h}
                           </th>
@@ -805,7 +776,10 @@ export const ModuleContentView: React.FC<{
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-800/80">
-                      {sub.comparisonTable.rows.map((row) => (
+                      {(language === 'en' && enSub?.comparisonTable?.rows
+                        ? enSub.comparisonTable.rows
+                        : sub.comparisonTable.rows
+                      ).map((row) => (
                         <tr
                           key={row.criterion}
                           className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"

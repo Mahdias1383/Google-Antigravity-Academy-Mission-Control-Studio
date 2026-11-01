@@ -9,6 +9,7 @@ import {
   Trophy,
 } from 'lucide-react';
 import { MissionMilestonePayload } from '../utils/generators';
+import { useLanguage } from '../context/LanguageContext';
 
 const DELAY_CLASS_MAP: Record<number, string> = {
   0: '[animation-delay:0ms]',
@@ -33,6 +34,7 @@ export const MissionMilestoneOverlay: React.FC<{
   onAdvanceNextModule: (nextModuleNumber: number) => void;
   onOpenTrophyCase: () => void;
 }> = ({ milestone, onClose, onAdvanceNextModule, onOpenTrophyCase }) => {
+  const { language } = useLanguage();
   if (!milestone) return null;
 
   const nextModuleNum =
@@ -124,7 +126,11 @@ export const MissionMilestoneOverlay: React.FC<{
                 className="text-sm sm:text-base font-black text-slate-900 dark:text-white mt-1"
               >
                 {milestone.isFullAcademyMastery
-                  ? 'تبریک! تسلط کامل ۱۰۰٪ بر تمام ۸ فصل آکادمی Antigravity!'
+                  ? language === 'en'
+                    ? 'Congratulations! 100% Full Academy Mastery Achieved!'
+                    : 'تبریک! تسلط کامل ۱۰۰٪ بر تمام ۸ فصل آکادمی Antigravity!'
+                  : language === 'en'
+                  ? 'Engineering Mission Milestone Successfully Recorded!'
                   : 'نقطه عطف مأموریت مهندسی با موفقیت ثبت شد!'}
               </h2>
             </div>
@@ -133,7 +139,7 @@ export const MissionMilestoneOverlay: React.FC<{
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close Mission Milestone Overlay"
+            aria-label={language === 'en' ? 'Close Mission Milestone Overlay' : 'بستن پیام پیشرفت'}
             className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
@@ -215,7 +221,11 @@ export const MissionMilestoneOverlay: React.FC<{
             <div className="flex items-center justify-between text-xs">
               <span className="font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>پیشرفت کل در مسیر گواهینامه معمار ارشد:</span>
+                <span>
+                  {language === 'en'
+                    ? 'Total Architect Certification Track Progress:'
+                    : 'پیشرفت کل در مسیر گواهینامه معمار ارشد:'}
+                </span>
               </span>
               <span
                 dir="ltr"
@@ -247,7 +257,7 @@ export const MissionMilestoneOverlay: React.FC<{
               data-testid="dismiss-milestone-overlay-btn"
               className="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             >
-              بستن و ادامه مطالعه (Dismiss)
+              {language === 'en' ? 'Dismiss & Continue' : 'بستن و ادامه مطالعه (Dismiss)'}
             </button>
 
             <button
@@ -257,7 +267,7 @@ export const MissionMilestoneOverlay: React.FC<{
               className="px-4 py-2.5 rounded-xl border border-amber-500/40 bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
             >
               <Trophy className="w-3.5 h-3.5" />
-              <span>تالار افتخارات و XP</span>
+              <span>{language === 'en' ? 'Trophy Case & XP' : 'تالار افتخارات و XP'}</span>
             </button>
 
             {!milestone.isFullAcademyMastery && (
@@ -267,7 +277,7 @@ export const MissionMilestoneOverlay: React.FC<{
                 data-testid="milestone-next-module-btn"
                 className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >
-                <span>پرش به فصل {nextModuleNum}</span>
+                <span>{language === 'en' ? `Advance to Module 0${nextModuleNum}` : `پرش به فصل ${nextModuleNum}`}</span>
                 <ArrowUpLeft className="w-4 h-4" />
               </button>
             )}

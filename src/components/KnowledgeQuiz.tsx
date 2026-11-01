@@ -28,6 +28,7 @@ import {
   CURATED_KNOWLEDGE_QUIZ_BANK,
 } from '../utils/quizGenerators';
 import { ExportSectionPdfButton, PrintableDocumentPayload } from './CodeAndPdfTools';
+import { useLanguage } from '../context/LanguageContext';
 
 export interface KnowledgeQuizProps {
   entries: KnowledgeBaseEntryItem[];
@@ -50,6 +51,8 @@ export const KnowledgeQuiz: React.FC<KnowledgeQuizProps> = ({
   isModal = false,
   onClose,
 }) => {
+  const { language, isRTL } = useLanguage();
+
   // Current active doc for the quiz
   const [activeDocId, setActiveDocId] = useState<string>(() => {
     if (selectedDocId) return selectedDocId;
@@ -155,7 +158,11 @@ export const KnowledgeQuiz: React.FC<KnowledgeQuizProps> = ({
         onRewardXp(gained, activeDoc.id);
       }
 
-      setXpRewardToast(`+${gained} XP برای پاسخ صحیح به مأموریت «${currentQuestion.topicFa}»`);
+      setXpRewardToast(
+        language === 'en'
+          ? `+${gained} XP awarded for correct answer on "${currentQuestion.topicEn}"`
+          : `+${gained} XP برای پاسخ صحیح به مأموریت «${currentQuestion.topicFa}»`
+      );
       setTimeout(() => setXpRewardToast(null), 4000);
     }
   };
@@ -192,20 +199,35 @@ export const KnowledgeQuiz: React.FC<KnowledgeQuizProps> = ({
   // PDF Export Payload Generator
   const handleExportQuizPdf = () => {
     const payload: PrintableDocumentPayload = {
-      titleFa: `گزارش ارزشیابی و آزمون دانشی سند: ${activeDoc.titleFa}`,
+      titleFa:
+        language === 'en'
+          ? `Knowledge Quiz Report: ${activeDoc.titleEn}`
+          : `گزارش ارزشیابی و آزمون دانشی سند: ${activeDoc.titleFa}`,
       titleEn: `Knowledge Quiz Report — ${activeDoc.titleEn}`,
       subtitleOrCategory: `KNOWLEDGE BASE AUDIT QUIZ · ${scoreSummary.masteryTierEn} (+${scoreSummary.earnedXp} XP)`,
       sections: [
         {
-          headingFa: 'خلاصه عملکرد و امتیاز کسب‌شده در آزمون',
+          headingFa:
+            language === 'en'
+              ? 'Quiz Session Performance & XP Breakdown'
+              : 'خلاصه عملکرد و امتیاز کسب‌شده در آزمون',
           headingEn: 'Quiz Session Performance & XP Breakdown',
-          paragraphsFa: [
-            `سند آزمون: ${activeDoc.titleFa} (${activeDoc.keyPath})`,
-            `تعداد کل پرسش‌ها: ${scoreSummary.totalQuestions} پرسش`,
-            `پاسخ‌های صحیح: ${scoreSummary.correctCount} از ${scoreSummary.totalQuestions} (${scoreSummary.accuracyPercent}%)`,
-            `امتیاز XP دریافتی: ${scoreSummary.earnedXp} XP از مجموع ${scoreSummary.totalPossibleXp} XP ممکن`,
-            `سطح تسلط کسب‌شده: ${scoreSummary.masteryTierFa} (${scoreSummary.masteryTierEn})`,
-          ],
+          paragraphsFa:
+            language === 'en'
+              ? [
+                  `Audited Document: ${activeDoc.titleEn} (${activeDoc.keyPath})`,
+                  `Total Questions: ${scoreSummary.totalQuestions} Questions`,
+                  `Correct Answers: ${scoreSummary.correctCount} of ${scoreSummary.totalQuestions} (${scoreSummary.accuracyPercent}%)`,
+                  `Earned XP: ${scoreSummary.earnedXp} XP out of ${scoreSummary.totalPossibleXp} XP possible`,
+                  `Mastery Tier Achieved: ${scoreSummary.masteryTierEn}`,
+                ]
+              : [
+                  `سند آزمون: ${activeDoc.titleFa} (${activeDoc.keyPath})`,
+                  `تعداد کل پرسش‌ها: ${scoreSummary.totalQuestions} پرسش`,
+                  `پاسخ‌های صحیح: ${scoreSummary.correctCount} از ${scoreSummary.totalQuestions} (${scoreSummary.accuracyPercent}%)`,
+                  `امتیاز XP دریافتی: ${scoreSummary.earnedXp} XP از مجموع ${scoreSummary.totalPossibleXp} XP ممکن`,
+                  `سطح تسلط کسب‌شده: ${scoreSummary.masteryTierFa} (${scoreSummary.masteryTierEn})`,
+                ],
         },
         ...questions.map((q, idx) => {
           const userChoiceIdx = selectedOptionByQuestionId[q.id];
@@ -215,14 +237,25 @@ export const KnowledgeQuiz: React.FC<KnowledgeQuizProps> = ({
           const isUserCorrect = userChoiceIdx === q.correctOptionIndex;
 
           return {
-            headingFa: `پرسش ${idx + 1}: ${q.topicFa} [${isUserCorrect ? 'صحیح ✓' : 'نادرست ✗'}]`,
+            headingFa:
+              language === 'en'
+                ? `Question ${idx + 1}: ${q.topicEn} [${isUserCorrect ? 'Correct ✓' : 'Incorrect ✗'}]`
+                : `پرسش ${idx + 1}: ${q.topicFa} [${isUserCorrect ? 'صحیح ✓' : 'نادرست ✗'}]`,
             headingEn: `Question ${idx + 1}: ${q.topicEn} (${q.xpReward} XP)`,
-            paragraphsFa: [
-              `صورت پرسش: ${q.questionFa}`,
-              `گزینه انتخابی کاربر: [${userChoice?.id || '—'}] ${userChoice?.textFa || 'بدون پاسخ'}`,
-              `پاسخ معتبر معماری: [${correctChoice.id}] ${correctChoice.textFa}`,
-              `تحلیل مهندسی و دلیل پاسخ: ${q.explanationFa}`,
-            ],
+            paragraphsFa:
+              language === 'en'
+                ? [
+                    `Question: ${q.questionEn}`,
+                    `Selected Option: [${userChoice?.id || '—'}] ${userChoice?.textEn || 'Unanswered'}`,
+                    `Verified Architectural Answer: [${correctChoice.id}] ${correctChoice.textEn}`,
+                    `Engineering Analysis & Rationale: ${q.explanationEn}`,
+                  ]
+                : [
+                    `صورت پرسش: ${q.questionFa}`,
+                    `گزینه انتخابی کاربر: [${userChoice?.id || '—'}] ${userChoice?.textFa || 'بدون پاسخ'}`,
+                    `پاسخ معتبر معماری: [${correctChoice.id}] ${correctChoice.textFa}`,
+                    `تحلیل مهندسی و دلیل پاسخ: ${q.explanationFa}`,
+                  ],
           };
         }),
       ],
@@ -247,20 +280,28 @@ export const KnowledgeQuiz: React.FC<KnowledgeQuizProps> = ({
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">
-                آزمون تعاملی تسلط بر پایگاه دانش{' '}
-                <span
-                  dir="ltr"
-                  className="ltr-inline font-mono text-xs sm:text-sm text-blue-500"
-                >
-                  (Knowledge Base Challenge &amp; XP Rewards)
-                </span>
+                {language === 'en' ? (
+                  'Knowledge Base Interactive Challenge & XP Rewards'
+                ) : (
+                  <>
+                    آزمون تعاملی تسلط بر پایگاه دانش{' '}
+                    <span
+                      dir="ltr"
+                      className="ltr-inline font-mono text-xs sm:text-sm text-blue-500"
+                    >
+                      (Knowledge Base Challenge &amp; XP Rewards)
+                    </span>
+                  </>
+                )}
               </h2>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400">
                 +{currentQuestion?.xpReward || 40} XP Per Question
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              آزمون‌های چندگزینه‌ای مبتنی بر سند انتخابی، ممیزی معماری و دریافت امتیاز <span dir="ltr" className="ltr-inline font-mono">XP</span> برای ارتقای رتبه معمار
+              {language === 'en'
+                ? 'Multiple-choice challenges based on the selected document, architectural auditing, and XP points towards mastery rank.'
+                : 'آزمون‌های چندگزینه‌ای مبتنی بر سند انتخابی، ممیزی معماری و دریافت امتیاز XP برای ارتقای رتبه معمار'}
             </p>
           </div>
         </div>
@@ -287,7 +328,7 @@ export const KnowledgeQuiz: React.FC<KnowledgeQuizProps> = ({
               data-testid="kb-quiz-export-pdf-btn"
               className="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
             >
-              <span>📄 خروجی PDF آزمون</span>
+              <span>{language === 'en' ? '📄 Export Quiz PDF' : '📄 خروجی PDF آزمون'}</span>
             </button>
           )}
 
@@ -310,7 +351,7 @@ export const KnowledgeQuiz: React.FC<KnowledgeQuizProps> = ({
         <div className="flex items-center gap-2">
           <BookOpen className="w-4 h-4 text-indigo-500 shrink-0" />
           <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
-            انتخاب سند پایگاه دانش برای آزمون:
+            {language === 'en' ? 'Select Knowledge Base Document:' : 'انتخاب سند پایگاه دانش برای آزمون:'}
           </span>
         </div>
 
@@ -323,7 +364,7 @@ export const KnowledgeQuiz: React.FC<KnowledgeQuizProps> = ({
           >
             {entries.map((entry) => (
               <option key={entry.id} value={entry.id}>
-                {entry.titleFa} ({entry.keyPath.split('/').pop()})
+                {language === 'en' ? entry.titleEn : entry.titleFa} ({entry.keyPath.split('/').pop()})
               </option>
             ))}
           </select>
@@ -332,11 +373,11 @@ export const KnowledgeQuiz: React.FC<KnowledgeQuizProps> = ({
             type="button"
             onClick={handleResetQuiz}
             data-testid="kb-quiz-reset-btn"
-            title="آزمون مجدد این سند"
+            title={language === 'en' ? 'Restart quiz for this document' : 'آزمون مجدد این سند'}
             className="px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold flex items-center gap-1 cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>شروع مجدد</span>
+            <span>{language === 'en' ? 'Restart' : 'شروع مجدد'}</span>
           </button>
         </div>
       </div>
@@ -364,323 +405,342 @@ export const KnowledgeQuiz: React.FC<KnowledgeQuizProps> = ({
       {/* Main Quiz Body */}
       {!quizFinished && currentQuestion ? (
         <div className="space-y-5" data-testid="kb-quiz-active-question-card">
-          {/* Question Stepper & Progress Tracker */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-xs font-mono text-slate-500 dark:text-slate-400">
-              <span data-testid="kb-quiz-question-counter">
-                پرسش {currentQuestionIndex + 1} از {questions.length} · Question{' '}
-                {currentQuestionIndex + 1} of {questions.length}
-              </span>
-              <span className="font-bold text-blue-500">
-                {Math.round(((currentQuestionIndex + 1) / questions.length) * 100)}%
-              </span>
-            </div>
-
-            {/* Visual Progress Bar */}
-            <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-300 rounded-full"
-                style={{
-                  width: `${((currentQuestionIndex + 1) / questions.length) * 100}%`,
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Current Question Card */}
-          <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/70 space-y-4">
-            {/* Topic & Metadata Badges */}
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400">
-                  {currentQuestion.difficulty.toUpperCase()}
-                </span>
-                <span
-                  dir="ltr"
-                  className="ltr-inline text-xs font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1"
-                >
-                  <FileCode2 className="w-3.5 h-3.5 text-blue-500" />
-                  {currentQuestion.keyPath}
-                </span>
-              </div>
-
-              <div
-                dir="ltr"
-                className="ltr-inline text-xs font-mono font-bold text-amber-500"
-              >
-                Reward: +{currentQuestion.xpReward} XP
-              </div>
-            </div>
-
-            {/* Question Text */}
+            {/* Question Stepper & Progress Tracker */}
             <div className="space-y-1.5">
-              <h3
-                data-testid="kb-quiz-question-text-fa"
-                className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white leading-7"
-              >
-                {currentQuestion.questionFa}
-              </h3>
-              <div
-                dir="ltr"
-                data-testid="kb-quiz-question-text-en"
-                className="ltr-inline text-xs font-mono text-slate-500 dark:text-slate-400 block"
-              >
-                {currentQuestion.questionEn}
+              <div className="flex items-center justify-between text-xs font-mono text-slate-500 dark:text-slate-400">
+                <span data-testid="kb-quiz-question-counter">
+                  {language === 'en'
+                    ? `Question ${currentQuestionIndex + 1} of ${questions.length}`
+                    : `پرسش ${currentQuestionIndex + 1} از ${questions.length} · Question ${currentQuestionIndex + 1} of ${questions.length}`}
+                </span>
+                <span className="font-bold text-blue-500">
+                  {Math.round(((currentQuestionIndex + 1) / questions.length) * 100)}%
+                </span>
+              </div>
+
+              {/* Visual Progress Bar */}
+              <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-300 rounded-full"
+                  style={{
+                    width: `${((currentQuestionIndex + 1) / questions.length) * 100}%`,
+                  }}
+                />
               </div>
             </div>
 
-            {/* Multiple Choice Options List */}
-            <div className="grid grid-cols-1 gap-2.5 pt-2">
-              {currentQuestion.options.map((option, optIdx) => {
-                const isSelected = currentSelectedOption === optIdx;
-                const isCorrectOption = optIdx === currentQuestion.correctOptionIndex;
-
-                let optionClass =
-                  'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 text-slate-700 dark:text-slate-200 hover:border-blue-400 dark:hover:border-blue-600';
-
-                if (isCurrentSubmitted) {
-                  if (isCorrectOption) {
-                    optionClass =
-                      'border-emerald-500 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-bold';
-                  } else if (isSelected && !isCorrectOption) {
-                    optionClass =
-                      'border-rose-500 bg-rose-500/15 text-rose-700 dark:text-rose-300 font-bold';
-                  } else {
-                    optionClass =
-                      'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 opacity-60 text-slate-500';
-                  }
-                } else if (isSelected) {
-                  optionClass =
-                    'border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-300 font-bold shadow-sm';
-                }
-
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    onClick={() => handleSelectOption(optIdx)}
-                    disabled={isCurrentSubmitted}
-                    data-testid={`kb-quiz-option-${option.id}`}
-                    className={`w-full text-right p-3.5 rounded-xl border text-xs sm:text-sm transition-all flex items-start gap-3 cursor-pointer ${optionClass}`}
+            {/* Current Question Card */}
+            <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/70 space-y-4">
+              {/* Topic & Metadata Badges */}
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400">
+                    {currentQuestion.difficulty.toUpperCase()}
+                  </span>
+                  <span
+                    dir="ltr"
+                    className="ltr-inline text-xs font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1"
                   >
-                    <span
-                      dir="ltr"
-                      className={`ltr-inline w-6 h-6 rounded-lg font-mono text-xs font-extrabold flex items-center justify-center shrink-0 mt-0.5 ${
-                        isCurrentSubmitted
-                          ? isCorrectOption
-                            ? 'bg-emerald-600 text-white'
-                            : isSelected
-                            ? 'bg-rose-600 text-white'
-                            : 'bg-slate-200 dark:bg-slate-800 text-slate-600'
-                          : isSelected
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-                      }`}
-                    >
-                      {option.id}
-                    </span>
-
-                    <div className="flex-1 space-y-1">
-                      <div className="leading-5">{option.textFa}</div>
-                      <div
-                        dir="ltr"
-                        className="ltr-inline text-[11px] font-mono opacity-80 block text-left"
-                      >
-                        {option.textEn}
-                      </div>
-                    </div>
-
-                    {isCurrentSubmitted && isCorrectOption && (
-                      <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
-                    )}
-                    {isCurrentSubmitted && isSelected && !isCorrectOption && (
-                      <XCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Answer Explanation Banner (Revealed after submission) */}
-            {isCurrentSubmitted && (
-              <div
-                data-testid="kb-quiz-explanation-banner"
-                className={`p-4 rounded-xl border space-y-2 ${
-                  currentSelectedOption === currentQuestion.correctOptionIndex
-                    ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200'
-                    : 'border-rose-500/40 bg-rose-500/10 text-rose-800 dark:text-rose-200'
-                }`}
-              >
-                <div className="flex items-center gap-2 font-bold text-xs">
-                  {currentSelectedOption === currentQuestion.correctOptionIndex ? (
-                    <>
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                      <span>
-                        پاسخ شما کاملاً صحیح است! (+{currentQuestion.xpReward} XP)
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <XCircle className="w-4 h-4 text-rose-500" />
-                      <span>
-                        پاسخ نادرست. گزینه صحیح:{' '}
-                        {
-                          currentQuestion.options[currentQuestion.correctOptionIndex]
-                            ?.id
-                        }
-                      </span>
-                    </>
-                  )}
+                    <FileCode2 className="w-3.5 h-3.5 text-blue-500" />
+                    {currentQuestion.keyPath}
+                  </span>
                 </div>
 
-                <div className="text-xs leading-6">
-                  {currentQuestion.explanationFa}
+                <div
+                  dir="ltr"
+                  className="ltr-inline text-xs font-mono font-bold text-amber-500"
+                >
+                  Reward: +{currentQuestion.xpReward} XP
+                </div>
+              </div>
+
+              {/* Question Text */}
+              <div className="space-y-1.5">
+                <h3
+                  data-testid="kb-quiz-question-text-fa"
+                  className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white leading-7"
+                >
+                  {language === 'en' ? currentQuestion.questionEn : currentQuestion.questionFa}
+                </h3>
+                <div
+                  dir="ltr"
+                  data-testid="kb-quiz-question-text-en"
+                  className="ltr-inline text-xs font-mono text-slate-500 dark:text-slate-400 block"
+                >
+                  {language === 'en' ? `Topic: ${currentQuestion.topicEn}` : currentQuestion.questionEn}
+                </div>
+              </div>
+
+              {/* Multiple Choice Options List */}
+              <div className="grid grid-cols-1 gap-2.5 pt-2">
+                {currentQuestion.options.map((option, optIdx) => {
+                  const isSelected = currentSelectedOption === optIdx;
+                  const isCorrectOption = optIdx === currentQuestion.correctOptionIndex;
+
+                  let optionClass =
+                    'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 text-slate-700 dark:text-slate-200 hover:border-blue-400 dark:hover:border-blue-600';
+
+                  if (isCurrentSubmitted) {
+                    if (isCorrectOption) {
+                      optionClass =
+                        'border-emerald-500 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-bold';
+                    } else if (isSelected && !isCorrectOption) {
+                      optionClass =
+                        'border-rose-500 bg-rose-500/15 text-rose-700 dark:text-rose-300 font-bold';
+                    } else {
+                      optionClass =
+                        'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 opacity-60 text-slate-500';
+                    }
+                  } else if (isSelected) {
+                    optionClass =
+                      'border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-300 font-bold shadow-sm';
+                  }
+
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => handleSelectOption(optIdx)}
+                      disabled={isCurrentSubmitted}
+                      data-testid={`kb-quiz-option-${option.id}`}
+                      className={`w-full ${isRTL ? 'text-right' : 'text-left'} p-3.5 rounded-xl border text-xs sm:text-sm transition-all flex items-start gap-3 cursor-pointer ${optionClass}`}
+                    >
+                      <span
+                        dir="ltr"
+                        className={`ltr-inline w-6 h-6 rounded-lg font-mono text-xs font-extrabold flex items-center justify-center shrink-0 mt-0.5 ${
+                          isCurrentSubmitted
+                            ? isCorrectOption
+                              ? 'bg-emerald-600 text-white'
+                              : isSelected
+                              ? 'bg-rose-600 text-white'
+                              : 'bg-slate-200 dark:bg-slate-800 text-slate-600'
+                            : isSelected
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                        }`}
+                      >
+                        {option.id}
+                      </span>
+
+                      <div className="flex-1 space-y-1">
+                        <div className="leading-5">
+                          {language === 'en' ? option.textEn : option.textFa}
+                        </div>
+                        {language !== 'en' && (
+                          <div
+                            dir="ltr"
+                            className="text-[11px] font-mono opacity-80 block text-left"
+                          >
+                            {option.textEn}
+                          </div>
+                        )}
+                      </div>
+
+                      {isCurrentSubmitted && isCorrectOption && (
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                      )}
+                      {isCurrentSubmitted && isSelected && !isCorrectOption && (
+                        <XCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Answer Explanation Banner (Revealed after submission) */}
+              {isCurrentSubmitted && (
+                <div
+                  data-testid="kb-quiz-explanation-banner"
+                  className={`p-4 rounded-xl border space-y-2 ${
+                    currentSelectedOption === currentQuestion.correctOptionIndex
+                      ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200'
+                      : 'border-rose-500/40 bg-rose-500/10 text-rose-800 dark:text-rose-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 font-bold text-xs">
+                    {currentSelectedOption === currentQuestion.correctOptionIndex ? (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                        <span>
+                          {language === 'en'
+                            ? `Correct Answer! (+${currentQuestion.xpReward} XP)`
+                            : `پاسخ شما کاملاً صحیح است! (+${currentQuestion.xpReward} XP)`}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="w-4 h-4 text-rose-500" />
+                        <span>
+                          {language === 'en'
+                            ? `Incorrect. Correct option: ${
+                                currentQuestion.options[currentQuestion.correctOptionIndex]?.id
+                              }`
+                            : `پاسخ نادرست. گزینه صحیح: ${
+                                currentQuestion.options[currentQuestion.correctOptionIndex]?.id
+                              }`}
+                        </span>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="text-xs leading-6">
+                    {language === 'en' ? currentQuestion.explanationEn : currentQuestion.explanationFa}
+                  </div>
+                  {language !== 'en' && (
+                    <div
+                      dir="ltr"
+                      className="text-[11px] font-mono opacity-80 block pt-1 border-t border-slate-200/50 dark:border-slate-800/50 text-left"
+                    >
+                      {currentQuestion.explanationEn}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Bottom Actions Row */}
+              <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={handlePrevQuestion}
+                  disabled={currentQuestionIndex === 0}
+                  className="px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                  <span>{language === 'en' ? 'Previous Question' : 'پرسش قبلی'}</span>
+                </button>
+
+                <div className="flex items-center gap-2">
+                  {!isCurrentSubmitted ? (
+                    <button
+                      type="button"
+                      onClick={handleSubmitCurrentAnswer}
+                      disabled={currentSelectedOption === null}
+                      data-testid="kb-quiz-submit-btn"
+                      className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-extrabold flex items-center gap-1.5 cursor-pointer shadow-md"
+                    >
+                      <Check className="w-4 h-4" />
+                      <span>{language === 'en' ? 'Submit Answer' : 'تأیید و ثبت پاسخ (Submit)'}</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleNextOrFinish}
+                      data-testid="kb-quiz-next-btn"
+                      className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold flex items-center gap-1.5 cursor-pointer shadow-md"
+                    >
+                      <span>
+                        {currentQuestionIndex < questions.length - 1
+                          ? language === 'en' ? 'Next Question' : 'پرسش بعدی'
+                          : language === 'en' ? 'View Final Results' : 'مشاهده کارنامه پایانی'}
+                      </span>
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Quiz Finished Summary View */
+          <div
+            data-testid="kb-quiz-summary-card"
+            className="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-950/90 text-center space-y-6"
+          >
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-emerald-500/15 border border-emerald-500/35 flex items-center justify-center text-emerald-500">
+              <Award className="w-8 h-8" />
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
+                {language === 'en'
+                  ? 'Knowledge Base Quiz Performance Report'
+                  : 'کارنامه و ارزشیابی آزمون دانشی پایگاه دانش'}
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {language === 'en' ? 'Audited Document: ' : 'سند ارزیابی‌شده: '}
+                <strong className="text-slate-800 dark:text-slate-200">
+                  {language === 'en' ? activeDoc.titleEn : activeDoc.titleFa}
+                </strong>{' '}
+                (<code dir="ltr" className="ltr-inline">{activeDoc.keyPath}</code>)
+              </p>
+            </div>
+
+            {/* 3 Metric Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 max-w-xl mx-auto">
+              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-1">
+                <div className="text-[11px] font-bold text-slate-500">
+                  {language === 'en' ? 'Correct Answers' : 'پاسخ‌های صحیح'}
                 </div>
                 <div
                   dir="ltr"
-                  className="ltr-inline text-[11px] font-mono opacity-80 block text-left pt-1 border-t border-slate-200/50 dark:border-slate-800/50"
+                  data-testid="kb-quiz-correct-count"
+                  className="text-lg font-mono font-black text-emerald-500"
                 >
-                  {currentQuestion.explanationEn}
+                  {scoreSummary.correctCount} / {scoreSummary.totalQuestions}
+                </div>
+                <div className="text-[10px] text-slate-400">
+                  {language === 'en' ? `Accuracy: ${scoreSummary.accuracyPercent}%` : `دقت: ${scoreSummary.accuracyPercent}%`}
                 </div>
               </div>
-            )}
 
-            {/* Bottom Actions Row */}
-            <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 dark:border-slate-800">
+              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-1">
+                <div className="text-[11px] font-bold text-slate-500">
+                  {language === 'en' ? 'Earned XP' : 'امتیاز XP کسب‌شده'}
+                </div>
+                <div
+                  dir="ltr"
+                  data-testid="kb-quiz-session-earned-xp"
+                  className="text-lg font-mono font-black text-amber-500"
+                >
+                  +{scoreSummary.earnedXp} XP
+                </div>
+                <div className="text-[10px] text-slate-400">
+                  {language === 'en' ? `Out of ${scoreSummary.totalPossibleXp} XP` : `از مجموع ${scoreSummary.totalPossibleXp} XP`}
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-1">
+                <div className="text-[11px] font-bold text-slate-500">
+                  {language === 'en' ? 'Mastery Tier' : 'سطح شایستگی'}
+                </div>
+                <div
+                  dir="ltr"
+                  data-testid="kb-quiz-mastery-tier"
+                  className="text-xs font-mono font-bold text-indigo-400 truncate"
+                  title={scoreSummary.masteryTierEn}
+                >
+                  {scoreSummary.masteryTierEn}
+                </div>
+                <div className="text-[10px] text-slate-400 truncate">
+                  {language === 'en' ? scoreSummary.masteryTierEn : scoreSummary.masteryTierFa}
+                </div>
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
               <button
                 type="button"
-                onClick={handlePrevQuestion}
-                disabled={currentQuestionIndex === 0}
-                className="px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                onClick={handleResetQuiz}
+                data-testid="kb-quiz-retake-btn"
+                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-extrabold flex items-center gap-1.5 cursor-pointer"
               >
-                <ChevronRight className="w-4 h-4" />
-                <span>پرسش قبلی</span>
+                <RotateCcw className="w-4 h-4" />
+                <span>{language === 'en' ? 'Retake Quiz' : 'تکرار آزمون این سند (Retake)'}</span>
               </button>
 
-              <div className="flex items-center gap-2">
-                {!isCurrentSubmitted ? (
-                  <button
-                    type="button"
-                    onClick={handleSubmitCurrentAnswer}
-                    disabled={currentSelectedOption === null}
-                    data-testid="kb-quiz-submit-btn"
-                    className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-extrabold flex items-center gap-1.5 cursor-pointer shadow-md"
-                  >
-                    <Check className="w-4 h-4" />
-                    <span>تأیید و ثبت پاسخ (Submit)</span>
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleNextOrFinish}
-                    data-testid="kb-quiz-next-btn"
-                    className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold flex items-center gap-1.5 cursor-pointer shadow-md"
-                  >
-                    <span>
-                      {currentQuestionIndex < questions.length - 1
-                        ? 'پرسش بعدی'
-                        : 'مشاهده کارنامه پایانی'}
-                    </span>
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
+              {onExportPdf && (
+                <button
+                  type="button"
+                  onClick={handleExportQuizPdf}
+                  className="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>{language === 'en' ? '📄 Export Scorecard PDF' : '📄 دریافت کارنامه PDF'}</span>
+                </button>
+              )}
             </div>
           </div>
-        </div>
-      ) : (
-        /* Quiz Finished Summary View */
-        <div
-          data-testid="kb-quiz-summary-card"
-          className="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-950/90 text-center space-y-6"
-        >
-          <div className="w-16 h-16 mx-auto rounded-2xl bg-emerald-500/15 border border-emerald-500/35 flex items-center justify-center text-emerald-500">
-            <Award className="w-8 h-8" />
-          </div>
-
-          <div className="space-y-1.5">
-            <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
-              کارنامه و ارزشیابی آزمون دانشی پایگاه دانش
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              سند ارزیابی‌شده:{' '}
-              <strong className="text-slate-800 dark:text-slate-200">
-                {activeDoc.titleFa}
-              </strong>{' '}
-              (<code dir="ltr" className="ltr-inline">{activeDoc.keyPath}</code>)
-            </p>
-          </div>
-
-          {/* 3 Metric Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 max-w-xl mx-auto">
-            <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-1">
-              <div className="text-[11px] font-bold text-slate-500">پاسخ‌های صحیح</div>
-              <div
-                dir="ltr"
-                data-testid="kb-quiz-correct-count"
-                className="text-lg font-mono font-black text-emerald-500"
-              >
-                {scoreSummary.correctCount} / {scoreSummary.totalQuestions}
-              </div>
-              <div className="text-[10px] text-slate-400">
-                دقت: {scoreSummary.accuracyPercent}%
-              </div>
-            </div>
-
-            <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-1">
-              <div className="text-[11px] font-bold text-slate-500">امتیاز XP کسب‌شده</div>
-              <div
-                dir="ltr"
-                data-testid="kb-quiz-session-earned-xp"
-                className="text-lg font-mono font-black text-amber-500"
-              >
-                +{scoreSummary.earnedXp} XP
-              </div>
-              <div className="text-[10px] text-slate-400">
-                از مجموع {scoreSummary.totalPossibleXp} XP
-              </div>
-            </div>
-
-            <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-1">
-              <div className="text-[11px] font-bold text-slate-500">سطح شایستگی</div>
-              <div
-                dir="ltr"
-                data-testid="kb-quiz-mastery-tier"
-                className="text-xs font-mono font-bold text-indigo-400 truncate"
-                title={scoreSummary.masteryTierEn}
-              >
-                {scoreSummary.masteryTierEn}
-              </div>
-              <div className="text-[10px] text-slate-400 truncate">
-                {scoreSummary.masteryTierFa}
-              </div>
-            </div>
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-            <button
-              type="button"
-              onClick={handleResetQuiz}
-              data-testid="kb-quiz-retake-btn"
-              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-extrabold flex items-center gap-1.5 cursor-pointer"
-            >
-              <RotateCcw className="w-4 h-4" />
-              <span>تکرار آزمون این سند (Retake)</span>
-            </button>
-
-            {onExportPdf && (
-              <button
-                type="button"
-                onClick={handleExportQuizPdf}
-                className="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-              >
-                <span>📄 دریافت کارنامه PDF</span>
-              </button>
-            )}
-          </div>
-        </div>
-      )}
+        )}
     </div>
   );
 };

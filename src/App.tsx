@@ -553,7 +553,7 @@ function MainWorkspace() {
                     activeSection === 'curriculum' && activeModuleId === mod.id;
                   const isDone = completedModules.includes(mod.id);
                   const primaryTitle = language === 'en' ? `Module ${mod.number}: ${mod.titleEn}` : `فصل ${mod.number}: ${mod.titleFa}`;
-                  const secondaryTitle = language === 'en' ? mod.titleFa : mod.titleEn;
+                  const secondaryTitle = language === 'en' ? `${mod.readingTime} · ${mod.difficulty}` : mod.titleEn;
 
                   return (
                     <button
@@ -581,7 +581,7 @@ function MainWorkspace() {
                           {primaryTitle}
                         </div>
                         <div
-                          dir={language === 'en' ? 'rtl' : 'ltr'}
+                          dir="ltr"
                           className={`text-[10px] font-mono text-slate-500 dark:text-slate-400 ${
                             isRTL ? 'text-right' : 'text-left'
                           } leading-4 mt-0.5 break-words opacity-80`}
@@ -758,7 +758,6 @@ function MainWorkspace() {
             <div className="space-y-2">
               {currentModule.subSections.map((sub) => {
                 const subPrimary = language === 'en' ? sub.titleEn : sub.titleFa;
-                const subSecondary = language === 'en' ? sub.titleFa : sub.titleEn;
                 return (
                   <a
                     key={sub.id}
@@ -766,14 +765,16 @@ function MainWorkspace() {
                     className="block p-2.5 rounded-lg text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-blue-500 transition-colors"
                   >
                     <div className="font-semibold leading-5">{subPrimary}</div>
-                    <div
-                      dir={language === 'en' ? 'rtl' : 'ltr'}
-                      className={`text-[10px] font-mono opacity-75 ${
-                        isRTL ? 'text-right' : 'text-left'
-                      } leading-4 mt-1 break-words`}
-                    >
-                      {subSecondary}
-                    </div>
+                    {language !== 'en' && (
+                      <div
+                        dir="ltr"
+                        className={`text-[10px] font-mono opacity-75 ${
+                          isRTL ? 'text-right' : 'text-left'
+                        } leading-4 mt-1 break-words`}
+                      >
+                        {sub.titleEn}
+                      </div>
+                    )}
                   </a>
                 );
               })}
@@ -895,11 +896,11 @@ function MainWorkspace() {
                 </div>
 
                 <div
-                  dir={language === 'en' ? 'rtl' : 'ltr'}
+                  dir="ltr"
                   className="text-xs font-mono text-slate-500 dark:text-slate-400 block opacity-80"
                   data-testid="resume-session-title-en"
                 >
-                  {language === 'en' ? detectedSession.targetTitleFa : detectedSession.targetTitleEn}
+                  {language === 'en' ? detectedSession.badgeLabelEn : detectedSession.targetTitleEn}
                 </div>
               </div>
 

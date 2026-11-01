@@ -79,6 +79,23 @@ export interface TranslationDictionary {
   milestoneTitle: string;
   milestoneAdvance: string;
   milestoneTrophy: string;
+
+  // PWA & Offline
+  pwaInstallBtn: string;
+  pwaModalTitle: string;
+  pwaModalGotIt: string;
+  offlineBanner: string;
+
+  // Global Command Search
+  searchModalPlaceholder: string;
+  searchModulesHeader: string;
+  searchStudiosHeader: string;
+
+  // Comparison Matrix Headers
+  tableColCriterion: string;
+  tableColTraditional: string;
+  tableColAntigravity: string;
+  tableColVerdict: string;
 }
 
 export const APP_TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
@@ -155,6 +172,20 @@ export const APP_TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
     milestoneTitle: 'تبریک معمار! دستاورد فاز جدید ثبت شد',
     milestoneAdvance: 'پیشروی به فصل بعدی',
     milestoneTrophy: 'مشاهده تالار افتخارات و کاپ‌ها',
+
+    pwaInstallBtn: 'نصب اپلیکیشن (Install PWA)',
+    pwaModalTitle: 'نصب نسخه وب‌اپلیکیشن پیش‌رونده (PWA)',
+    pwaModalGotIt: 'متوجه شدم',
+    offlineBanner: 'حالت آفلاین فعال است — محتوای آکادمی از حافظه کش PWA بارگذاری می‌شود',
+
+    searchModalPlaceholder: 'جستجوی فصل، مفهوم (مثلاً Supercomplete، task.md، FastMCP، Worktree)...',
+    searchModulesHeader: 'فصل‌های آموزشی (۸ ماژول)',
+    searchStudiosHeader: 'استودیوهای مهندسی و ابزارهای تعاملی (Interactive Studios)',
+
+    tableColCriterion: 'معیار مقایسه',
+    tableColTraditional: 'رویکرد سنتی / دستیار سنکرون',
+    tableColAntigravity: 'محیط هوشمند Google Antigravity',
+    tableColVerdict: 'قضاوت معمار سیستم',
   },
 
   en: {
@@ -230,6 +261,20 @@ export const APP_TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
     milestoneTitle: 'Architect Milestone Achieved!',
     milestoneAdvance: 'Advance to Next Module',
     milestoneTrophy: 'View Trophy Case & Badges',
+
+    pwaInstallBtn: 'Install App (PWA)',
+    pwaModalTitle: 'Install Progressive Web App (PWA)',
+    pwaModalGotIt: 'Got it',
+    offlineBanner: 'Offline Mode Active — Content loaded from PWA offline cache',
+
+    searchModalPlaceholder: 'Search modules, concepts (e.g. Supercomplete, task.md, FastMCP, Worktree)...',
+    searchModulesHeader: 'Curriculum Modules (8 Modules)',
+    searchStudiosHeader: 'Interactive Studios & Engineering Tools',
+
+    tableColCriterion: 'Criterion',
+    tableColTraditional: 'Synchronous Copilot',
+    tableColAntigravity: 'Google Antigravity',
+    tableColVerdict: 'Architectural Verdict',
   },
 };
 

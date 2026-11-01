@@ -25,6 +25,7 @@ import {
   buildKnowledgeBaseUserStateJson,
   parseKnowledgeBaseUserStateJson,
 } from '../utils/generators';
+import { useLanguage } from '../context/LanguageContext';
 
 const USER_STATE_STORAGE_KEY = 'ag_knowledge_base_user_state_v1';
 
@@ -146,6 +147,7 @@ export const MissionControlSimulator: React.FC<{
   totalModules = 8,
   onRestoreCompletedModules,
 }) => {
+  const { language, isRTL, t } = useLanguage();
   const [selectedTaskId, setSelectedTaskId] = useState<string>(SIMULATOR_TASKS[0].id);
   const [executionMode, setExecutionMode] = useState<'Planning Mode' | 'Fast Mode'>('Planning Mode');
   const [activeArtifactTab, setActiveArtifactTab] = useState<'task.md' | 'implementation_plan.md' | 'walkthrough.md'>('implementation_plan.md');
@@ -193,7 +195,7 @@ export const MissionControlSimulator: React.FC<{
     workspaceName: 'google-antigravity-academy-workspace',
     taskId: currentTask.id,
     titleEn: currentTask.titleEn,
-    titleFa: currentTask.titleFa,
+    titleFa: language === 'en' ? currentTask.titleEn : currentTask.titleFa,
     worktree: currentTask.worktree,
     executionMode,
     executionStage,
@@ -212,7 +214,7 @@ export const MissionControlSimulator: React.FC<{
       workspaceName: 'google-antigravity-academy-workspace',
       taskId: currentTask.id,
       titleEn: currentTask.titleEn,
-      titleFa: currentTask.titleFa,
+      titleFa: language === 'en' ? currentTask.titleEn : currentTask.titleFa,
       worktree: currentTask.worktree,
       executionMode,
       executionStage,
@@ -240,11 +242,15 @@ export const MissionControlSimulator: React.FC<{
       document.body.removeChild(anchor);
       URL.revokeObjectURL(url);
       setSyncStatusBanner(
-        'وضعیت محیط کار در .agent/knowledge-base/user-state.json همگام‌سازی و دانلود شد (Cross-Session Continuity Active).'
+        language === 'en'
+          ? 'Workspace state synchronized and downloaded to .agent/knowledge-base/user-state.json (Cross-Session Continuity Active).'
+          : 'وضعیت محیط کار در .agent/knowledge-base/user-state.json همگام‌سازی و دانلود شد (Cross-Session Continuity Active).'
       );
     } else {
       setSyncStatusBanner(
-        'وضعیت فعلی در حافظه پایدار .agent/knowledge-base/user-state.json ذخیره شد.'
+        language === 'en'
+          ? 'Current workspace state saved to persistent storage in .agent/knowledge-base/user-state.json.'
+          : 'وضعیت فعلی در حافظه پایدار .agent/knowledge-base/user-state.json ذخیره شد.'
       );
     }
   };
@@ -259,7 +265,10 @@ export const MissionControlSimulator: React.FC<{
     setRestoreError('');
     const result = parseKnowledgeBaseUserStateJson(restoreJsonDraft);
     if (!result.valid || !result.data) {
-      setRestoreError(result.error || 'ساختار فایل JSON معتبر نیست.');
+      setRestoreError(
+        result.error ||
+          (language === 'en' ? 'Invalid JSON document schema.' : 'ساختار فایل JSON معتبر نیست.')
+      );
       return;
     }
     const doc = result.data;
@@ -281,7 +290,9 @@ export const MissionControlSimulator: React.FC<{
     }
     setShowRestorePanel(false);
     setSyncStatusBanner(
-      'وضعیت محیط کار و پیشرفت ماژول‌ها با موفقیت از .agent/knowledge-base/user-state.json بازیابی شد!'
+      language === 'en'
+        ? 'Workspace state and module progress successfully restored from .agent/knowledge-base/user-state.json!'
+        : 'وضعیت محیط کار و پیشرفت ماژول‌ها با موفقیت از .agent/knowledge-base/user-state.json بازیابی شد!'
     );
   };
 
@@ -356,13 +367,19 @@ export const MissionControlSimulator: React.FC<{
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
             <div className="text-xs font-bold text-blue-600 dark:text-blue-400">
-              استودیو ۱ · شبیه‌ساز تعاملی محیط Google Antigravity
+              {language === 'en'
+                ? 'Studio 1 · Google Antigravity Interactive Environment Simulator'
+                : 'استودیو ۱ · شبیه‌ساز تعاملی محیط Google Antigravity'}
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">
-              شبیه‌ساز زنده Mission Control و ممیزی خطی آرتیفکت‌ها
+              {language === 'en'
+                ? 'Live Mission Control Simulator & Artifact PR-Style Review'
+                : 'شبیه‌ساز زنده Mission Control و ممیزی خطی آرتیفکت‌ها'}
             </h1>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1">
-              یک تسک مهندسی را انتخاب کنید، روی هر خط از <code dir="ltr" className="ltr-inline">implementation_plan.md</code> کلیک کرده و کامنت ممیزی PR-Style ثبت کنید، سپس اجرای خودکار ایجنت و تولید <code dir="ltr" className="ltr-inline">walkthrough.md</code> را مشاهده نمایید.
+              {language === 'en'
+                ? 'Select an engineering task, click any line of implementation_plan.md to submit PR-style review comments, and observe autonomous agent execution producing walkthrough.md.'
+                : 'یک تسک مهندسی را انتخاب کنید، روی هر خط از implementation_plan.md کلیک کرده و کامنت ممیزی PR-Style ثبت کنید، سپس اجرای خودکار ایجنت و تولید walkthrough.md را مشاهده نمایید.'}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2.5 shrink-0">
@@ -373,10 +390,10 @@ export const MissionControlSimulator: React.FC<{
               className="px-3.5 py-2 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors flex items-center gap-2 cursor-pointer whitespace-nowrap"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>همگام‌سازی محیط کار (Sync Workspace)</span>
+              <span>{language === 'en' ? 'Sync Workspace' : 'همگام‌سازی محیط کار (Sync Workspace)'}</span>
             </button>
             <ExportSectionPdfButton
-              label="دریافت PDF این بخش"
+              label={language === 'en' ? 'Export Section PDF' : 'دریافت PDF این بخش'}
               payload={simulatorPdfPayload}
               onExport={onExportPdf}
             />
@@ -402,7 +419,9 @@ export const MissionControlSimulator: React.FC<{
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 pt-2">
           <div className="lg:col-span-2 space-y-1.5">
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-              انتخاب سناریوی مهندسی در حال اجرا در Agent Manager:
+              {language === 'en'
+                ? 'Select Active Engineering Scenario in Agent Manager:'
+                : 'انتخاب سناریوی مهندسی در حال اجرا در Agent Manager:'}
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {SIMULATOR_TASKS.map((t) => (
@@ -414,13 +433,17 @@ export const MissionControlSimulator: React.FC<{
                     setExecutionStage('planning-review');
                     setActiveArtifactTab('implementation_plan.md');
                   }}
-                  className={`p-3.5 rounded-lg border text-right transition-all cursor-pointer ${
+                  className={`p-3.5 rounded-lg border ${
+                    isRTL ? 'text-right' : 'text-left'
+                  } transition-all cursor-pointer ${
                     selectedTaskId === t.id
                       ? 'border-blue-500 bg-blue-500/10 text-slate-900 dark:text-white'
                       : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 text-slate-600 dark:text-slate-400'
                   }`}
                 >
-                  <div className="text-xs font-bold">{t.titleFa}</div>
+                  <div className="text-xs font-bold">
+                    {language === 'en' ? t.titleEn : t.titleFa}
+                  </div>
                   <div dir="ltr" className="ltr-inline text-[11px] font-mono text-blue-500 mt-1">
                     {t.worktree}
                   </div>
@@ -431,7 +454,7 @@ export const MissionControlSimulator: React.FC<{
 
           <div className="space-y-1.5">
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-              حالت اجرای ایجنت (Execution Mode):
+              {language === 'en' ? 'Agent Execution Mode:' : 'حالت اجرای ایجنت (Execution Mode):'}
             </label>
             <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
               <button
@@ -459,7 +482,11 @@ export const MissionControlSimulator: React.FC<{
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-5">
               {executionMode === 'Planning Mode'
-                ? 'تولید کامل آرتیفکت‌ها و توقف در دروازه Request Review پیش از تغییر کد.'
+                ? language === 'en'
+                  ? 'Full artifact generation and pause at Request Review gate before code mutation.'
+                  : 'تولید کامل آرتیفکت‌ها و توقف در دروازه Request Review پیش از تغییر کد.'
+                : language === 'en'
+                ? 'Direct code mutation with minimal latency for straightforward edits.'
                 : 'اجرای مستقیم تغییرات کد با حداقل تاخیر برای تسک‌های کوچک.'}
             </p>
           </div>
@@ -498,7 +525,7 @@ export const MissionControlSimulator: React.FC<{
                   className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
                 >
                   <Play className="w-3.5 h-3.5" />
-                  <span>تایید ممیزی و اجرای ایجنت (Submit Review & Execute)</span>
+                  <span>{language === 'en' ? 'Submit Review & Execute' : 'تایید ممیزی و اجرای ایجنت (Submit Review & Execute)'}</span>
                 </button>
               ) : (
                 <button
@@ -507,7 +534,7 @@ export const MissionControlSimulator: React.FC<{
                   className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 cursor-pointer"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
-                  <span>شروع مجدد ممیزی</span>
+                  <span>{language === 'en' ? 'Restart Audit' : 'شروع مجدد ممیزی'}</span>
                 </button>
               )}
             </div>
@@ -518,7 +545,11 @@ export const MissionControlSimulator: React.FC<{
             {activeArtifactTab === 'task.md' && (
               <div className="space-y-3">
                 <div className="text-xs text-slate-500 dark:text-slate-400">
-                  وضعیت لحظه‌ای چک‌لیست در <code dir="ltr" className="ltr-inline">.aistudio/artifacts/brain/task.md</code>:
+                  {language === 'en' ? (
+                    <>Live checklist status in <code dir="ltr" className="ltr-inline">.aistudio/artifacts/brain/task.md</code>:</>
+                  ) : (
+                    <>وضعیت لحظه‌ای چک‌لیست در <code dir="ltr" className="ltr-inline">.aistudio/artifacts/brain/task.md</code>:</>
+                  )}
                 </div>
                 <div dir="ltr" className="ltr-code space-y-2">
                   {currentTask.tasks.map((item, idx) => {
@@ -553,7 +584,9 @@ export const MissionControlSimulator: React.FC<{
               <div className="space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600 dark:text-slate-400">
                   <span>
-                    روی هر خط از سند زیر کلیک کنید تا کامنت ممیزی معماری (Inline PR-Style Comment) اضافه نمایید:
+                    {language === 'en'
+                      ? 'Click on any line below to add an architectural PR-style review comment:'
+                      : 'روی هر خط از سند زیر کلیک کنید تا کامنت ممیزی معماری (Inline PR-Style Comment) اضافه نمایید:'}
                   </span>
                   <span dir="ltr" className="ltr-inline font-mono text-amber-500">
                     {inlineComments.length} Active Review Comment(s)
@@ -608,7 +641,11 @@ export const MissionControlSimulator: React.FC<{
                 {selectedLineNumber && (
                   <div className="p-4 rounded-lg border border-blue-500/40 bg-blue-500/5 space-y-2.5">
                     <div className="flex items-center justify-between text-xs font-bold text-blue-600 dark:text-blue-400">
-                      <span>افزودن کامنت ممیزی روی خط شماره {selectedLineNumber}:</span>
+                      <span>
+                        {language === 'en'
+                          ? `Add review comment on line #${selectedLineNumber}:`
+                          : `افزودن کامنت ممیزی روی خط شماره ${selectedLineNumber}:`}
+                      </span>
                       <span dir="ltr" className="ltr-inline font-mono">Line #{selectedLineNumber}</span>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2">
@@ -616,7 +653,11 @@ export const MissionControlSimulator: React.FC<{
                         type="text"
                         value={commentDraft}
                         onChange={(e) => setCommentDraft(e.target.value)}
-                        placeholder="مثال: Use selectinload() and enforce Pydantic ConfigDict(extra='forbid')..."
+                        placeholder={
+                          language === 'en'
+                            ? "e.g. Use selectinload() and enforce Pydantic ConfigDict(extra='forbid')..."
+                            : "مثال: Use selectinload() and enforce Pydantic ConfigDict(extra='forbid')..."
+                        }
                         className="flex-1 px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white"
                       />
                       <button
@@ -625,7 +666,11 @@ export const MissionControlSimulator: React.FC<{
                         className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
                       >
                         <Send className="w-3.5 h-3.5" />
-                        <span>ثبت کامنت روی خط {selectedLineNumber}</span>
+                        <span>
+                          {language === 'en'
+                            ? `Save Comment on Line ${selectedLineNumber}`
+                            : `ثبت کامنت روی خط ${selectedLineNumber}`}
+                        </span>
                       </button>
                     </div>
                   </div>
@@ -636,7 +681,11 @@ export const MissionControlSimulator: React.FC<{
             {activeArtifactTab === 'walkthrough.md' && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between text-xs text-emerald-500 font-bold">
-                  <span>آرتیفکت نهایی تحویل و صحت‌سنجی بصری (walkthrough.md):</span>
+                  <span>
+                    {language === 'en'
+                      ? 'Final Delivery & Verification Proof Artifact (walkthrough.md):'
+                      : 'آرتیفکت نهایی تحویل و صحت‌سنجی بصری (walkthrough.md):'}
+                  </span>
                   <span dir="ltr" className="ltr-inline font-mono">VERIFIED BY BROWSER SUBAGENT</span>
                 </div>
                 <div dir="ltr" className="ltr-code p-4 rounded-lg bg-slate-950 border border-slate-800 text-xs font-mono text-slate-200 overflow-x-auto">
@@ -653,7 +702,7 @@ export const MissionControlSimulator: React.FC<{
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Terminal className="w-4 h-4 text-blue-500" />
-                <span>ترمینال و تله‌متری ایجنت</span>
+                <span>{language === 'en' ? 'Agent Terminal & Telemetry' : 'ترمینال و تله‌متری ایجنت'}</span>
               </h3>
               <span dir="ltr" className="ltr-inline text-[11px] font-mono text-slate-500">
                 {executionStage.toUpperCase()}
@@ -682,7 +731,9 @@ export const MissionControlSimulator: React.FC<{
                 ))
               ) : (
                 <div className="text-slate-400">
-                  Awaiting human sign-off on implementation_plan.md. Click "Submit Review & Execute" to run terminal & Browser Subagent pipeline.
+                  {language === 'en'
+                    ? 'Awaiting human sign-off on implementation_plan.md. Click "Submit Review & Execute" to run terminal & Browser Subagent pipeline.'
+                    : 'در انتظار تایید معمار روی implementation_plan.md. برای اجرای پایپ‌لاین دکمه «تایید ممیزی و اجرای ایجنت» را بزنید.'}
                 </div>
               )}
             </div>
@@ -693,7 +744,7 @@ export const MissionControlSimulator: React.FC<{
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Eye className="w-4 h-4 text-emerald-500" />
-                <span>ضبط بصری Browser Subagent</span>
+                <span>{language === 'en' ? 'Browser Subagent Visual Telemetry' : 'ضبط بصری Browser Subagent'}</span>
               </h3>
               <span dir="ltr" className="ltr-inline text-[11px] font-mono text-emerald-500">
                 WebP Capture
@@ -731,7 +782,9 @@ export const MissionControlSimulator: React.FC<{
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
-                  همگام‌سازی پایدار محیط کار و پایگاه دانش (Sync Workspace &amp; Knowledge Base)
+                  {language === 'en'
+                    ? 'Persistent Workspace & Knowledge Base Sync'
+                    : 'همگام‌سازی پایدار محیط کار و پایگاه دانش (Sync Workspace & Knowledge Base)'}
                 </h2>
                 <span
                   dir="ltr"
@@ -741,7 +794,11 @@ export const MissionControlSimulator: React.FC<{
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                برای جلوگیری از فراموشی کانتکست (<span dir="ltr" className="ltr-inline">Context Rot</span>) و حفظ پیوستگی بین نشست‌های کاری، وضعیت فعلی تسک، کامنت‌های ممیزی خطی و پیشرفت ماژول‌های آکادمی را در قالب فایل استاندارد <code dir="ltr" className="ltr-inline">.agent/knowledge-base/user-state.json</code> استخراج یا بازیابی کنید.
+                {language === 'en' ? (
+                  <>To prevent <span dir="ltr" className="ltr-inline">Context Rot</span> and preserve cross-session continuity, export or restore current task status, inline review comments, and academy module progress in standardized <code dir="ltr" className="ltr-inline">.agent/knowledge-base/user-state.json</code>.</>
+                ) : (
+                  <>برای جلوگیری از فراموشی کانتکست (<span dir="ltr" className="ltr-inline">Context Rot</span>) و حفظ پیوستگی بین نشست‌های کاری، وضعیت فعلی تسک، کامنت‌های ممیزی خطی و پیشرفت ماژول‌های آکادمی را در قالب فایل استاندارد <code dir="ltr" className="ltr-inline">.agent/knowledge-base/user-state.json</code> استخراج یا بازیابی کنید.</>
+                )}
               </p>
             </div>
           </div>
@@ -754,7 +811,7 @@ export const MissionControlSimulator: React.FC<{
               className="px-3.5 py-2 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>دانلود user-state.json</span>
+              <span>{language === 'en' ? 'Download user-state.json' : 'دانلود user-state.json'}</span>
             </button>
 
             <button
@@ -766,12 +823,12 @@ export const MissionControlSimulator: React.FC<{
               {copiedUserState ? (
                 <>
                   <Check className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>کپی شد!</span>
+                  <span>{language === 'en' ? 'Copied!' : 'کپی شد!'}</span>
                 </>
               ) : (
                 <>
                   <Copy className="w-3.5 h-3.5 text-blue-500" />
-                  <span>کپی JSON</span>
+                  <span>{language === 'en' ? 'Copy JSON' : 'کپی JSON'}</span>
                 </>
               )}
             </button>
@@ -787,7 +844,7 @@ export const MissionControlSimulator: React.FC<{
               className="px-3 py-2 rounded-lg text-xs font-semibold border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-200 hover:border-emerald-500 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <Upload className="w-3.5 h-3.5 text-emerald-500" />
-              <span>بازیابی وضعیت (Import / Restore State)</span>
+              <span>{language === 'en' ? 'Import / Restore State' : 'بازیابی وضعیت (Import / Restore State)'}</span>
             </button>
           </div>
         </div>
@@ -795,25 +852,33 @@ export const MissionControlSimulator: React.FC<{
         {/* Summary KPI Strip for Persistent State */}
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
           <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60">
-            <div className="text-[11px] text-slate-500 dark:text-slate-400">مسیر آرتیفکت پایدار</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+              {language === 'en' ? 'Persistent Artifact Path' : 'مسیر آرتیفکت پایدار'}
+            </div>
             <div dir="ltr" className="ltr-inline text-xs font-mono font-bold text-blue-500 mt-1 truncate">
               .agent/knowledge-base/user-state.json
             </div>
           </div>
           <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60">
-            <div className="text-[11px] text-slate-500 dark:text-slate-400">شاخه ایزوله فعال (Worktree)</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+              {language === 'en' ? 'Active Isolated Worktree' : 'شاخه ایزوله فعال (Worktree)'}
+            </div>
             <div dir="ltr" className="ltr-inline text-xs font-mono font-bold text-emerald-500 mt-1 truncate">
               {currentTask.worktree}
             </div>
           </div>
           <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60">
-            <div className="text-[11px] text-slate-500 dark:text-slate-400">کامنت‌های ممیزی ذخیره شده</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+              {language === 'en' ? 'Stored Audit Comments' : 'کامنت‌های ممیزی ذخیره شده'}
+            </div>
             <div dir="ltr" className="ltr-inline text-xs font-mono font-bold text-amber-500 mt-1 tabular-nums">
               {inlineComments.length} Inline Review(s)
             </div>
           </div>
           <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60">
-            <div className="text-[11px] text-slate-500 dark:text-slate-400">پیشرفت ماژول‌های آکادمی</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+              {language === 'en' ? 'Academy Progress' : 'پیشرفت ماژول‌های آکادمی'}
+            </div>
             <div dir="ltr" className="ltr-inline text-xs font-mono font-bold text-purple-500 mt-1 tabular-nums">
               {completedModules.length} / {totalModules} ModulesSynced
             </div>
@@ -828,7 +893,11 @@ export const MissionControlSimulator: React.FC<{
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
-                محتوای فایل <code dir="ltr" className="ltr-inline">.agent/knowledge-base/user-state.json</code> خود را برای بازیابی نشست قبلی وارد کنید:
+                {language === 'en' ? (
+                  <>Paste the content of your <code dir="ltr" className="ltr-inline">.agent/knowledge-base/user-state.json</code> to hydrate your previous session:</>
+                ) : (
+                  <>محتوای فایل <code dir="ltr" className="ltr-inline">.agent/knowledge-base/user-state.json</code> خود را برای بازیابی نشست قبلی وارد کنید:</>
+                )}
               </span>
               <span dir="ltr" className="ltr-inline text-[11px] font-mono text-emerald-500">
                 Cross-Session State Hydration
@@ -851,7 +920,7 @@ export const MissionControlSimulator: React.FC<{
                 onClick={() => setShowRestorePanel(false)}
                 className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer"
               >
-                انصراف
+                {language === 'en' ? 'Cancel' : 'انصراف'}
               </button>
               <button
                 type="button"
@@ -860,7 +929,7 @@ export const MissionControlSimulator: React.FC<{
                 className="px-4 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1.5 cursor-pointer"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
-                <span>اعمال و بازیابی وضعیت (Restore Workspace)</span>
+                <span>{language === 'en' ? 'Restore Workspace' : 'اعمال و بازیابی وضعیت (Restore Workspace)'}</span>
               </button>
             </div>
           </div>
@@ -875,7 +944,9 @@ export const MissionControlSimulator: React.FC<{
               filename: '.agent/knowledge-base/user-state.json',
               language: 'json',
               description:
-                'خروجی زنده و ساختاریافته وضعیت محیط کار (شامل Worktree فعال، وضعیت چک‌لیست task.md، کامنت‌های ممیزی خطی و پیشرفت سرفصل‌های آکادمی):',
+                language === 'en'
+                  ? 'Live structured export of workspace state (including active Worktree, task.md checklist state, inline PR review comments, and academy curriculum progress):'
+                  : 'خروجی زنده و ساختاریافته وضعیت محیط کار (شامل Worktree فعال، وضعیت چک‌لیست task.md، کامنت‌های ممیزی خطی و پیشرفت سرفصل‌های آکادمی):',
               code: userStateJson,
             },
           ]}

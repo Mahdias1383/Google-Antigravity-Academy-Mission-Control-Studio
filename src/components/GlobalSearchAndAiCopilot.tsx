@@ -13,6 +13,7 @@ import {
   CHEAT_SHEET_CARDS,
   ARCHITECT_SCENARIOS,
 } from '../data/curriculumIndex';
+import { useLanguage } from '../context/LanguageContext';
 
 export const GlobalCommandSearchModal: React.FC<{
   isOpen: boolean;
@@ -30,6 +31,7 @@ export const GlobalCommandSearchModal: React.FC<{
       | 'knowledge-base'
   ) => void;
 }> = ({ isOpen, onClose, onNavigateToModule, onNavigateToStudio }) => {
+  const { language, isRTL, t } = useLanguage();
   const [query, setQuery] = useState<string>('');
 
   if (!isOpen) return null;
@@ -123,7 +125,7 @@ export const GlobalCommandSearchModal: React.FC<{
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="جستجوی فصل، مفهوم (مثلاً Supercomplete، task.md، FastMCP، Worktree)..."
+            placeholder={t('searchModalPlaceholder')}
             className="flex-1 bg-transparent text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none"
           />
           <button
@@ -140,7 +142,7 @@ export const GlobalCommandSearchModal: React.FC<{
           {matchedModules.length > 0 && (
             <div className="space-y-1.5">
               <div className="px-2 text-[11px] font-bold text-slate-400">
-                فصل‌های آموزشی (8 Modules)
+                {t('searchModulesHeader')}
               </div>
               {matchedModules.map((mod) => (
                 <button
@@ -150,14 +152,19 @@ export const GlobalCommandSearchModal: React.FC<{
                     onNavigateToModule(mod.id);
                     onClose();
                   }}
-                  className="w-full text-right p-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between gap-3 transition-colors cursor-pointer"
+                  className={`w-full ${isRTL ? 'text-right' : 'text-left'} p-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between gap-3 transition-colors cursor-pointer`}
                 >
                   <div>
                     <div className="text-xs font-bold text-slate-900 dark:text-white">
-                      فصل {mod.number}: {mod.titleFa}
+                      {language === 'en'
+                        ? `Module 0${mod.number}: ${mod.titleEn}`
+                        : `فصل ۰${mod.number}: ${mod.titleFa}`}
                     </div>
-                    <div dir="ltr" className="ltr-inline text-[11px] font-mono text-slate-500">
-                      {mod.titleEn}
+                    <div
+                      dir="ltr"
+                      className="text-[11px] font-mono text-slate-500"
+                    >
+                      {language === 'en' ? `${mod.readingTime} · ${mod.difficulty}` : mod.titleEn}
                     </div>
                   </div>
                   <BookOpen className="w-4 h-4 text-blue-500 shrink-0" />
@@ -169,7 +176,7 @@ export const GlobalCommandSearchModal: React.FC<{
           {matchedStudios.length > 0 && (
             <div className="space-y-1.5">
               <div className="px-2 text-[11px] font-bold text-slate-400">
-                استودیوهای مهندسی و ابزارهای تعاملی (Interactive Studios)
+                {t('searchStudiosHeader')}
               </div>
               {matchedStudios.map((st) => (
                 <button
@@ -179,14 +186,17 @@ export const GlobalCommandSearchModal: React.FC<{
                     onNavigateToStudio(st.id);
                     onClose();
                   }}
-                  className="w-full text-right p-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between gap-3 transition-colors cursor-pointer"
+                  className={`w-full ${isRTL ? 'text-right' : 'text-left'} p-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between gap-3 transition-colors cursor-pointer`}
                 >
                   <div>
                     <div className="text-xs font-bold text-slate-900 dark:text-white">
-                      {st.titleFa}
+                      {language === 'en' ? st.titleEn : st.titleFa}
                     </div>
-                    <div dir="ltr" className="ltr-inline text-[11px] font-mono text-blue-500">
-                      {st.titleEn}
+                    <div
+                      dir="ltr"
+                      className="text-[11px] font-mono text-blue-500"
+                    >
+                      {language === 'en' ? `Interactive Studio · ${st.id}` : st.titleEn}
                     </div>
                   </div>
                   <FileCode className="w-4 h-4 text-emerald-500 shrink-0" />
@@ -201,13 +211,26 @@ export const GlobalCommandSearchModal: React.FC<{
 };
 
 export const GroundedAiArchitectCopilot: React.FC = () => {
+  const { language, isRTL, t } = useLanguage();
   const [prompt, setPrompt] = useState<string>(
-    'چگونه در Google Antigravity با استفاده از .agent/workflows/safe-migration.md و Browser Subagent یک مایگریشن Alembic بدون قفل شدن جدول در PostgreSQL اجرا و صحت‌سنجی کنیم؟'
+    language === 'en'
+      ? 'How to execute and verify an Alembic migration in Google Antigravity using .agent/workflows/safe-migration.md and Browser Subagent without PostgreSQL table locks?'
+      : 'چگونه در Google Antigravity با استفاده از .agent/workflows/safe-migration.md و Browser Subagent یک مایگریشن Alembic بدون قفل شدن جدول در PostgreSQL اجرا و صحت‌سنجی کنیم؟'
   );
   const [mode, setMode] = useState<'search-grounding' | 'high-thinking'>('search-grounding');
   const [loading, setLoading] = useState<boolean>(false);
   const [answer, setAnswer] = useState<string>(
-    `### معماری پیشنهادی اجرای ایمن مایگریشن با \`/safe-migration\` و \`Browser Subagent\`
+    language === 'en'
+      ? `### Recommended Safe Migration Architecture via \`/safe-migration\` & \`Browser Subagent\`
+
+1. **Guardrail Invariant in \`.agent/rules/01-fastapi-sqlalchemy-async.md\`:**
+   - Enforce \`postgresql_concurrently=True\` for building indexes on high-traffic tables combined with \`op.get_bind().execution_options(isolation_level="AUTOCOMMIT")\`.
+2. **Execute Pipeline in \`.agent/workflows/safe-migration.md\`:**
+   - Step 1 uses the \`// turbo\` directive to run \`poetry run alembic heads\`, ensuring no parallel branched heads exist.
+   - Step 4 executes a full reversibility cycle (\`upgrade head -> downgrade -1 -> upgrade head\`) against the ephemeral test database.
+3. **Autonomous End-to-End Proof via \`Browser Subagent\`:**
+   - After applying the revision, the browser subagent navigates to the financial reporting dashboard, monitors the network stream for zero 422 or 500 errors, and records a visual WebP proof artifact in \`walkthrough.md\`.`
+      : `### معماری پیشنهادی اجرای ایمن مایگریشن با \`/safe-migration\` و \`Browser Subagent\`
 
 1. **تعریف گاردریل در \`.agent/rules/01-fastapi-sqlalchemy-async.md\`:**
    - الزام به استفاده از \`postgresql_concurrently=True\` برای ساخت ایندکس‌ها در جداول پرترافیک به همراه \`op.get_bind().execution_options(isolation_level="AUTOCOMMIT")\`.
@@ -250,13 +273,19 @@ export const GroundedAiArchitectCopilot: React.FC = () => {
       <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/75 p-6 sm:p-8 space-y-5">
         <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
           <div className="text-xs font-bold text-blue-600 dark:text-blue-400">
-            کاوشگر هوشمند مستندات با Google Search Grounding و استدلال عمیق
+            {language === 'en'
+              ? 'Intelligent Documentation Explorer with Google Search Grounding & Deep Reasoning'
+              : 'کاوشگر هوشمند مستندات با Google Search Grounding و استدلال عمیق'}
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">
-            تحلیلگر معماری و جستجوگر زنده مستندات Google Antigravity
+            {language === 'en'
+              ? 'Architectural Analyst & Live Google Antigravity Documentation Search'
+              : 'تحلیلگر معماری و جستجوگر زنده مستندات Google Antigravity'}
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1">
-            پاسخگویی به سوالات پیچیده معماری بر اساس مستندات رسمی <code dir="ltr" className="ltr-inline">https://antigravity.google/docs</code> با پشتیبانی از ابزار <code dir="ltr" className="ltr-inline">googleSearch</code> (مدل <code dir="ltr" className="ltr-inline">gemini-3.8-flash</code>) و استدلال عمیق.
+            {language === 'en'
+              ? 'Answer complex architectural queries grounded in official https://antigravity.google/docs with googleSearch tool and deep reasoning.'
+              : 'پاسخگویی به سوالات پیچیده معماری بر اساس مستندات رسمی https://antigravity.google/docs با پشتیبانی از ابزار googleSearch (مدل gemini-3.8-flash) و استدلال عمیق.'}
           </p>
         </div>
 
@@ -293,7 +322,11 @@ export const GroundedAiArchitectCopilot: React.FC = () => {
               type="text"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="سوال معماری خود درباره Google Antigravity را بنویسید..."
+              placeholder={
+                language === 'en'
+                  ? 'Type your architectural question about Google Antigravity...'
+                  : 'سوال معماری خود درباره Google Antigravity را بنویسید...'
+              }
               className="flex-1 px-4 py-2.5 text-xs sm:text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white"
             />
             <button
@@ -302,14 +335,26 @@ export const GroundedAiArchitectCopilot: React.FC = () => {
               className="px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-bold flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
             >
               <Send className="w-4 h-4" />
-              <span>{loading ? 'در حال تحلیل و جستجو...' : 'ارسال پرسش معماری'}</span>
+              <span>
+                {loading
+                  ? language === 'en'
+                    ? 'Analyzing & Searching...'
+                    : 'در حال تحلیل و جستجو...'
+                  : language === 'en'
+                  ? 'Send Architecture Query'
+                  : 'ارسال پرسش معماری'}
+              </span>
             </button>
           </div>
         </form>
 
         <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950 p-5 space-y-4">
           <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2.5 text-xs font-bold text-blue-600 dark:text-blue-400">
-            <span>پاسخ سنتزشده معمار سیستم:</span>
+            <span>
+              {language === 'en'
+                ? 'Synthesized Systems Architect Response:'
+                : 'پاسخ سنتزشده معمار سیستم:'}
+            </span>
             <span dir="ltr" className="ltr-inline font-mono">
               {mode === 'search-grounding' ? 'Grounded via Google Search' : 'ThinkingLevel.HIGH'}
             </span>
@@ -321,7 +366,9 @@ export const GroundedAiArchitectCopilot: React.FC = () => {
           {sources.length > 0 && (
             <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-1.5">
               <div className="text-[11px] font-bold text-slate-500">
-                منابع و پیوندهای مستندات (Citations):
+                {language === 'en'
+                  ? 'Official Documentation Citations:'
+                  : 'منابع و پیوندهای مستندات (Citations):'}
               </div>
               <div className="flex flex-wrap gap-2">
                 {sources.map((src, i) => (

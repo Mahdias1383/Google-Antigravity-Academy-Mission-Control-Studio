@@ -21,10 +21,16 @@ import {
   ExportSectionPdfButton,
   PrintableDocumentPayload,
 } from '../components/CodeAndPdfTools';
+import { useLanguage } from '../context/LanguageContext';
+import {
+  CHEAT_SHEET_ITEM_EN_MAP,
+  SCENARIO_EN_MAP,
+} from '../utils/curriculumEnglishContent';
 
 export const McpVisualStudio: React.FC<{
   onExportPdf: (payload: PrintableDocumentPayload) => void;
 }> = ({ onExportPdf }) => {
+  const { language, isRTL } = useLanguage();
   const [selection, setSelection] = useState<McpIntegrationSelection>({
     postgres: true,
     github: true,
@@ -86,17 +92,27 @@ export const McpVisualStudio: React.FC<{
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
             <div className="text-xs font-bold text-blue-600 dark:text-blue-400">
-              استودیو ۳ · یکپارچه‌سازی Model Context Protocol (MCP)
+              {language === 'en'
+                ? 'Studio 03 · Model Context Protocol (MCP) Integration'
+                : 'استودیو ۳ · یکپارچه‌سازی Model Context Protocol (MCP)'}
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">
-              استودیوی بصری ساخت سرور پایتون <code dir="ltr" className="ltr-inline">FastMCP</code> و <code dir="ltr" className="ltr-inline">mcp_config.json</code>
+              {language === 'en' ? (
+                <>Visual Studio for Python <code dir="ltr" className="ltr-inline">FastMCP</code> &amp; <code dir="ltr" className="ltr-inline">mcp_config.json</code></>
+              ) : (
+                <>استودیوی بصری ساخت سرور پایتون <code dir="ltr" className="ltr-inline">FastMCP</code> و <code dir="ltr" className="ltr-inline">mcp_config.json</code></>
+              )}
             </h1>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1">
-              سرویس‌های زیرساختی سازمان خود را انتخاب کنید تا هم فایل پیکربندی <code dir="ltr" className="ltr-inline">mcp_config.json</code> و هم کد کامل سرور پایتون با <code dir="ltr" className="ltr-inline">httpx.AsyncClient</code> به صورت بلادرنگ تولید شود.
+              {language === 'en' ? (
+                <>Select your infrastructure connectors to generate both client <code dir="ltr" className="ltr-inline">mcp_config.json</code> and full async Python server code with <code dir="ltr" className="ltr-inline">httpx.AsyncClient</code> in real time.</>
+              ) : (
+                <>سرویس‌های زیرساختی سازمان خود را انتخاب کنید تا هم فایل پیکربندی <code dir="ltr" className="ltr-inline">mcp_config.json</code> و هم کد کامل سرور پایتون با <code dir="ltr" className="ltr-inline">httpx.AsyncClient</code> به صورت بلادرنگ تولید شود.</>
+              )}
             </p>
           </div>
           <ExportSectionPdfButton
-            label="دریافت PDF این بخش"
+            label={language === 'en' ? 'Export Section PDF' : 'دریافت PDF این بخش'}
             payload={mcpPdfPayload}
             onExport={onExportPdf}
           />
@@ -106,7 +122,7 @@ export const McpVisualStudio: React.FC<{
           {/* Left Configuration Controls (5 Cols) */}
           <div className="lg:col-span-5 space-y-4">
             <h2 className="text-sm font-bold text-slate-900 dark:text-white">
-              ۱. انتخاب کانکتورها و ابزارهای MCP:
+              {language === 'en' ? '1. Select MCP Connectors & Tools:' : '۱. انتخاب کانکتورها و ابزارهای MCP:'}
             </h2>
             <div className="space-y-2">
               {(
@@ -137,7 +153,7 @@ export const McpVisualStudio: React.FC<{
             </div>
 
             <h2 className="text-sm font-bold text-slate-900 dark:text-white pt-2">
-              ۲. تنظیم متغیرهای محیطی و اندپوینت‌ها:
+              {language === 'en' ? '2. Environment Variables & Endpoints Configuration:' : '۲. تنظیم متغیرهای محیطی و اندپوینت‌ها:'}
             </h2>
             <div className="space-y-2.5">
               <div>
@@ -257,6 +273,7 @@ export const McpVisualStudio: React.FC<{
 export const CheatSheetsStudio: React.FC<{
   onExportPdf: (payload: PrintableDocumentPayload) => void;
 }> = ({ onExportPdf }) => {
+  const { language } = useLanguage();
   const [searchFilter, setSearchFilter] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
 
@@ -299,17 +316,25 @@ export const CheatSheetsStudio: React.FC<{
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
             <div className="text-xs font-bold text-blue-600 dark:text-blue-400">
-              استودیو ۴ · کارت‌های مرجع سریع و خروجی PDF موضوعی
+              {language === 'en'
+                ? 'Studio 04 · Quick Reference Cards & Modular PDF Export'
+                : 'استودیو ۴ · کارت‌های مرجع سریع و خروجی PDF موضوعی'}
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">
-              مرکز چیت‌شیت‌های تعاملی و خروجی PDF ماژولار
+              {language === 'en'
+                ? 'Interactive Master Cheat Sheets & Modular PDF Export Center'
+                : 'مرکز چیت‌شیت‌های تعاملی و خروجی PDF ماژولار'}
             </h1>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1">
-              هر کارت مرجع دارای دکمه اختصاصی <span className="font-bold text-blue-500">«دریافت PDF این بخش»</span> است تا بتوانید برگه‌های تقلب مجزا برای تیم خود چاپ یا ذخیره کنید.
+              {language === 'en' ? (
+                <>Every reference card features a dedicated <span className="font-bold text-blue-500">"Export Section PDF"</span> button to generate isolated printable cheat sheets for your engineering team.</>
+              ) : (
+                <>هر کارت مرجع دارای دکمه اختصاصی <span className="font-bold text-blue-500">«دریافت PDF این بخش»</span> است تا بتوانید برگه‌های تقلب مجزا برای تیم خود چاپ یا ذخیره کنید.</>
+              )}
             </p>
           </div>
           <ExportSectionPdfButton
-            label="دریافت PDF تمام چیت‌شیت‌ها"
+            label={language === 'en' ? 'Export All Cheat Sheets PDF' : 'دریافت PDF تمام چیت‌شیت‌ها'}
             payload={allCheatSheetsPdf}
             onExport={onExportPdf}
           />
@@ -323,7 +348,11 @@ export const CheatSheetsStudio: React.FC<{
               type="text"
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
-              placeholder="جستجو در دستورات، میانبرها، @rule، // turbo یا Git Worktree..."
+              placeholder={
+                language === 'en'
+                  ? 'Search commands, shortcuts, @rule, // turbo, or Git Worktrees...'
+                  : 'جستجو در دستورات، میانبرها، @rule، // turbo یا Git Worktree...'
+              }
               className="w-full pr-10 pl-4 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white"
             />
           </div>
@@ -378,11 +407,11 @@ export const CheatSheetsStudio: React.FC<{
                       {card.category} · {card.titleEn}
                     </div>
                     <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mt-0.5 flex flex-wrap items-center gap-1.5">
-                      <span>{card.titleFa}</span>
+                      <span>{language === 'en' ? card.titleEn : card.titleFa}</span>
                     </h2>
                   </div>
                   <ExportSectionPdfButton
-                    label="دریافت PDF این بخش"
+                    label={language === 'en' ? 'Export Section PDF' : 'دریافت PDF این بخش'}
                     payload={singleCardPdf}
                     onExport={onExportPdf}
                     compact
@@ -390,27 +419,30 @@ export const CheatSheetsStudio: React.FC<{
                 </div>
 
                 <div className="space-y-2.5">
-                  {card.items.map((item) => (
-                    <div
-                      key={item.keyEn}
-                      className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 space-y-1"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <code
-                          dir="ltr"
-                          className="ltr-inline text-xs font-mono font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded"
-                        >
-                          {item.keyEn}
-                        </code>
-                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                          {item.labelFa}
-                        </span>
+                  {card.items.map((item) => {
+                    const itemEn = CHEAT_SHEET_ITEM_EN_MAP[item.keyEn];
+                    return (
+                      <div
+                        key={item.keyEn}
+                        className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 space-y-1"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <code
+                            dir="ltr"
+                            className="ltr-inline text-xs font-mono font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded"
+                          >
+                            {item.keyEn}
+                          </code>
+                          <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                            {language === 'en' ? (itemEn?.labelEn || item.keyEn) : item.labelFa}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 leading-5">
+                          {language === 'en' ? (itemEn?.detailEn || item.detailFa) : item.detailFa}
+                        </p>
                       </div>
-                      <p className="text-xs text-slate-600 dark:text-slate-400 leading-5">
-                        {item.detailFa}
-                      </p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -424,6 +456,7 @@ export const CheatSheetsStudio: React.FC<{
 export const ArchitectScenarioLab: React.FC<{
   onExportPdf: (payload: PrintableDocumentPayload) => void;
 }> = ({ onExportPdf }) => {
+  const { language, isRTL } = useLanguage();
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
 
   const answeredCount = Object.keys(selectedAnswers).length;
@@ -456,13 +489,19 @@ export const ArchitectScenarioLab: React.FC<{
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
             <div className="text-xs font-bold text-blue-600 dark:text-blue-400">
-              استودیو ۵ · ارزیابی تصمیم‌گیری معماری (Principal Architect Lab)
+              {language === 'en'
+                ? 'Studio 05 · Architectural Decision Evaluation (Principal Architect Lab)'
+                : 'استودیو ۵ · ارزیابی تصمیم‌گیری معماری (Principal Architect Lab)'}
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">
-              آزمایشگاه ۸ چالش واقعی معماری Google Antigravity
+              {language === 'en'
+                ? 'Google Antigravity 8 Production Case Studies Lab'
+                : 'آزمایشگاه ۸ چالش واقعی معماری Google Antigravity'}
             </h1>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1">
-              در هر سناریوی واقعی، تصمیم معماری بهینه را انتخاب کنید تا تحلیل فنی و متریک‌های اثرگذاری آن را مشاهده نمایید.
+              {language === 'en'
+                ? 'Select the optimal architectural decision for each production scenario to view technical analysis, impact metrics, and trade-offs.'
+                : 'در هر سناریوی واقعی، تصمیم معماری بهینه را انتخاب کنید تا تحلیل فنی و متریک‌های اثرگذاری آن را مشاهده نمایید.'}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -480,7 +519,7 @@ export const ArchitectScenarioLab: React.FC<{
               </button>
             )}
             <ExportSectionPdfButton
-              label="دریافت PDF این بخش"
+              label={language === 'en' ? 'Export Section PDF' : 'دریافت PDF این بخش'}
               payload={labPdfPayload}
               onExport={onExportPdf}
             />
@@ -492,6 +531,7 @@ export const ArchitectScenarioLab: React.FC<{
         {ARCHITECT_SCENARIOS.map((scen) => {
           const chosenOptionId = selectedAnswers[scen.id];
           const chosenOption = scen.options.find((o) => o.id === chosenOptionId);
+          const scenEn = SCENARIO_EN_MAP[scen.id];
 
           return (
             <div
@@ -500,7 +540,8 @@ export const ArchitectScenarioLab: React.FC<{
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="text-xs font-bold text-blue-600 dark:text-blue-400">
-                  سناریوی ۰{scen.number} · <span dir="ltr" className="ltr-inline">{scen.category}</span>
+                  {language === 'en' ? `Scenario 0${scen.number} · ` : `سناریوی ۰${scen.number} · `}
+                  <span dir="ltr" className="ltr-inline">{scen.category}</span>
                 </div>
                 <div dir="ltr" className="ltr-inline text-xs font-mono text-slate-500">
                   {scen.titleEn}
@@ -508,11 +549,11 @@ export const ArchitectScenarioLab: React.FC<{
               </div>
 
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                {scen.titleFa}
+                {language === 'en' ? scen.titleEn : scen.titleFa}
               </h2>
 
               <p className="text-xs sm:text-sm leading-7 text-slate-700 dark:text-slate-300">
-                {scen.problemStatementFa}
+                {language === 'en' && scenEn ? scenEn.problemStatementEn : scen.problemStatementFa}
               </p>
 
               <pre dir="ltr" className="ltr-code p-3.5 rounded-lg bg-slate-950 border border-slate-800 text-xs font-mono text-slate-300 overflow-x-auto">
@@ -522,6 +563,7 @@ export const ArchitectScenarioLab: React.FC<{
               <div className="space-y-2.5 pt-1">
                 {scen.options.map((opt) => {
                   const isSelected = chosenOptionId === opt.id;
+                  const optEn = scenEn?.optionsEn[opt.id];
                   return (
                     <button
                       key={opt.id}
@@ -529,7 +571,7 @@ export const ArchitectScenarioLab: React.FC<{
                       onClick={() =>
                         setSelectedAnswers((prev) => ({ ...prev, [scen.id]: opt.id }))
                       }
-                      className={`w-full text-right p-4 rounded-xl border transition-all cursor-pointer space-y-1.5 ${
+                      className={`w-full ${isRTL ? 'text-right' : 'text-left'} p-4 rounded-xl border transition-all cursor-pointer space-y-1.5 ${
                         isSelected
                           ? opt.isOptimal
                             ? 'border-emerald-500 bg-emerald-500/10'
@@ -539,7 +581,7 @@ export const ArchitectScenarioLab: React.FC<{
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                          {opt.labelFa}
+                          {language === 'en' ? (optEn?.labelEn || opt.commandOrSpecEn) : opt.labelFa}
                         </span>
                         <code dir="ltr" className="ltr-inline text-[11px] font-mono text-blue-500">
                           {opt.commandOrSpecEn}
@@ -567,15 +609,23 @@ export const ArchitectScenarioLab: React.FC<{
                       )}
                       <span>
                         {chosenOption.isOptimal
-                          ? 'تصمیم معماری بهینه (Principal Architect Approved)'
-                          : 'ضدالگو / انتخاب غیربهینه (Architectural Anti-Pattern)'}
+                          ? (language === 'en'
+                              ? 'Optimal Architecture Decision (Principal Architect Approved)'
+                              : 'تصمیم معماری بهینه (Principal Architect Approved)')
+                          : (language === 'en'
+                              ? 'Architectural Anti-Pattern / Sub-optimal Choice'
+                              : 'ضدالگو / انتخاب غیربهینه (Architectural Anti-Pattern)')}
                       </span>
                     </div>
                     <span dir="ltr" className="ltr-inline font-mono text-[11px]">
                       {chosenOption.impactMetrics}
                     </span>
                   </div>
-                  <p className="text-xs sm:text-sm leading-6">{chosenOption.explanationFa}</p>
+                  <p className="text-xs sm:text-sm leading-6">
+                    {language === 'en' && scenEn?.optionsEn[chosenOption.id]
+                      ? scenEn.optionsEn[chosenOption.id].explanationEn
+                      : chosenOption.explanationFa}
+                  </p>
                 </div>
               )}
             </div>

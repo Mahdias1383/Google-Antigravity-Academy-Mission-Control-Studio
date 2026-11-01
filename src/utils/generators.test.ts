@@ -68,6 +68,14 @@ import {
   parseActivityLogsFromStorage,
   NavigationActivityEvent,
 } from './activityLogger';
+import {
+  clampDeltaTime,
+  createInitialCyberArenaState,
+  spawnWaveEnemies,
+  startCyberGameSession,
+  toggleCyberGamePause,
+  stepCyberArenaSimulation,
+} from './cyberGameEngine';
 
 
 test('buildRuleMarkdown generates valid Glob frontmatter and selected domain sections', () => {
@@ -1408,6 +1416,84 @@ test('Activity Logger: createSectionChangeEvent, appendSectionChangeEvent, stats
   assert.equal(restored[0].id, evt3.id);
   assert.deepEqual(parseActivityLogsFromStorage('invalid-json'), []);
 });
+
+test('3D Cyber-Defense Game Engine: state transitions, 3 enemy archetypes with windup telegraphs, combat physics, and wave progression work deterministically', () => {
+  // 1. Delta time clamping per Three.js game guidelines
+  assert.equal(clampDeltaTime(0.016), 0.016);
+  assert.equal(clampDeltaTime(0.5), 0.05);
+  assert.equal(clampDeltaTime(-1), 0);
+
+  // 2. Title screen state initialization & starting session
+  const titleState = createInitialCyberArenaState('title');
+  assert.equal(titleState.status, 'title');
+  assert.equal(titleState.enemies.length, 0);
+
+  const playingState = startCyberGameSession(titleState);
+  assert.equal(playingState.status, 'playing');
+  assert.equal(playingState.wave, 1);
+  assert.ok(playingState.enemies.length >= 5);
+
+  // Verify all 3 required enemy archetypes exist in Wave 1 ('swarmer', 'ranged', 'charger')
+  const wave1Enemies = spawnWaveEnemies(1);
+  const archetypes = new Set(wave1Enemies.map((e) => e.archetype));
+  assert.equal(archetypes.has('swarmer'), true);
+  assert.equal(archetypes.has('ranged'), true);
+  assert.equal(archetypes.has('charger'), true);
+
+  // 3. Pause and Resume state toggle
+  const pausedState = toggleCyberGamePause(playingState);
+  assert.equal(pausedState.status, 'paused');
+  const resumedState = toggleCyberGamePause(pausedState);
+  assert.equal(resumedState.status, 'playing');
+
+  // 4. Player movement, Quantum Dash, and primary laser fire
+  const stepped = stepCyberArenaSimulation(resumedState, 0.03, {
+    moveX: 1,
+    moveZ: 0,
+    fireHeld: true,
+    dashPressed: true,
+    pulsePressed: false,
+  });
+  assert.ok(stepped.player.x > 0);
+  assert.ok(stepped.player.dashCooldown > 0);
+  assert.equal(stepped.projectiles.length, 1);
+  assert.equal(stepped.events.some((ev) => ev.type === 'dash'), true);
+
+  // 5. EMP Pulse Blast damages nearby enemies and triggers wave progression when wave is cleared
+  const nearEnemyState = createInitialCyberArenaState('playing');
+  nearEnemyState.enemies = [
+    {
+      id: 'test-swarmer-1',
+      archetype: 'swarmer',
+      x: 2.0,
+      z: 0,
+      vx: 0,
+      vz: 0,
+      facingAngle: 0,
+      hp: 30,
+      maxHp: 50,
+      radius: 0.95,
+      phase: 'pursue',
+      phaseTimer: 0,
+      chargeDirX: 0,
+      chargeDirZ: 0,
+      hitFlashTimer: 0,
+      scoreValue: 150,
+    },
+  ];
+  const afterPulse = stepCyberArenaSimulation(nearEnemyState, 0.02, {
+    moveX: 0,
+    moveZ: 0,
+    fireHeld: false,
+    dashPressed: false,
+    pulsePressed: true,
+  });
+  assert.equal(afterPulse.kills, 1);
+  assert.equal(afterPulse.wave, 2);
+  assert.ok(afterPulse.score >= 150);
+  assert.equal(afterPulse.events.some((ev) => ev.type === 'wave_cleared'), true);
+});
+
 
 
 

@@ -7,7 +7,8 @@ export type WorkspaceSectionId =
   | 'cheatsheets'
   | 'scenarios'
   | 'ai-architect'
-  | 'knowledge-base';
+  | 'knowledge-base'
+  | 'game-3d';
 
 export type NavigationEventType = 'section_change';
 
@@ -111,6 +112,12 @@ const SECTION_CATALOG: Record<
     titleFa: 'کاوشگر پایگاه دانش و Context Rot',
     titleEn: 'Knowledge Base Explorer',
     badgeCode: 'STUDIO-KNOWLEDGE-BASE',
+    category: 'studio',
+  },
+  'game-3d': {
+    titleFa: 'میدان نبرد سه‌بعدی Antigravity (Three.js)',
+    titleEn: '3D Cyber-Defense Arena (Three.js)',
+    badgeCode: 'STUDIO-3D-GAME',
     category: 'studio',
   },
 };
@@ -473,6 +480,7 @@ export const ALL_WORKSPACE_SECTION_IDS: WorkspaceSectionId[] = [
   'scenarios',
   'ai-architect',
   'knowledge-base',
+  'game-3d',
 ];
 
 export const SECTION_CHART_COLORS: Record<WorkspaceSectionId, string> = {
@@ -485,6 +493,7 @@ export const SECTION_CHART_COLORS: Record<WorkspaceSectionId, string> = {
   scenarios: '#ec4899',
   'ai-architect': '#14b8a6',
   'knowledge-base': '#f97316',
+  'game-3d': '#ef4444',
 };
 
 export interface ActivityDateSectionDatum {
@@ -500,6 +509,7 @@ export interface ActivityDateSectionDatum {
   scenarios: number;
   'ai-architect': number;
   'knowledge-base': number;
+  'game-3d': number;
 }
 
 export interface ActivitySectionChartSeries {
@@ -552,6 +562,7 @@ export function aggregateActivityEventsByDateAndSection(
         scenarios: 0,
         'ai-architect': 0,
         'knowledge-base': 0,
+        'game-3d': 0,
       };
       dateMap.set(dateKey, bucket);
     }

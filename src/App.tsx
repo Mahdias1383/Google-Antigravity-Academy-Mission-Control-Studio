@@ -19,6 +19,7 @@ import {
   X,
   Database,
   Activity,
+  Gamepad2,
 } from 'lucide-react';
 import { ALL_CURRICULUM_MODULES } from './data/curriculumIndex';
 import {
@@ -60,6 +61,7 @@ import { KnowledgeBaseExplorer } from './components/KnowledgeBaseExplorer';
 import { MissionMilestoneOverlay } from './components/MissionMilestoneToast';
 import { PWAInstallButton, OfflineIndicator } from './components/PWAInstallAndOffline';
 import { PomodoroHeaderWidget } from './components/PomodoroHeaderWidget';
+import { Antigravity3DGame } from './components/Antigravity3DGame';
 
 type ActiveWorkspaceSection =
   | 'curriculum'
@@ -70,7 +72,8 @@ type ActiveWorkspaceSection =
   | 'cheatsheets'
   | 'scenarios'
   | 'ai-architect'
-  | 'knowledge-base';
+  | 'knowledge-base'
+  | 'game-3d';
 
 function MainWorkspace() {
   const { language, toggleLanguage, isRTL, t } = useLanguage();
@@ -136,6 +139,23 @@ function MainWorkspace() {
 
       if (requestedSection === 'knowledge-base') {
         setActiveSection('knowledge-base');
+        setResumeModalOpen(false);
+        setSessionTrackingReady(true);
+        return;
+      }
+
+      if (
+        requestedSection === 'game-3d' ||
+        searchParams.get('game') === '1'
+      ) {
+        setActiveSection('game-3d');
+        setResumeModalOpen(false);
+        setSessionTrackingReady(true);
+        return;
+      }
+
+      if (requestedSection === 'ai-architect') {
+        setActiveSection('ai-architect');
         setResumeModalOpen(false);
         setSessionTrackingReady(true);
         return;
@@ -336,6 +356,15 @@ function MainWorkspace() {
     (completedModules.length / ALL_CURRICULUM_MODULES.length) * 100
   );
 
+  // Full-Viewport Game Shell Mode: when in 3D Cyber Arena ('game-3d'), render only the 100vw x 100vh WebGL Game Shell without website chrome
+  if (activeSection === 'game-3d') {
+    return (
+      <Antigravity3DGame
+        onExitToAcademy={() => setActiveSection('curriculum')}
+      />
+    );
+  }
+
   return (
     <div
       dir={isRTL ? 'rtl' : 'ltr'}
@@ -531,6 +560,18 @@ function MainWorkspace() {
           >
             <Database className="w-3.5 h-3.5 text-blue-500" />
             <span>{t('navKnowledgeBase')}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSection('game-3d')}
+            data-testid="nav-tab-game-3d"
+            className="px-3 py-1.5 rounded-lg text-xs font-extrabold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap bg-amber-500/15 border border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/25"
+          >
+            <Gamepad2 className="w-3.5 h-3.5 text-amber-500" />
+            <span>
+              {language === 'en' ? '3D Cyber Arena (Three.js)' : 'میدان نبرد سه‌بعدی (Three.js)'}
+            </span>
           </button>
         </div>
 
@@ -838,7 +879,11 @@ function MainWorkspace() {
             <ArchitectScenarioLab onExportPdf={(payload) => setPdfPayload(payload)} />
           )}
 
-          {activeSection === 'ai-architect' && <GroundedAiArchitectCopilot />}
+          {activeSection === 'ai-architect' && (
+            <GroundedAiArchitectCopilot
+              onLaunch3DGame={() => setActiveSection('game-3d')}
+            />
+          )}
 
           {activeSection === 'knowledge-base' && (
             <KnowledgeBaseExplorer

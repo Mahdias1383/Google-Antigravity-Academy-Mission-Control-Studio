@@ -477,7 +477,8 @@ export type WorkspaceSectionId =
   | 'cheatsheets'
   | 'scenarios'
   | 'ai-architect'
-  | 'knowledge-base';
+  | 'knowledge-base'
+  | 'game-3d';
 
 export interface RecentSessionSnapshot {
   version: '1.0';
@@ -544,6 +545,11 @@ const STUDIO_METADATA_MAP: Record<
     titleFa: 'کاوشگر پایگاه دانش (.agent/knowledge-base) و مدیریت Context Rot',
     titleEn: 'Knowledge Base Explorer & Context Rot Management Studio',
     badgeEn: 'STUDIO · KNOWLEDGE BASE EXPLORER',
+  },
+  'game-3d': {
+    titleFa: 'میدان نبرد سه‌بعدی Antigravity (Three.js 3D Cyber-Defense Arena)',
+    titleEn: 'Antigravity 3D Cyber-Defense Game: Context Rot Purge (Three.js)',
+    badgeEn: 'STUDIO · 3D CYBER ARENA',
   },
 };
 

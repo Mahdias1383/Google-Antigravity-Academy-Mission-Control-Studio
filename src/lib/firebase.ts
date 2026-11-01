@@ -10,9 +10,14 @@ import {
 import {
   getFirestore,
   doc,
+  collection,
   getDoc,
+  getDocs,
   setDoc,
   updateDoc,
+  deleteDoc,
+  query,
+  where,
   getDocFromServer,
   serverTimestamp,
 } from 'firebase/firestore';
@@ -107,6 +112,14 @@ export interface CloudArchitectProgressPayload {
   currentLevel: number;
 }
 
+export interface CloudDailyStudyGoalPayload {
+  id: string;
+  titleFa: string;
+  moduleRef: string;
+  targetMinutes: number;
+  completed: boolean;
+}
+
 export async function signInWithGooglePopup(): Promise<User> {
   const result = await signInWithPopup(auth, googleProvider);
   return result.user;
@@ -188,5 +201,78 @@ export async function syncArchitectProgressToCloud(
     }
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
+  }
+}
+
+export async function loadDailyGoalsFromCloud(
+  userId: string
+): Promise<CloudDailyStudyGoalPayload[]> {
+  const path = `users/${userId}/goals`;
+  try {
+    const goalsQuery = query(
+      collection(db, 'users', userId, 'goals'),
+      where('ownerId', '==', userId)
+    );
+    const snap = await getDocs(goalsQuery);
+    return snap.docs.map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        titleFa: String(data.titleFa || ''),
+        moduleRef: String(data.moduleRef || 'Module 1'),
+        targetMinutes: Number(data.targetMinutes) || 25,
+        completed: Boolean(data.completed),
+      };
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, path);
+  }
+}
+
+export async function saveDailyGoalToCloud(
+  userId: string,
+  goal: CloudDailyStudyGoalPayload
+): Promise<void> {
+  const safeGoalId = goal.id.replace(/[^a-zA-Z0-9_-]/g, '-').slice(0, 64) || 'goal-1';
+  const path = `users/${userId}/goals/${safeGoalId}`;
+  const goalRef = doc(db, 'users', userId, 'goals', safeGoalId);
+
+  const sanitized = {
+    titleFa: goal.titleFa.trim().slice(0, 200) || 'Audit Antigravity Artifacts',
+    moduleRef: goal.moduleRef.trim().slice(0, 100) || 'Module 1',
+    targetMinutes: Math.max(5, Math.min(180, Math.round(goal.targetMinutes))),
+    completed: Boolean(goal.completed),
+  };
+
+  try {
+    const existing = await getDoc(goalRef);
+    if (!existing.exists()) {
+      await setDoc(goalRef, {
+        ownerId: userId,
+        ...sanitized,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    } else {
+      await updateDoc(goalRef, {
+        ...sanitized,
+        updatedAt: serverTimestamp(),
+      });
+    }
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+  }
+}
+
+export async function deleteDailyGoalFromCloud(
+  userId: string,
+  goalId: string
+): Promise<void> {
+  const safeGoalId = goalId.replace(/[^a-zA-Z0-9_-]/g, '-').slice(0, 64);
+  const path = `users/${userId}/goals/${safeGoalId}`;
+  try {
+    await deleteDoc(doc(db, 'users', userId, 'goals', safeGoalId));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
   }
 }

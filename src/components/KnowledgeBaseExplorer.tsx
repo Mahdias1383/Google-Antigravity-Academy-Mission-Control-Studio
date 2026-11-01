@@ -23,6 +23,7 @@ import {
   BookOpen,
   Zap,
   Calendar,
+  HelpCircle,
 } from 'lucide-react';
 import { ALL_CURRICULUM_MODULES } from '../data/curriculumIndex';
 import {
@@ -62,6 +63,7 @@ import {
   ExportSectionPdfButton,
   PrintableDocumentPayload,
 } from './CodeAndPdfTools';
+import { KnowledgeQuiz } from './KnowledgeQuiz';
 
 const DEFAULT_FALLBACK_STUDY_DAYS: StudySessionDay[] = [
   { dateIso: '2026-10-21', dayLabelFa: 'چهارشنبه', minutesStudied: 35, modulesTouched: 1, active: true },
@@ -226,6 +228,37 @@ export const KnowledgeBaseExplorer: React.FC<{
       return {};
     }
   });
+
+  // Knowledge Quiz State
+  const [activeQuizDocId, setActiveQuizDocId] = useState<string>(() => {
+    return entries[0]?.id || 'kb-user-state-sync';
+  });
+  const [showQuizSection, setShowQuizSection] = useState<boolean>(false);
+  const quizSectionRef = useRef<HTMLDivElement | null>(null);
+
+  const handleOpenQuizForDoc = (docId: string) => {
+    setActiveQuizDocId(docId);
+    setShowQuizSection(true);
+    setTimeout(() => {
+      quizSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+  };
+
+  const handleRewardQuizXp = (xpEarned: number) => {
+    const todayIso = '2026-10-31';
+    setYearlyUsageOverrides((prev) =>
+      recordKnowledgeBaseDailyUsageAction(
+        prev,
+        todayIso,
+        'entry-edit',
+        xpEarned * 4
+      )
+    );
+    setSelectedHeatmapDateIso(todayIso);
+    setStatusBanner(
+      `تبریک! ${xpEarned} امتیاز XP از آزمون دانشی پایگاه دانش دریافت شد و در کارنامه مهندسی ثبت گردید.`
+    );
+  };
 
   useEffect(() => {
     try {
@@ -1093,6 +1126,32 @@ export const KnowledgeBaseExplorer: React.FC<{
             >
               <Plus className="w-3.5 h-3.5" />
               <span>افزودن آیتم دانشی جدید</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setShowQuizSection((prev) => !prev);
+                if (!showQuizSection) {
+                  setTimeout(() => {
+                    quizSectionRef.current?.scrollIntoView({
+                      behavior: 'smooth',
+                      block: 'start',
+                    });
+                  }, 80);
+                }
+              }}
+              data-testid="kb-open-quiz-btn"
+              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-extrabold flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+              <span>{showQuizSection ? 'بستن پنل آزمون' : 'آزمون دانشی پایگاه دانش'}</span>
+              <span
+                dir="ltr"
+                className="ltr-inline font-mono text-[10px] bg-white/20 px-1.5 py-0.5 rounded font-bold"
+              >
+                Quiz &amp; XP
+              </span>
             </button>
 
             <ExportSectionPdfButton
@@ -2464,6 +2523,20 @@ export const KnowledgeBaseExplorer: React.FC<{
         </div>
       </section>
 
+      {/* Interactive Knowledge Base Quiz Component Section */}
+      <div ref={quizSectionRef} id="kb-quiz-interactive-section">
+        {showQuizSection && (
+          <KnowledgeQuiz
+            entries={entries}
+            selectedDocId={activeQuizDocId}
+            onSelectDoc={(id) => setActiveQuizDocId(id)}
+            onRewardXp={handleRewardQuizXp}
+            onExportPdf={onExportPdf}
+            onClose={() => setShowQuizSection(false)}
+          />
+        )}
+      </div>
+
       {/* Searchable Bento Grid */}
       {filteredMatchResults.length === 0 ? (
         <div
@@ -2726,6 +2799,16 @@ export const KnowledgeBaseExplorer: React.FC<{
                   </span>
 
                   <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenQuizForDoc(item.id)}
+                      data-testid={`kb-quiz-btn-${item.id}`}
+                      className="px-2.5 py-1.5 rounded-lg border border-indigo-500/35 bg-indigo-500/10 hover:bg-indigo-600 hover:text-white text-indigo-600 dark:text-indigo-400 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <HelpCircle className="w-3.5 h-3.5" />
+                      <span>آزمون سند (Quiz)</span>
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => handleStartEdit(item)}

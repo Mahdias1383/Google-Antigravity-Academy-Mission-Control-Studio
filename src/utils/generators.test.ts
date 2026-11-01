@@ -26,6 +26,14 @@ import {
   recordKnowledgeBaseDailyUsageAction,
   searchKnowledgeBaseFullText,
 } from './generators';
+import {
+  CURATED_KNOWLEDGE_QUIZ_BANK,
+  getKnowledgeQuizQuestionsForDoc,
+  generateDynamicQuestionsForCustomDoc,
+  evaluateQuizAnswer,
+  calculateQuizScoreSummary,
+} from './quizGenerators';
+
 
 test('buildRuleMarkdown generates valid Glob frontmatter and selected domain sections', () => {
   const md = buildRuleMarkdown({
@@ -937,6 +945,93 @@ test('.github/workflows/main.yml defines automated Node.js setup, npm dependency
   assert.equal(workflowContent.includes('npm run build'), true);
 });
 
+test('Knowledge Quiz: retrieves curated questions matching selected document or synthesizes dynamic questions for custom docs', () => {
+  const initialDocs = buildInitialKnowledgeBaseEntries(null, null);
+  const userStateDoc = initialDocs.find((d) => d.id === 'kb-user-state-sync')!;
+  assert.ok(userStateDoc);
 
+  // 1. Curated questions for default doc
+  const userStateQuestions = getKnowledgeQuizQuestionsForDoc(userStateDoc);
+  assert.ok(userStateQuestions.length >= 2);
+  assert.equal(userStateQuestions[0].docId, 'kb-user-state-sync');
+  assert.ok(userStateQuestions[0].options.length === 4);
+  assert.ok(userStateQuestions[0].xpReward >= 30);
+  assert.ok(userStateQuestions[0].questionFa.length > 10);
+  assert.ok(userStateQuestions[0].explanationFa.length > 10);
 
+  // 2. Curated questions for sqlalchemy async rule
+  const sqlDoc = initialDocs.find((d) => d.id === 'kb-rule-sqlalchemy-async')!;
+  const sqlQuestions = getKnowledgeQuizQuestionsForDoc(sqlDoc);
+  assert.ok(sqlQuestions.length >= 2);
+  assert.equal(sqlQuestions[0].docId, 'kb-rule-sqlalchemy-async');
 
+  // 3. Dynamic synthesis for arbitrary custom doc
+  const customDoc = {
+    id: 'kb-custom-redis-locks',
+    keyPath: '.agent/rules/distributed-locks.md',
+    titleFa: 'مدیریت قفل‌های توزیع‌شده با ردیس',
+    titleEn: 'Distributed Redlock Concurrency Governance',
+    category: 'architecture-rule' as const,
+    contentSnippet: 'Acquire redlock with TTL <= 10s and unique nonce.',
+    tokenCount: 210,
+    stalenessPercent: 5,
+    bentoSpan: 'normal' as const,
+    updatedAtIso: '2026-10-31T12:00:00.000Z',
+  };
+  const dynamicQuestions = getKnowledgeQuizQuestionsForDoc(customDoc);
+  assert.equal(dynamicQuestions.length, 2);
+  assert.equal(dynamicQuestions[0].docId, 'kb-custom-redis-locks');
+  assert.ok(dynamicQuestions[0].questionFa.includes('قفل‌های توزیع‌شده'));
+  assert.ok(dynamicQuestions[0].options.length === 4);
+});
+
+test('Knowledge Quiz: evaluateQuizAnswer awards XP on correct answer and zero XP on incorrect answer', () => {
+  const sampleQuestion = CURATED_KNOWLEDGE_QUIZ_BANK[0];
+  const correctIdx = sampleQuestion.correctOptionIndex;
+  const incorrectIdx = (correctIdx + 1) % 4;
+
+  // Correct answer
+  const correctResult = evaluateQuizAnswer(sampleQuestion, correctIdx);
+  assert.equal(correctResult.isCorrect, true);
+  assert.equal(correctResult.earnedXp, sampleQuestion.xpReward);
+  assert.equal(correctResult.correctOptionIndex, correctIdx);
+  assert.ok(correctResult.explanationFa.length > 5);
+
+  // Incorrect answer
+  const incorrectResult = evaluateQuizAnswer(sampleQuestion, incorrectIdx);
+  assert.equal(incorrectResult.isCorrect, false);
+  assert.equal(incorrectResult.earnedXp, 0);
+  assert.equal(incorrectResult.correctOptionIndex, correctIdx);
+});
+
+test('Knowledge Quiz: calculateQuizScoreSummary aggregates accuracy, earned XP, and mastery rank tier', () => {
+  const sampleQuestions = CURATED_KNOWLEDGE_QUIZ_BANK.slice(0, 3);
+  const q0 = sampleQuestions[0];
+  const q1 = sampleQuestions[1];
+  const q2 = sampleQuestions[2];
+
+  // Perfect score
+  const perfectSummary = calculateQuizScoreSummary(sampleQuestions, {
+    [q0.id]: q0.correctOptionIndex,
+    [q1.id]: q1.correctOptionIndex,
+    [q2.id]: q2.correctOptionIndex,
+  });
+  assert.equal(perfectSummary.totalQuestions, 3);
+  assert.equal(perfectSummary.correctCount, 3);
+  assert.equal(perfectSummary.accuracyPercent, 100);
+  assert.equal(perfectSummary.earnedXp, q0.xpReward + q1.xpReward + q2.xpReward);
+  assert.equal(perfectSummary.masteryTierEn, 'Principal Antigravity Auditor');
+  assert.equal(perfectSummary.passed, true);
+
+  // Partial score (1 correct, 2 incorrect)
+  const partialSummary = calculateQuizScoreSummary(sampleQuestions, {
+    [q0.id]: q0.correctOptionIndex,
+    [q1.id]: (q1.correctOptionIndex + 1) % 4,
+    [q2.id]: (q2.correctOptionIndex + 1) % 4,
+  });
+  assert.equal(partialSummary.correctCount, 1);
+  assert.equal(partialSummary.incorrectCount, 2);
+  assert.equal(partialSummary.accuracyPercent, 33);
+  assert.equal(partialSummary.earnedXp, q0.xpReward);
+  assert.equal(partialSummary.masteryTierEn, 'Knowledge Base Trainee');
+});

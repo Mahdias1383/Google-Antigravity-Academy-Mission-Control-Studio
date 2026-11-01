@@ -951,7 +951,7 @@ test('calculateMasteryRankStanding assigns Trainee, Specialist, Architect, and P
   assert.equal(principal.ranks.every((r) => r.unlocked), true);
 });
 
-test('.github/workflows/main.yml defines automated Node.js setup, npm dependency installation, lint, test, and production build steps', async () => {
+test('.github/workflows/main.yml defines automated Node.js setup, npm dependency installation, lint, test, and production build steps with a valid package-lock.json', async () => {
   const fs = await import('node:fs');
   const path = await import('node:path');
   const workflowPath = path.resolve(process.cwd(), '.github/workflows/main.yml');
@@ -960,10 +960,17 @@ test('.github/workflows/main.yml defines automated Node.js setup, npm dependency
   const workflowContent = fs.readFileSync(workflowPath, 'utf-8');
   assert.equal(workflowContent.includes('actions/checkout@v4'), true);
   assert.equal(workflowContent.includes('actions/setup-node@v4'), true);
+  assert.equal(workflowContent.includes("cache: 'npm'"), true);
   assert.equal(workflowContent.includes('npm ci || npm install'), true);
   assert.equal(workflowContent.includes('npm run lint'), true);
   assert.equal(workflowContent.includes('npm test'), true);
   assert.equal(workflowContent.includes('npm run build'), true);
+
+  const lockfilePath = path.resolve(process.cwd(), 'package-lock.json');
+  assert.equal(fs.existsSync(lockfilePath), true, 'package-lock.json must exist for npm caching in GitHub Actions');
+  const lockfileJson = JSON.parse(fs.readFileSync(lockfilePath, 'utf-8'));
+  assert.equal(typeof lockfileJson.lockfileVersion, 'number');
+  assert.equal(lockfileJson.lockfileVersion >= 2, true);
 });
 
 test('Knowledge Quiz: retrieves curated questions matching selected document or synthesizes dynamic questions for custom docs', () => {

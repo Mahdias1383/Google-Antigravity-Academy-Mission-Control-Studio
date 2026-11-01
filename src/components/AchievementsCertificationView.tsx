@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import * as d3 from 'd3';
 import {
   Flame,
   Share2,
@@ -27,6 +28,13 @@ import {
   LogIn,
   LogOut,
   RefreshCw,
+  Link2,
+  ExternalLink,
+  Globe,
+  Send,
+  MessageCircle,
+  Eye,
+  X,
 } from 'lucide-react';
 import type { User } from 'firebase/auth';
 import {
@@ -41,6 +49,9 @@ import {
   StudySessionDay,
   DailyStudyGoalItem,
   StudioUsageItem,
+  SharedMasteryProgressCardSnapshot,
+  HeatmapActivitySource,
+  HeatmapDayCell,
   calculateCertificationMetrics,
   calculateStreakSummary,
   calculateWeeklyPlannerMetrics,
@@ -48,6 +59,13 @@ import {
   calculateTrophyCaseStatus,
   formatActiveTimerDisplay,
   formatShareableReportCardText,
+  buildShareableProgressCardBundle,
+  parseSharedProgressCardFromQuery,
+  buildStudyStreakHeatmapData,
+  DAILY_STREAK_STORAGE_KEY,
+  evaluateDailyStreakMilestones,
+  serializeDailyStreakStateToStorage,
+  parseDailyStreakStateFromStorage,
 } from '../utils/achievements';
 import {
   ExportSectionPdfButton,
@@ -137,7 +155,24 @@ export const AchievementsCertificationView: React.FC<{
   const [architectName, setArchitectName] = useState<string>('آریا رستمی (Aria Rostami)');
   const [roleTitle, setRoleTitle] = useState<string>('Principal AI Systems Architect');
   const [organization, setOrganization] = useState<string>('Enterprise Cloud Engineering');
-  const [studyDays, setStudyDays] = useState<StudySessionDay[]>(INITIAL_STUDY_DAYS);
+  const [initialPersistedStreak] = useState(() => {
+    if (typeof window === 'undefined') {
+      return parseDailyStreakStateFromStorage(null, INITIAL_STUDY_DAYS);
+    }
+    return parseDailyStreakStateFromStorage(
+      window.localStorage.getItem(DAILY_STREAK_STORAGE_KEY),
+      INITIAL_STUDY_DAYS
+    );
+  });
+  const [studyDays, setStudyDays] = useState<StudySessionDay[]>(
+    initialPersistedStreak.studyDays
+  );
+  const [persistedStreakDays, setPersistedStreakDays] = useState<number>(
+    initialPersistedStreak.currentStreakDays
+  );
+  const [longestStreakDaysRecord, setLongestStreakDaysRecord] = useState<number>(
+    initialPersistedStreak.longestStreakDays
+  );
   const [sessionMinutesInput, setSessionMinutesInput] = useState<number>(30);
   const [copiedReportState, setCopiedReportState] = useState<'none' | 'text' | 'link'>('none');
 
@@ -165,6 +200,28 @@ export const AchievementsCertificationView: React.FC<{
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [cloudSyncStatus, setCloudSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
   const [cloudSyncMessage, setCloudSyncMessage] = useState<string>('');
+
+  // Public Mastery Progress Card & Social Share State
+  const [sharedCardPreview, setSharedCardPreview] =
+    useState<SharedMasteryProgressCardSnapshot | null>(() => {
+      if (typeof window === 'undefined') return null;
+      return parseSharedProgressCardFromQuery(window.location.search);
+    });
+  const [publicLinkStatus, setPublicLinkStatus] = useState<
+    'idle' | 'generated' | 'copied' | 'shared'
+  >('idle');
+
+  // D3.js Calendar Heatmap State
+  const heatmapSvgRef = useRef<SVGSVGElement | null>(null);
+  const [heatmapWeeksCount, setHeatmapWeeksCount] = useState<12 | 24>(12);
+  const [heatmapFilterSource, setHeatmapFilterSource] = useState<
+    'all' | HeatmapActivitySource
+  >('all');
+  const [selectedHeatmapDateIso, setSelectedHeatmapDateIso] =
+    useState<string>('2026-10-27');
+  const [heatmapOverrides, setHeatmapOverrides] = useState<
+    Record<string, { active: boolean; minutesStudied: number; studioRuns: number }>
+  >({});
 
   useEffect(() => {
     const unsubscribe = subscribeToAuthChanges(async (user) => {
@@ -209,7 +266,50 @@ export const AchievementsCertificationView: React.FC<{
   }, [timerRunning]);
 
   const metrics = calculateCertificationMetrics(allModules, completedModules, architectName);
-  const streakStats = calculateStreakSummary(studyDays);
+  const rawStripStreakStats = calculateStreakSummary(studyDays);
+  const effectiveCurrentStreak = Math.max(
+    0,
+    persistedStreakDays
+  );
+  const effectiveLongestStreak = Math.max(
+    effectiveCurrentStreak,
+    longestStreakDaysRecord,
+    rawStripStreakStats.longestStreakDays
+  );
+  const streakStats = {
+    ...rawStripStreakStats,
+    currentStreakDays: effectiveCurrentStreak,
+    longestStreakDays: effectiveLongestStreak,
+  };
+  const streakMilestoneEval = evaluateDailyStreakMilestones(
+    streakStats.currentStreakDays,
+    streakStats.longestStreakDays
+  );
+
+  // Persist daily streak counter and study days to localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const lastDate =
+        studyDays.length > 0
+          ? studyDays[studyDays.length - 1].dateIso
+          : '2026-10-27';
+      const serialized = serializeDailyStreakStateToStorage({
+        currentStreakDays: streakStats.currentStreakDays,
+        longestStreakDays: streakStats.longestStreakDays,
+        lastLoggedDateIso: lastDate,
+        studyDays,
+      });
+      window.localStorage.setItem(DAILY_STREAK_STORAGE_KEY, serialized);
+    } catch {
+      // Ignore storage quota errors in restricted frames
+    }
+  }, [
+    studyDays,
+    streakStats.currentStreakDays,
+    streakStats.longestStreakDays,
+  ]);
+
   const plannerAnalytics = calculateWeeklyPlannerMetrics(studyDays, dailyTargetMinutes);
   const trophyCase = calculateTrophyCaseStatus(
     metrics.completedCount,
@@ -217,10 +317,234 @@ export const AchievementsCertificationView: React.FC<{
     completedScenarioIds
   );
   const xpProgression = calculateXpAndLevelProgression(
-    metrics.totalXp + trophyCase.trophyBonusXp,
+    metrics.totalXp + trophyCase.trophyBonusXp + streakMilestoneEval.totalMilestoneBonusXp,
     streakStats.totalMinutesStudied,
     studioUsageItems
   );
+  const heatmapSummary = buildStudyStreakHeatmapData(
+    studyDays,
+    studioUsageItems,
+    heatmapWeeksCount,
+    heatmapOverrides
+  );
+  const selectedHeatmapCell: HeatmapDayCell =
+    heatmapSummary.cells.find((c) => c.dateIso === selectedHeatmapDateIso) ||
+    heatmapSummary.cells[heatmapSummary.cells.length - 1];
+
+  const handleSetHeatmapCellMode = (
+    cell: HeatmapDayCell,
+    mode: HeatmapActivitySource
+  ) => {
+    const nextConfig =
+      mode === 'both'
+        ? { active: true, minutesStudied: 60, studioRuns: 3 }
+        : mode === 'academy'
+        ? { active: true, minutesStudied: 50, studioRuns: 0 }
+        : mode === 'studios'
+        ? { active: true, minutesStudied: 0, studioRuns: 4 }
+        : { active: false, minutesStudied: 0, studioRuns: 0 };
+
+    setHeatmapOverrides((prev) => ({
+      ...prev,
+      [cell.dateIso]: nextConfig,
+    }));
+
+    // Synchronize with recent 7-day strip if date matches
+    if (studyDays.some((d) => d.dateIso === cell.dateIso)) {
+      setStudyDays((prev) =>
+        prev.map((d) =>
+          d.dateIso === cell.dateIso
+            ? {
+                ...d,
+                active: nextConfig.active,
+                minutesStudied:
+                  nextConfig.minutesStudied > 0
+                    ? nextConfig.minutesStudied
+                    : nextConfig.studioRuns * 10,
+                modulesTouched: nextConfig.minutesStudied > 0 ? 2 : 0,
+              }
+            : d
+        )
+      );
+    }
+  };
+
+  const handleToggleHeatmapCellActivity = (cell: HeatmapDayCell) => {
+    handleSetHeatmapCellMode(cell, cell.active ? 'none' : 'both');
+  };
+
+  // D3.js Calendar Heatmap Renderer Effect
+  useEffect(() => {
+    const svgEl = heatmapSvgRef.current;
+    if (!svgEl) return;
+
+    const svg = d3.select(svgEl);
+    svg.selectAll('*').remove();
+
+    const margin = { top: 24, right: 16, bottom: 12, left: 42 };
+    const cellSize = 20;
+    const cellGap = 5;
+    const totalWeeks = heatmapSummary.totalWeeks;
+    const innerWidth = totalWeeks * (cellSize + cellGap);
+    const innerHeight = 7 * (cellSize + cellGap);
+    const width = margin.left + innerWidth + margin.right;
+    const height = margin.top + innerHeight + margin.bottom;
+
+    svg
+      .attr('viewBox', `0 0 ${width} ${height}`)
+      .attr('preserveAspectRatio', 'xMidYMid meet');
+
+    const rootG = svg
+      .append('g')
+      .attr('transform', `translate(${margin.left},${margin.top})`);
+
+    const weekIndices = d3.range(0, totalWeeks);
+    const dayIndices = d3.range(0, 7);
+
+    const xScale = d3
+      .scaleBand<number>()
+      .domain(weekIndices)
+      .range([0, innerWidth])
+      .paddingInner(0.18);
+
+    const yScale = d3
+      .scaleBand<number>()
+      .domain(dayIndices)
+      .range([0, innerHeight])
+      .paddingInner(0.18);
+
+    const academyColorScale = d3
+      .scaleThreshold<number, string>()
+      .domain([1, 2, 3, 4])
+      .range(['#1e293b', '#1e3a8a', '#1d4ed8', '#3b82f6', '#60a5fa']);
+
+    const studiosColorScale = d3
+      .scaleThreshold<number, string>()
+      .domain([1, 2, 3, 4])
+      .range(['#1e293b', '#312e81', '#4338ca', '#6366f1', '#818cf8']);
+
+    const bothColorScale = d3
+      .scaleThreshold<number, string>()
+      .domain([1, 2, 3, 4])
+      .range(['#1e293b', '#064e3b', '#047857', '#10b981', '#34d399']);
+
+    const resolveCellFill = (d: HeatmapDayCell): string => {
+      if (
+        heatmapFilterSource !== 'all' &&
+        d.activitySource !== heatmapFilterSource
+      ) {
+        return '#0f172a';
+      }
+      if (!d.active || d.intensityLevel === 0) {
+        return '#1e293b';
+      }
+      if (d.activitySource === 'both') {
+        return bothColorScale(d.intensityLevel);
+      }
+      if (d.activitySource === 'studios') {
+        return studiosColorScale(d.intensityLevel);
+      }
+      return academyColorScale(d.intensityLevel);
+    };
+
+    // Month Labels along top X axis
+    rootG
+      .append('g')
+      .attr('class', 'heatmap-months')
+      .selectAll('text.heatmap-month-label')
+      .data(heatmapSummary.monthMarkers)
+      .join('text')
+      .attr('class', 'heatmap-month-label')
+      .attr('x', (m) => xScale(m.weekIndex) ?? 0)
+      .attr('y', -8)
+      .attr('fill', '#94a3b8')
+      .attr('font-size', '10px')
+      .attr('font-family', 'JetBrains Mono, monospace')
+      .attr('font-weight', '700')
+      .text((m) => m.labelEn);
+
+    // Weekday Labels along left Y axis
+    const weekdayShortEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    rootG
+      .append('g')
+      .attr('class', 'heatmap-weekdays')
+      .selectAll('text.heatmap-weekday-label')
+      .data([0, 1, 2, 3, 4, 5, 6])
+      .join('text')
+      .attr('class', 'heatmap-weekday-label')
+      .attr('x', -8)
+      .attr('y', (d) => (yScale(d) ?? 0) + (yScale.bandwidth() / 2) + 3.5)
+      .attr('text-anchor', 'end')
+      .attr('fill', '#64748b')
+      .attr('font-size', '9px')
+      .attr('font-family', 'JetBrains Mono, monospace')
+      .text((d) => (d % 2 === 1 || d === 0 || d === 6 ? weekdayShortEn[d] : ''));
+
+    // Day Cells Grid
+    const cellsGroup = rootG.append('g').attr('class', 'heatmap-cells');
+
+    const rects = cellsGroup
+      .selectAll<SVGRectElement, HeatmapDayCell>('rect.heatmap-day-cell')
+      .data(heatmapSummary.cells, (d) => d.dateIso)
+      .join('rect')
+      .attr('class', 'heatmap-day-cell')
+      .attr('data-testid', (d) => `heatmap-cell-${d.dateIso}`)
+      .attr('data-date', (d) => d.dateIso)
+      .attr('data-source', (d) => d.activitySource)
+      .attr('data-intensity', (d) => String(d.intensityLevel))
+      .attr('x', (d) => xScale(d.weekIndex) ?? 0)
+      .attr('y', (d) => yScale(d.dayOfWeek) ?? 0)
+      .attr('width', xScale.bandwidth())
+      .attr('height', yScale.bandwidth())
+      .attr('rx', 4)
+      .attr('ry', 4)
+      .attr('fill', (d) => resolveCellFill(d))
+      .attr('stroke', (d) =>
+        d.dateIso === selectedHeatmapDateIso
+          ? '#f59e0b'
+          : d.activitySource === 'both'
+          ? 'rgba(52, 211, 153, 0.45)'
+          : 'rgba(255, 255, 255, 0.06)'
+      )
+      .attr('stroke-width', (d) =>
+        d.dateIso === selectedHeatmapDateIso ? 2.2 : 1
+      )
+      .attr('cursor', 'pointer')
+      .on('click', (_event, d) => {
+        setSelectedHeatmapDateIso(d.dateIso);
+      });
+
+    rects
+      .append('title')
+      .text(
+        (d) =>
+          `${d.dateIso} (${d.dayLabelFa}) — ${
+            d.active
+              ? `${d.minutesStudied}m Academy · ${d.studioRuns} Studio Runs · +${d.xpEarned} XP [${d.activitySource.toUpperCase()}]`
+              : 'Rest Day (0m)'
+          }`
+      );
+
+    // Subtle dual-domain indicator dot for days active in BOTH Academy and Studios
+    cellsGroup
+      .selectAll<SVGCircleElement, HeatmapDayCell>('circle.heatmap-both-dot')
+      .data(
+        heatmapSummary.cells.filter(
+          (c) =>
+            c.activitySource === 'both' &&
+            (heatmapFilterSource === 'all' || heatmapFilterSource === 'both')
+        ),
+        (d) => d.dateIso
+      )
+      .join('circle')
+      .attr('class', 'heatmap-both-dot')
+      .attr('cx', (d) => (xScale(d.weekIndex) ?? 0) + xScale.bandwidth() - 4)
+      .attr('cy', (d) => (yScale(d.dayOfWeek) ?? 0) + 4)
+      .attr('r', 2)
+      .attr('fill', '#ffffff')
+      .attr('fill-opacity', 0.85)
+      .attr('pointer-events', 'none');
+  }, [heatmapSummary, heatmapFilterSource, selectedHeatmapDateIso]);
 
   const handleToggleScenarioTrophy = (scenarioId: string) => {
     setCompletedScenarioIds((prev) =>
@@ -254,8 +578,8 @@ export const AchievementsCertificationView: React.FC<{
 
   const handleLogStudySession = () => {
     const addedMins = Math.max(5, Math.min(240, Number(sessionMinutesInput) || 25));
-    setStudyDays((prev) =>
-      prev.map((d, idx) =>
+    setStudyDays((prev) => {
+      const next = prev.map((d, idx) =>
         idx === prev.length - 1
           ? {
               ...d,
@@ -264,8 +588,59 @@ export const AchievementsCertificationView: React.FC<{
               modulesTouched: d.modulesTouched + 1,
             }
           : d
+      );
+      const nextSummary = calculateStreakSummary(next);
+      setPersistedStreakDays((curr) => {
+        const updated = Math.max(curr + 1, nextSummary.currentStreakDays);
+        setLongestStreakDaysRecord((best) => Math.max(best, updated));
+        return updated;
+      });
+      return next;
+    });
+  };
+
+  const handleIncrementConsecutiveStreakDay = () => {
+    setStudyDays((prev) =>
+      prev.map((d, idx) =>
+        idx === prev.length - 1
+          ? {
+              ...d,
+              active: true,
+              minutesStudied: Math.max(30, d.minutesStudied + 15),
+              modulesTouched: Math.max(1, d.modulesTouched),
+            }
+          : d
       )
     );
+    setPersistedStreakDays((curr) => {
+      const next = curr + 1;
+      setLongestStreakDaysRecord((best) => Math.max(best, next));
+      return next;
+    });
+  };
+
+  const handleSetStreakMilestonePreset = (targetDays: number) => {
+    const safeDays = Math.max(0, Math.floor(targetDays));
+    if (safeDays > 0) {
+      setStudyDays((prev) =>
+        prev.map((d) => ({
+          ...d,
+          active: true,
+          minutesStudied: Math.max(35, d.minutesStudied),
+          modulesTouched: Math.max(1, d.modulesTouched),
+        }))
+      );
+    } else {
+      setStudyDays((prev) =>
+        prev.map((d, idx) =>
+          idx === prev.length - 1
+            ? { ...d, active: false, minutesStudied: 0, modulesTouched: 0 }
+            : d
+        )
+      );
+    }
+    setPersistedStreakDays(safeDays);
+    setLongestStreakDaysRecord((best) => Math.max(best, safeDays));
   };
 
   const handleQuickAddReadingTimeXp = (minutesToAdd: number) => {
@@ -337,8 +712,8 @@ export const AchievementsCertificationView: React.FC<{
   };
 
   const handleToggleStudyDay = (dateIso: string) => {
-    setStudyDays((prev) =>
-      prev.map((d) => {
+    setStudyDays((prev) => {
+      const next = prev.map((d) => {
         if (d.dateIso !== dateIso) return d;
         const nextActive = !d.active;
         return {
@@ -347,8 +722,75 @@ export const AchievementsCertificationView: React.FC<{
           minutesStudied: nextActive ? Math.max(30, d.minutesStudied) : 0,
           modulesTouched: nextActive ? Math.max(1, d.modulesTouched) : 0,
         };
-      })
-    );
+      });
+      const summary = calculateStreakSummary(next);
+      setPersistedStreakDays(summary.currentStreakDays);
+      setLongestStreakDaysRecord((best) =>
+        Math.max(best, summary.longestStreakDays)
+      );
+      return next;
+    });
+  };
+
+  const shareBundle = buildShareableProgressCardBundle({
+    baseUrl: typeof window !== 'undefined' ? window.location.origin : undefined,
+    architectName,
+    roleTitle,
+    organization,
+    metrics,
+    xpProgression,
+    currentStreakDays: streakStats.currentStreakDays,
+  });
+
+  const handleGeneratePublicProgressLink = () => {
+    try {
+      const urlObj = new URL(shareBundle.publicCardUrl);
+      window.history.replaceState(null, '', `${urlObj.pathname}${urlObj.search}`);
+    } catch {
+      // Ignore history API errors in restricted frames
+    }
+    void navigator.clipboard?.writeText(shareBundle.publicCardUrl).catch(() => {});
+    setSharedCardPreview(shareBundle.snapshot);
+    setPublicLinkStatus('generated');
+    setCopiedReportState('link');
+    setTimeout(() => {
+      setPublicLinkStatus('idle');
+      setCopiedReportState('none');
+    }, 2800);
+  };
+
+  const handleCopyPublicProgressLink = () => {
+    void navigator.clipboard?.writeText(shareBundle.publicCardUrl).catch(() => {});
+    setPublicLinkStatus('copied');
+    setCopiedReportState('link');
+    setTimeout(() => {
+      setPublicLinkStatus('idle');
+      setCopiedReportState('none');
+    }, 2400);
+  };
+
+  const handleWebShareProgressCard = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: shareBundle.shareHeadlineEn,
+          text: shareBundle.shareMessageEn,
+          url: shareBundle.publicCardUrl,
+        });
+        setPublicLinkStatus('shared');
+        setTimeout(() => setPublicLinkStatus('idle'), 2400);
+        return;
+      } catch {
+        // Fallback to copying link + text
+      }
+    }
+    void navigator.clipboard
+      ?.writeText(
+        `${shareBundle.shareMessageFa}\n\n${shareBundle.shareMessageEn}\n\n${shareBundle.publicCardUrl}`
+      )
+      .catch(() => {});
+    setPublicLinkStatus('copied');
+    setTimeout(() => setPublicLinkStatus('idle'), 2400);
   };
 
   const handleShareReportCard = async (mode: 'text' | 'link') => {
@@ -360,22 +802,17 @@ export const AchievementsCertificationView: React.FC<{
             text: shareableText,
           });
         } catch {
-          navigator.clipboard?.writeText(shareableText);
+          void navigator.clipboard?.writeText(shareableText).catch(() => {});
         }
       } else {
-        navigator.clipboard?.writeText(shareableText);
+        void navigator.clipboard?.writeText(shareableText).catch(() => {});
       }
       setCopiedReportState('text');
       setTimeout(() => setCopiedReportState('none'), 2200);
       return;
     }
 
-    const shareUrl = `${window.location.origin}/?cert=${encodeURIComponent(
-      metrics.certificateSerial
-    )}&completed=${metrics.completedCount}`;
-    navigator.clipboard?.writeText(`${shareableText}\n\nVerification Link: ${shareUrl}`);
-    setCopiedReportState('link');
-    setTimeout(() => setCopiedReportState('none'), 2200);
+    handleGeneratePublicProgressLink();
   };
 
   const certificationPdfPayload: PrintableDocumentPayload = {
@@ -416,6 +853,89 @@ export const AchievementsCertificationView: React.FC<{
 
   return (
     <div className="space-y-8 pb-12" data-testid="achievements-certification-view">
+      {/* Shared Public Mastery Progress Card Verification Banner */}
+      {sharedCardPreview && (
+        <div
+          data-testid="public-mastery-card-preview"
+          className="rounded-xl border-2 border-emerald-500/60 bg-gradient-to-br from-slate-900 via-[#0b172a] to-slate-950 text-white p-6 sm:p-7 space-y-5 shadow-2xl"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold">
+                <Globe className="w-3.5 h-3.5" />
+                <span>کارت عمومی تاییدشده پیشرفت معمار (Verified Public Mastery Card)</span>
+              </span>
+              <span
+                dir="ltr"
+                data-testid="preview-card-slug-badge"
+                className="ltr-inline px-2.5 py-0.5 rounded bg-blue-500/15 border border-blue-500/30 text-blue-300 font-mono text-xs"
+              >
+                {sharedCardPreview.cardSlugId}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setSharedCardPreview(null)}
+              data-testid="close-public-card-preview-btn"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>بستن پیش‌نمایش کارت عمومی</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+            <div className="lg:col-span-7 space-y-3">
+              <div dir="ltr" className="ltr-inline text-xs font-mono text-emerald-400">
+                CERTIFICATE SERIAL: {sharedCardPreview.certificateSerial} · LEVEL{' '}
+                {sharedCardPreview.currentLevel}
+              </div>
+              <div className="text-2xl sm:text-3xl font-black text-white">
+                {sharedCardPreview.architectName}
+              </div>
+              <div dir="ltr" className="ltr-inline text-xs sm:text-sm font-mono text-blue-300">
+                {sharedCardPreview.roleTitle} @ {sharedCardPreview.organization}
+              </div>
+              <div className="p-3.5 rounded-xl border border-slate-800 bg-slate-950/70 space-y-1">
+                <div className="text-xs text-slate-400">درجه تخصصی ثبت‌شده در لینک عمومی:</div>
+                <div className="text-sm font-bold text-emerald-400">
+                  {sharedCardPreview.rankTitleFa}
+                </div>
+                <div dir="ltr" className="ltr-inline text-xs font-mono text-slate-300">
+                  {sharedCardPreview.rankTitleEn}
+                </div>
+              </div>
+            </div>
+
+            <div className="lg:col-span-5 grid grid-cols-3 gap-3 text-center">
+              <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/80">
+                <div dir="ltr" className="ltr-inline text-xl font-mono font-black text-blue-400 tabular-nums">
+                  {sharedCardPreview.completedCount}/{sharedCardPreview.totalModules}
+                </div>
+                <div className="text-[11px] text-slate-400 mt-1">
+                  ماژول‌های تکمیل‌شده ({sharedCardPreview.completionPercentage}٪)
+                </div>
+              </div>
+              <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/80">
+                <div dir="ltr" className="ltr-inline text-xl font-mono font-black text-emerald-400 tabular-nums">
+                  {sharedCardPreview.totalCombinedXp} XP
+                </div>
+                <div className="text-[11px] text-slate-400 mt-1">
+                  امتیاز کل (Level {sharedCardPreview.currentLevel})
+                </div>
+              </div>
+              <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/80">
+                <div dir="ltr" className="ltr-inline text-xl font-mono font-black text-amber-400 tabular-nums">
+                  {sharedCardPreview.currentStreakDays}d
+                </div>
+                <div className="text-[11px] text-slate-400 mt-1">پیوستگی مطالعه</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header Banner */}
       <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/75 p-6 sm:p-8 space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
@@ -1148,24 +1668,263 @@ export const AchievementsCertificationView: React.FC<{
         </div>
       </div>
 
-      {/* Section 1: Study Streak Counter & Session Tracker */}
+      {/* Section 1: Visual Daily Streak Counter, 7/30/100-Day Milestone Badges & Session Tracker */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-7 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/75 p-6 space-y-5">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-3.5">
-            <div className="flex items-center gap-2">
-              <Flame className="w-5 h-5 text-amber-500 shrink-0" />
+        <div
+          data-testid="daily-streak-counter-card"
+          className="lg:col-span-7 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/75 p-6 space-y-5"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3.5">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-amber-500/15 border border-amber-500/40 flex items-center justify-center text-amber-500 shrink-0">
+                <Flame className="w-5 h-5" />
+              </div>
               <div>
                 <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
-                  شمارنده پیوستگی جلسات مطالعه (Study Session Streak)
+                  شمارنده بصری پیوستگی روزانه و نشان‌های ۷، ۳۰ و ۱۰۰ روزه{' '}
+                  <span dir="ltr" className="ltr-inline font-mono text-xs sm:text-sm text-amber-500">
+                    (Daily Streak Counter)
+                  </span>
                 </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  روی هر روز کلیک کنید تا وضعیت فعالیت تغییر کند یا جلسه مطالعه جدیدی برای امروز ثبت نمایید
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  ذخیره خودکار در <span dir="ltr" className="ltr-inline font-mono">localStorage</span> · کسب نشان‌های ویژه در نقاط عطف ۷، ۳۰ و ۱۰۰ روز مطالعه متوالی
                 </p>
               </div>
             </div>
-            <div dir="ltr" className="ltr-inline text-xs font-mono font-bold text-amber-500 tabular-nums">
-              Current: {streakStats.currentStreakDays} Days · Best: {streakStats.longestStreakDays} Days
+            <div dir="ltr" className="ltr-inline text-xs font-mono font-bold text-emerald-500 tabular-nums">
+              {streakMilestoneEval.unlockedMilestoneCount} / {streakMilestoneEval.totalMilestones} Milestones · +{streakMilestoneEval.totalMilestoneBonusXp} XP
             </div>
+          </div>
+
+          {/* Visual Daily Streak Counter Hero Box + Controls */}
+          <div className="p-4 sm:p-5 rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-slate-900/40 to-slate-950/70 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-2xl bg-amber-500 text-slate-950 flex flex-col items-center justify-center shrink-0 shadow-lg">
+                  <Flame className="w-6 h-6" />
+                  <span
+                    dir="ltr"
+                    data-testid="daily-streak-count-value"
+                    className="ltr-inline text-lg font-mono font-black leading-none mt-0.5 tabular-nums"
+                  >
+                    {streakStats.currentStreakDays}
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">
+                      {streakStats.currentStreakDays} روز مطالعه متوالی
+                    </span>
+                    <span
+                      dir="ltr"
+                      data-testid="daily-streak-best-value"
+                      className="ltr-inline text-xs font-mono text-amber-500 font-bold tabular-nums"
+                    >
+                      (Best: {streakStats.longestStreakDays}d)
+                    </span>
+                  </div>
+                  <div className="text-xs text-slate-600 dark:text-slate-300">
+                    {streakMilestoneEval.highestUnlockedBadge ? (
+                      <>
+                        بالاترین نشان فعال:{' '}
+                        <span className="font-bold text-amber-400">
+                          {streakMilestoneEval.highestUnlockedBadge.titleFa}
+                        </span>{' '}
+                        <span dir="ltr" className="ltr-inline font-mono text-[11px] text-emerald-400">
+                          [{streakMilestoneEval.highestUnlockedBadge.badgeCode}]
+                        </span>
+                      </>
+                    ) : (
+                      <span>
+                        {streakMilestoneEval.daysToNextMilestone} روز دیگر تا کسب اولین نشان پیوستگی ۷ روزه (<span dir="ltr" className="ltr-inline font-mono">AG-STRK-007</span>)
+                      </span>
+                    )}
+                  </div>
+                  <div dir="ltr" className="ltr-inline text-[11px] font-mono text-slate-400">
+                    localStorage: {DAILY_STREAK_STORAGE_KEY} · Synced
+                  </div>
+                </div>
+              </div>
+
+              {/* Streak Action Controls (+1 Day & Milestone Presets) */}
+              <div className="flex flex-col items-stretch sm:items-end gap-2 shrink-0">
+                <button
+                  type="button"
+                  data-testid="streak-increment-day-btn"
+                  onClick={handleIncrementConsecutiveStreakDay}
+                  className="px-3.5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold flex items-center justify-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>ثبت روز متوالی جدید</span>
+                  <span dir="ltr" className="ltr-inline font-mono text-[11px]">
+                    (+1 Day Streak)
+                  </span>
+                </button>
+
+                <div
+                  dir="ltr"
+                  className="ltr-inline inline-flex items-center gap-1"
+                  data-testid="streak-milestone-presets"
+                >
+                  {[
+                    { days: 7, label: '7d' },
+                    { days: 30, label: '30d' },
+                    { days: 100, label: '100d' },
+                  ].map((preset) => (
+                    <button
+                      key={preset.days}
+                      type="button"
+                      data-testid={`streak-preset-${preset.days}`}
+                      onClick={() => handleSetStreakMilestonePreset(preset.days)}
+                      className={`px-2.5 py-1 rounded text-[11px] font-mono font-bold transition-colors cursor-pointer ${
+                        streakStats.currentStreakDays === preset.days
+                          ? 'bg-emerald-500 text-slate-950'
+                          : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    data-testid="streak-preset-reset"
+                    onClick={() => handleSetStreakMilestonePreset(5)}
+                    className="px-2 py-1 rounded text-[11px] font-mono text-slate-400 hover:text-white bg-slate-900 border border-slate-800 cursor-pointer"
+                  >
+                    5d
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Progress Bar toward Next Milestone (7 -> 30 -> 100 Days) */}
+            <div className="space-y-1.5 pt-2 border-t border-slate-800/60">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-600 dark:text-slate-300 font-semibold">
+                  {streakMilestoneEval.nextMilestoneDays
+                    ? `پیشرفت تا نقطه عطف ${streakMilestoneEval.nextMilestoneDays} روزه (${streakMilestoneEval.daysToNextMilestone} روز باقی‌مانده)`
+                    : 'تمامی نقاط عطف ۷، ۳۰ و ۱۰۰ روزه با موفقیت فتح شدند!'}
+                </span>
+                <span
+                  dir="ltr"
+                  data-testid="streak-next-milestone-progress-label"
+                  className="ltr-inline font-mono text-xs font-bold text-amber-400 tabular-nums"
+                >
+                  {streakStats.currentStreakDays} / {streakMilestoneEval.nextMilestoneDays ?? 100} Days ({streakMilestoneEval.nextMilestoneProgressPercent}%)
+                </span>
+              </div>
+              <div className="w-full h-2.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                <div
+                  data-testid="streak-next-milestone-progress-bar"
+                  className="h-full rounded-full bg-gradient-to-r from-amber-500 via-emerald-500 to-blue-500 transition-all duration-300"
+                  style={{ width: `${Math.max(4, streakMilestoneEval.nextMilestoneProgressPercent)}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 7, 30, and 100-Day Milestone Badges Row */}
+          <div
+            className="grid grid-cols-1 sm:grid-cols-3 gap-3"
+            data-testid="streak-milestone-badges-grid"
+          >
+            {streakMilestoneEval.milestones.map((badge) => {
+              const tierStyles =
+                badge.tier === 'Mythic'
+                  ? badge.unlocked
+                    ? 'border-amber-500/70 bg-amber-500/10'
+                    : 'border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 opacity-75'
+                  : badge.tier === 'Gold'
+                  ? badge.unlocked
+                    ? 'border-emerald-500/60 bg-emerald-500/10'
+                    : 'border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 opacity-75'
+                  : badge.unlocked
+                  ? 'border-blue-500/60 bg-blue-500/10'
+                  : 'border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 opacity-75';
+
+              return (
+                <div
+                  key={badge.badgeId}
+                  data-testid={`streak-milestone-badge-${badge.thresholdDays}`}
+                  data-unlocked={badge.unlocked ? 'true' : 'false'}
+                  className={`rounded-xl border p-3.5 flex flex-col justify-between space-y-2.5 transition-all ${tierStyles}`}
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-1.5 text-[11px] font-mono" dir="ltr">
+                      <span className="font-bold text-slate-700 dark:text-slate-200">
+                        {badge.badgeCode} · {badge.thresholdDays}D
+                      </span>
+                      <span className="font-extrabold text-emerald-500 tabular-nums">
+                        +{badge.bonusXp} XP
+                      </span>
+                    </div>
+
+                    <div className="flex items-start gap-2 pt-0.5">
+                      <div
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                          badge.unlocked
+                            ? badge.tier === 'Mythic'
+                              ? 'bg-amber-500 text-slate-950'
+                              : badge.tier === 'Gold'
+                              ? 'bg-emerald-500 text-slate-950'
+                              : 'bg-blue-600 text-white'
+                            : 'bg-slate-200 dark:bg-slate-800 text-slate-400'
+                        }`}
+                      >
+                        {badge.unlocked ? (
+                          <Trophy className="w-4 h-4" />
+                        ) : (
+                          <Lock className="w-3.5 h-3.5" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-extrabold text-slate-900 dark:text-white leading-5">
+                          {badge.titleFa}
+                        </div>
+                        <div
+                          dir="ltr"
+                          className="ltr-inline text-[10px] font-mono text-blue-500 leading-4 block mt-0.5"
+                        >
+                          {badge.titleEn}
+                        </div>
+                      </div>
+                    </div>
+
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-5">
+                      {badge.descriptionFa}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1 pt-2 border-t border-slate-200/70 dark:border-slate-800/80">
+                    <div className="flex items-center justify-between text-[10px] font-mono" dir="ltr">
+                      <span
+                        data-testid={`streak-milestone-status-${badge.thresholdDays}`}
+                        className={
+                          badge.unlocked
+                            ? 'font-extrabold text-emerald-500'
+                            : 'text-slate-400'
+                        }
+                      >
+                        {badge.unlocked
+                          ? 'UNLOCKED ✓'
+                          : `${badge.daysRemaining}d REMAINING`}
+                      </span>
+                      <span className="text-slate-400 tabular-nums">
+                        {badge.progressPercent}%
+                      </span>
+                    </div>
+                    <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${
+                          badge.unlocked ? 'bg-emerald-500' : 'bg-blue-500'
+                        }`}
+                        style={{ width: `${badge.progressPercent}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           {/* 7-Day Activity Strip */}
@@ -1297,6 +2056,338 @@ export const AchievementsCertificationView: React.FC<{
                 className="ltr-code w-full px-3 py-2 text-xs font-mono rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white"
               />
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* NEW: D3.js Powered Calendar Heatmap (Academy & Studios Study Streak Activity) */}
+      <div
+        className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/75 p-6 sm:p-8 space-y-6"
+        data-testid="d3-study-streak-heatmap"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center text-emerald-500 shrink-0">
+              <Calendar className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
+                  نقشه حرارتی تقویم پیوستگی مطالعه و فعالیت استودیوها (D3.js Calendar Heatmap)
+                </h2>
+                <span
+                  dir="ltr"
+                  data-testid="heatmap-active-days-badge"
+                  className="ltr-inline px-2.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-500 text-xs font-mono font-extrabold tabular-nums"
+                >
+                  {heatmapSummary.activeDaysCount} / {heatmapSummary.cells.length} ACTIVE DAYS
+                </span>
+              </div>
+              <div dir="ltr" className="ltr-inline text-xs font-mono text-slate-500 dark:text-slate-400 mt-0.5">
+                D3.js SVG Activity Matrix · {heatmapWeeksCount}-Week Academy Curriculum &amp; Interactive Studio Telemetry
+              </div>
+            </div>
+          </div>
+
+          {/* Window Switcher (12W / 24W) + Filter Pills by Activity Domain */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div
+              dir="ltr"
+              className="ltr-inline inline-flex items-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 p-0.5"
+              data-testid="heatmap-window-selector"
+            >
+              {([12, 24] as const).map((weeks) => (
+                <button
+                  key={weeks}
+                  type="button"
+                  data-testid={`heatmap-weeks-${weeks}`}
+                  onClick={() => setHeatmapWeeksCount(weeks)}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-colors cursor-pointer ${
+                    heatmapWeeksCount === weeks
+                      ? 'bg-emerald-600 text-white'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  {weeks}W ({weeks * 7}d)
+                </button>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1.5" data-testid="heatmap-domain-filters">
+              {[
+                { id: 'all' as const, labelFa: 'همه فعالیت‌ها', labelEn: 'All' },
+                { id: 'both' as const, labelFa: 'تلفیقی (آکادمی + استودیو)', labelEn: 'Academy + Studios' },
+                { id: 'academy' as const, labelFa: 'مطالعه آکادمی', labelEn: 'Academy Only' },
+                { id: 'studios' as const, labelFa: 'آزمایشگاه استودیو', labelEn: 'Studios Only' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  data-testid={`heatmap-filter-${tab.id}`}
+                  onClick={() => setHeatmapFilterSource(tab.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                    heatmapFilterSource === tab.id
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
+                  }`}
+                >
+                  <span>{tab.labelFa}</span>
+                  <span dir="ltr" className="ltr-inline font-mono text-[10px] opacity-80">
+                    ({tab.labelEn})
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Summary KPI Strip for 12-Week Heatmap */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60">
+            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+              روزهای تلفیقی (Academy + Studios)
+            </div>
+            <div dir="ltr" className="ltr-inline text-lg font-mono font-extrabold text-emerald-500 mt-0.5 tabular-nums">
+              {heatmapSummary.bothActiveDaysCount} Days
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60">
+            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+              روزهای مطالعه ماژول‌های آکادمی
+            </div>
+            <div dir="ltr" className="ltr-inline text-lg font-mono font-extrabold text-blue-500 mt-0.5 tabular-nums">
+              {heatmapSummary.academyOnlyDaysCount} Days
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60">
+            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+              روزهای تمرین در استودیوهای عملی
+            </div>
+            <div dir="ltr" className="ltr-inline text-lg font-mono font-extrabold text-indigo-400 mt-0.5 tabular-nums">
+              {heatmapSummary.studiosOnlyDaysCount} Days
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60">
+            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+              مجموع فعالیت ۱۲ هفته اخیر
+            </div>
+            <div dir="ltr" className="ltr-inline text-lg font-mono font-extrabold text-amber-500 mt-0.5 tabular-nums">
+              {heatmapSummary.totalMinutesInWindow}m · {heatmapSummary.totalStudioRunsInWindow} Runs
+            </div>
+          </div>
+        </div>
+
+        {/* D3 SVG Canvas + Selected Day Telemetry Inspector */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+          {/* D3 SVG Matrix Container (7 Cols) */}
+          <div className="lg:col-span-7 rounded-xl border border-slate-800 bg-slate-950 p-4 sm:p-5 flex flex-col justify-between space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span dir="ltr" className="ltr-inline text-xs font-mono font-bold text-slate-300">
+                D3.JS CALENDAR MATRIX (84 DAYS · CLICK ANY CELL TO INSPECT OR TOGGLE)
+              </span>
+              <span dir="ltr" className="ltr-inline text-[11px] font-mono text-emerald-400">
+                d3.scaleBand + d3.scaleThreshold
+              </span>
+            </div>
+
+            <div dir="ltr" className="w-full overflow-x-auto py-1">
+              <svg
+                ref={heatmapSvgRef}
+                data-testid="d3-calendar-heatmap-svg"
+                className="w-full min-w-[340px] max-w-full h-auto select-none"
+                role="img"
+                aria-label="D3.js Study Streak Calendar Heatmap"
+              />
+            </div>
+
+            {/* Color Legend */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-800/80 text-[11px] text-slate-400">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-sm bg-slate-800 border border-slate-700 inline-block" />
+                  <span>بدون فعالیت (Rest)</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-sm bg-blue-500 inline-block" />
+                  <span>آکادمی (Academy)</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-sm bg-indigo-500 inline-block" />
+                  <span>استودیو (Studios)</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-sm bg-emerald-400 inline-block" />
+                  <span>تلفیقی (Academy + Studios)</span>
+                </span>
+              </div>
+              <div dir="ltr" className="ltr-inline font-mono text-[10px] text-slate-500">
+                Peak Day: {heatmapSummary.maxDailyMinutes} mins
+              </div>
+            </div>
+          </div>
+
+          {/* Selected Day Telemetry Inspector (5 Cols) */}
+          <div
+            data-testid="d3-heatmap-day-inspector"
+            className="lg:col-span-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/70 p-5 flex flex-col justify-between space-y-4"
+          >
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+                <div>
+                  <div className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                    بازرس تله‌متری روز انتخاب‌شده در نقشه D3:
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-base font-extrabold text-slate-900 dark:text-white">
+                      {selectedHeatmapCell.dayLabelFa}
+                    </span>
+                    <span
+                      dir="ltr"
+                      data-testid="selected-heatmap-date"
+                      className="ltr-inline text-xs font-mono font-bold px-2 py-0.5 rounded bg-blue-500/15 text-blue-600 dark:text-blue-400"
+                    >
+                      {selectedHeatmapCell.dateIso}
+                    </span>
+                  </div>
+                </div>
+
+                <span
+                  dir="ltr"
+                  data-testid="selected-heatmap-source-badge"
+                  className={`ltr-inline px-2.5 py-1 rounded-md text-[11px] font-mono font-extrabold uppercase ${
+                    selectedHeatmapCell.activitySource === 'both'
+                      ? 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/40'
+                      : selectedHeatmapCell.activitySource === 'studios'
+                      ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/40'
+                      : selectedHeatmapCell.activitySource === 'academy'
+                      ? 'bg-blue-500/20 text-blue-400 border border-blue-500/40'
+                      : 'bg-slate-200 dark:bg-slate-800 text-slate-500'
+                  }`}
+                >
+                  {selectedHeatmapCell.activitySource === 'both'
+                    ? 'ACADEMY + STUDIOS'
+                    : selectedHeatmapCell.activitySource === 'studios'
+                    ? 'STUDIOS LAB'
+                    : selectedHeatmapCell.activitySource === 'academy'
+                    ? 'ACADEMY STUDY'
+                    : 'REST DAY'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2.5 text-center">
+                <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+                  <div
+                    dir="ltr"
+                    data-testid="selected-heatmap-minutes"
+                    className="ltr-inline text-base font-mono font-black text-blue-500 tabular-nums"
+                  >
+                    {selectedHeatmapCell.minutesStudied}m
+                  </div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">مطالعه آکادمی</div>
+                </div>
+
+                <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+                  <div
+                    dir="ltr"
+                    data-testid="selected-heatmap-studio-runs"
+                    className="ltr-inline text-base font-mono font-black text-indigo-400 tabular-nums"
+                  >
+                    {selectedHeatmapCell.studioRuns}
+                  </div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">اجرای استودیو</div>
+                </div>
+
+                <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+                  <div
+                    dir="ltr"
+                    data-testid="selected-heatmap-xp"
+                    className="ltr-inline text-base font-mono font-black text-emerald-500 tabular-nums"
+                  >
+                    +{selectedHeatmapCell.xpEarned} XP
+                  </div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">امتیاز روز</div>
+                </div>
+              </div>
+
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-6">
+                {selectedHeatmapCell.active
+                  ? `در تاریخ ${selectedHeatmapCell.dateIso}، شما به مدت ${selectedHeatmapCell.minutesStudied} دقیقه در ماژول‌های آکادمی مطالعه داشته و ${selectedHeatmapCell.studioRuns} بار سناریوهای استودیو را اجرا کرده‌اید.`
+                  : `در تاریخ ${selectedHeatmapCell.dateIso} فعالیتی ثبت نشده است. با دکمه‌های زیر می‌توانید نوع فعالیت (آکادمی، استودیو یا تلفیقی) را برای این روز ثبت کنید.`}
+              </p>
+
+              {/* Quick Activity Mode Selector for Selected Day */}
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-2">
+                <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                  تنظیم مستقیم نوع فعالیت برای این روز (Set Day Activity Domain):
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                  {[
+                    {
+                      mode: 'academy' as const,
+                      labelFa: 'فقط آکادمی',
+                      labelEn: 'Academy',
+                      activeClass: 'bg-blue-600 text-white border-blue-500',
+                    },
+                    {
+                      mode: 'studios' as const,
+                      labelFa: 'فقط استودیو',
+                      labelEn: 'Studios',
+                      activeClass: 'bg-indigo-600 text-white border-indigo-500',
+                    },
+                    {
+                      mode: 'both' as const,
+                      labelFa: 'تلفیقی کامل',
+                      labelEn: 'Both',
+                      activeClass: 'bg-emerald-600 text-white border-emerald-500',
+                    },
+                    {
+                      mode: 'none' as const,
+                      labelFa: 'استراحت',
+                      labelEn: 'Rest',
+                      activeClass: 'bg-slate-700 text-white border-slate-600',
+                    },
+                  ].map((item) => (
+                    <button
+                      key={item.mode}
+                      type="button"
+                      data-testid={`set-heatmap-mode-${item.mode}`}
+                      onClick={() => handleSetHeatmapCellMode(selectedHeatmapCell, item.mode)}
+                      className={`px-2 py-1.5 rounded-lg text-[11px] font-bold border transition-colors cursor-pointer flex flex-col items-center justify-center ${
+                        selectedHeatmapCell.activitySource === item.mode
+                          ? item.activeClass
+                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-blue-500/40'
+                      }`}
+                    >
+                      <span>{item.labelFa}</span>
+                      <span dir="ltr" className="ltr-inline text-[9px] font-mono opacity-80">
+                        {item.labelEn}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              data-testid="toggle-heatmap-day-btn"
+              onClick={() => handleToggleHeatmapCellActivity(selectedHeatmapCell)}
+              className={`w-full py-2.5 px-4 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-2 ${
+                selectedHeatmapCell.active
+                  ? 'bg-slate-200 dark:bg-slate-800 hover:bg-rose-500/20 text-slate-700 dark:text-slate-200 hover:text-rose-400'
+                  : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+              }`}
+            >
+              <Flame className="w-4 h-4" />
+              <span>
+                {selectedHeatmapCell.active
+                  ? 'پاک کردن فعالیت این روز در نقشه حرارتی (Clear Day Activity)'
+                  : 'ثبت فعالیت آکادمی و استودیو برای این روز (Log Active Day)'}
+              </span>
+            </button>
           </div>
         </div>
       </div>
@@ -1579,18 +2670,21 @@ export const AchievementsCertificationView: React.FC<{
         </div>
       </div>
 
-      {/* Section 3: Personalized Shareable Progress Report Card & Certificate Preview */}
-      <div className="rounded-xl border border-blue-500/40 bg-gradient-to-br from-slate-900 via-[#0d1528] to-slate-950 text-white p-6 sm:p-8 space-y-6 shadow-xl">
+      {/* Section 3: Personalized Shareable Progress Report Card, Public Link Generator & Social Media Sharing Studio */}
+      <div
+        className="rounded-xl border border-blue-500/40 bg-gradient-to-br from-slate-900 via-[#0d1528] to-slate-950 text-white p-6 sm:p-8 space-y-6 shadow-xl"
+        data-testid="share-progress-section"
+      >
         <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-800 pb-5">
           <div className="space-y-1">
             <div dir="ltr" className="ltr-inline text-xs font-mono text-blue-400">
               OFFICIAL ARCHITECT PROGRESS REPORT CARD · {metrics.certificateSerial}
             </div>
             <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-              کارنامه رسمی پیشرفت و گواهینامه معمار Google Antigravity
+              کارنامه رسمی پیشرفت، لینک عمومی یکتا و اشتراک‌گذاری در شبکه‌های اجتماعی
             </h2>
             <p className="text-xs text-slate-300">
-              آماده اشتراک‌گذاری با تیم مهندسی، ضمیمه در رزومه فنی یا چاپ به عنوان گواهینامه PDF
+              لینک عمومی یکتای کارت مهارت خود را تولید کنید و مستقیماً از طریق APIهای اشتراک‌گذاری شبکه‌های اجتماعی منتشر نمایید
             </p>
           </div>
 
@@ -1598,6 +2692,7 @@ export const AchievementsCertificationView: React.FC<{
             <button
               type="button"
               onClick={() => handleShareReportCard('text')}
+              data-testid="copy-report-text-btn"
               className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
             >
               {copiedReportState === 'text' ? (
@@ -1615,18 +2710,19 @@ export const AchievementsCertificationView: React.FC<{
 
             <button
               type="button"
-              onClick={() => handleShareReportCard('link')}
-              className="px-4 py-2 rounded-lg border border-slate-700 bg-slate-800/90 hover:bg-slate-700 text-slate-100 text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
+              onClick={handleGeneratePublicProgressLink}
+              data-testid="generate-public-link-btn"
+              className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
             >
-              {copiedReportState === 'link' ? (
+              {publicLinkStatus === 'generated' ? (
                 <>
-                  <Check className="w-4 h-4 text-emerald-400" />
-                  <span>لینک تایید کپی شد!</span>
+                  <Check className="w-4 h-4 text-white" />
+                  <span>لینک عمومی یکتا ساخته و کپی شد!</span>
                 </>
               ) : (
                 <>
-                  <Share2 className="w-4 h-4 text-blue-400" />
-                  <span>اشتراک‌گذاری لینک کارنامه (Share Link)</span>
+                  <Link2 className="w-4 h-4" />
+                  <span>تولید لینک عمومی کارنامه (Share Progress Link)</span>
                 </>
               )}
             </button>
@@ -1675,6 +2771,199 @@ export const AchievementsCertificationView: React.FC<{
           <div className="lg:col-span-5">
             <div dir="ltr" className="ltr-code rounded-xl border border-slate-800 bg-slate-950 p-4 text-[11px] font-mono text-slate-200 overflow-x-auto">
               <pre className="leading-relaxed"><code>{shareableText}</code></pre>
+            </div>
+          </div>
+        </div>
+
+        {/* Share Progress Hub: Unique Public Link + Social Media Sharing APIs */}
+        <div
+          data-testid="share-progress-hub"
+          className="rounded-xl border border-slate-800 bg-slate-950/85 p-5 sm:p-6 space-y-5"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/90 pb-4">
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <Share2 className="w-4 h-4 text-emerald-400" />
+                <h3 className="text-sm sm:text-base font-extrabold text-white">
+                  اشتراک‌گذاری کارت پیشرفت و لینک عمومی یکتا (Share Mastery Progress Card)
+                </h3>
+                <span
+                  dir="ltr"
+                  data-testid="public-card-slug-id"
+                  className="ltr-inline px-2 py-0.5 rounded bg-blue-500/15 border border-blue-500/30 text-blue-300 font-mono text-[11px]"
+                >
+                  {shareBundle.cardSlugId}
+                </span>
+              </div>
+              <p className="text-xs text-slate-400">
+                لینک زیر شامل پارامترهای رمزنگاری‌شده سطح، امتیاز XP، تعداد فصول تکمیل‌شده و کد گواهینامه شماست و برای هر بازدیدکننده کارت مهارت شما را بازسازی می‌کند.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  setSharedCardPreview((prev) => (prev ? null : shareBundle.snapshot))
+                }
+                data-testid="preview-public-card-btn"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-semibold cursor-pointer"
+              >
+                <Eye className="w-3.5 h-3.5 text-blue-400" />
+                <span>
+                  {sharedCardPreview
+                    ? 'بستن پیش‌نمایش کارت عمومی'
+                    : 'پیش‌نمایش کارت عمومی (Preview Public Card)'}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => void handleWebShareProgressCard()}
+                data-testid="web-share-api-btn"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold cursor-pointer"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>
+                  {publicLinkStatus === 'shared'
+                    ? 'منتشر شد (Shared via Web API)!'
+                    : 'اشتراک‌گذاری سریع (Web Share API)'}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* Unique Public Link URL Bar */}
+          <div className="space-y-2">
+            <label
+              htmlFor="public-progress-card-url-input"
+              className="flex items-center justify-between text-xs text-slate-300 font-semibold"
+            >
+              <span>آدرس عمومی یکتای کارنامه مهارت (Unique Public Mastery Progress Link):</span>
+              <span dir="ltr" className="ltr-inline font-mono text-[11px] text-emerald-400">
+                Direct Verification URL
+              </span>
+            </label>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+              <input
+                id="public-progress-card-url-input"
+                data-testid="public-progress-card-url-input"
+                type="text"
+                readOnly
+                dir="ltr"
+                value={shareBundle.publicCardUrl}
+                className="ltr-code flex-1 px-3.5 py-2.5 rounded-lg border border-slate-800 bg-slate-900 text-xs font-mono text-blue-300 select-all focus:outline-none focus:border-blue-500"
+              />
+              <button
+                type="button"
+                onClick={handleCopyPublicProgressLink}
+                data-testid="copy-public-link-btn"
+                className="px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shrink-0"
+              >
+                {publicLinkStatus === 'copied' ? (
+                  <>
+                    <Check className="w-4 h-4 text-emerald-300" />
+                    <span>لینک عمومی کپی شد!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4" />
+                    <span>کپی لینک عمومی (Copy Unique Link)</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Social Media Sharing APIs Grid */}
+          <div className="space-y-2.5 pt-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+              <span className="font-semibold text-slate-200">
+                انتشار مستقیم با API شبکه‌های اجتماعی (Social Media Sharing APIs):
+              </span>
+              <span dir="ltr" className="ltr-inline font-mono text-[11px] text-slate-400">
+                LinkedIn · X (Twitter) · Telegram · WhatsApp
+              </span>
+            </div>
+
+            <div
+              data-testid="social-share-grid"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
+            >
+              <a
+                href={shareBundle.socialShareUrls.linkedInUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="share-linkedin-link"
+                className="p-3.5 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 transition-colors flex items-center justify-between gap-3 group"
+              >
+                <div className="space-y-0.5">
+                  <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <span>اشتراک در لینکدین</span>
+                  </div>
+                  <div dir="ltr" className="ltr-inline text-[11px] font-mono text-blue-300">
+                    LinkedIn Share Offsite API
+                  </div>
+                </div>
+                <ExternalLink className="w-4 h-4 text-blue-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
+              </a>
+
+              <a
+                href={shareBundle.socialShareUrls.twitterXUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="share-twitter-link"
+                className="p-3.5 rounded-xl border border-slate-700 bg-slate-900/90 hover:bg-slate-800 transition-colors flex items-center justify-between gap-3 group"
+              >
+                <div className="space-y-0.5">
+                  <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <span>انتشار در شبکه X (توییتر)</span>
+                  </div>
+                  <div dir="ltr" className="ltr-inline text-[11px] font-mono text-slate-300">
+                    X / Twitter Intent Tweet API
+                  </div>
+                </div>
+                <ExternalLink className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
+              </a>
+
+              <a
+                href={shareBundle.socialShareUrls.telegramUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="share-telegram-link"
+                className="p-3.5 rounded-xl border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 transition-colors flex items-center justify-between gap-3 group"
+              >
+                <div className="space-y-0.5">
+                  <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <Send className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>ارسال در تلگرام</span>
+                  </div>
+                  <div dir="ltr" className="ltr-inline text-[11px] font-mono text-cyan-300">
+                    Telegram Share URL API
+                  </div>
+                </div>
+                <ExternalLink className="w-4 h-4 text-cyan-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
+              </a>
+
+              <a
+                href={shareBundle.socialShareUrls.whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="share-whatsapp-link"
+                className="p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors flex items-center justify-between gap-3 group"
+              >
+                <div className="space-y-0.5">
+                  <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <MessageCircle className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>ارسال در واتساپ</span>
+                  </div>
+                  <div dir="ltr" className="ltr-inline text-[11px] font-mono text-emerald-300">
+                    WhatsApp Send API
+                  </div>
+                </div>
+                <ExternalLink className="w-4 h-4 text-emerald-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
+              </a>
             </div>
           </div>
         </div>

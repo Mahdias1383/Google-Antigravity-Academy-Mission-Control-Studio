@@ -606,6 +606,7 @@ export const ModuleContentView: React.FC<{
             <button
               type="button"
               onClick={() => onToggleComplete(module.id)}
+              data-testid="toggle-module-complete-btn"
               className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold border transition-colors cursor-pointer whitespace-nowrap ${
                 isCompleted
                   ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-600 dark:text-emerald-300'

@@ -17,12 +17,15 @@ import {
   History,
   ArrowUpLeft,
   X,
+  Database,
 } from 'lucide-react';
 import { ALL_CURRICULUM_MODULES } from './data/curriculumIndex';
 import {
   serializeRecentSessionSnapshot,
   resolveRecentSessionFromStorage,
   ResolvedRecentSessionDescriptor,
+  buildMissionMilestoneNotification,
+  MissionMilestonePayload,
 } from './utils/generators';
 import { ModuleContentView } from './components/ModuleContentView';
 import {
@@ -41,6 +44,8 @@ import {
   GroundedAiArchitectCopilot,
 } from './components/GlobalSearchAndAiCopilot';
 import { AchievementsCertificationView } from './components/AchievementsCertificationView';
+import { KnowledgeBaseExplorer } from './components/KnowledgeBaseExplorer';
+import { MissionMilestoneOverlay } from './components/MissionMilestoneToast';
 import { PWAInstallButton, OfflineIndicator } from './components/PWAInstallAndOffline';
 
 type ActiveWorkspaceSection =
@@ -51,7 +56,8 @@ type ActiveWorkspaceSection =
   | 'mcp'
   | 'cheatsheets'
   | 'scenarios'
-  | 'ai-architect';
+  | 'ai-architect'
+  | 'knowledge-base';
 
 export default function App() {
   const [darkMode, setDarkMode] = useState<boolean>(true);
@@ -69,10 +75,32 @@ export default function App() {
   const [detectedSession, setDetectedSession] = useState<ResolvedRecentSessionDescriptor | null>(null);
   const [resumeModalOpen, setResumeModalOpen] = useState<boolean>(false);
   const [sessionTrackingReady, setSessionTrackingReady] = useState<boolean>(false);
+  const [activeMilestone, setActiveMilestone] = useState<MissionMilestonePayload | null>(null);
 
   // Detect last accessed module or studio from localStorage on startup
   useEffect(() => {
     try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const requestedSection = searchParams.get('section');
+      const hasSharedCardQuery =
+        requestedSection === 'achievements' ||
+        Boolean(searchParams.get('cardId')) ||
+        Boolean(searchParams.get('cert'));
+
+      if (hasSharedCardQuery) {
+        setActiveSection('achievements');
+        setResumeModalOpen(false);
+        setSessionTrackingReady(true);
+        return;
+      }
+
+      if (requestedSection === 'knowledge-base') {
+        setActiveSection('knowledge-base');
+        setResumeModalOpen(false);
+        setSessionTrackingReady(true);
+        return;
+      }
+
       const moduleSummaries = ALL_CURRICULUM_MODULES.map((m) => ({
         id: m.id,
         number: m.number,
@@ -176,13 +204,44 @@ export default function App() {
   }, []);
 
   const handleToggleModuleComplete = (modId: string) => {
-    setCompletedModules((prev) =>
-      prev.includes(modId) ? prev.filter((id) => id !== modId) : [...prev, modId]
-    );
+    const isAlreadyCompleted = completedModules.includes(modId);
+    if (isAlreadyCompleted) {
+      setCompletedModules((prev) => prev.filter((id) => id !== modId));
+      return;
+    }
+
+    const nextCompleted = [...completedModules, modId];
+    setCompletedModules(nextCompleted);
+
+    const targetMod = ALL_CURRICULUM_MODULES.find((m) => m.id === modId);
+    if (targetMod) {
+      const milestonePayload = buildMissionMilestoneNotification({
+        moduleId: targetMod.id,
+        moduleNumber: targetMod.number,
+        moduleTitleFa: targetMod.titleFa,
+        moduleTitleEn: targetMod.titleEn,
+        completedModules,
+        totalModules: ALL_CURRICULUM_MODULES.length,
+      });
+      setActiveMilestone(milestonePayload);
+    }
   };
 
   const handleCompleteAllModules = () => {
-    setCompletedModules(ALL_CURRICULUM_MODULES.map((m) => m.id));
+    const allIds = ALL_CURRICULUM_MODULES.map((m) => m.id);
+    setCompletedModules(allIds);
+    const finalMod = ALL_CURRICULUM_MODULES[ALL_CURRICULUM_MODULES.length - 1];
+    if (finalMod) {
+      const milestonePayload = buildMissionMilestoneNotification({
+        moduleId: finalMod.id,
+        moduleNumber: finalMod.number,
+        moduleTitleFa: finalMod.titleFa,
+        moduleTitleEn: finalMod.titleEn,
+        completedModules: allIds,
+        totalModules: ALL_CURRICULUM_MODULES.length,
+      });
+      setActiveMilestone(milestonePayload);
+    }
   };
 
   const currentModule =
@@ -341,6 +400,20 @@ export default function App() {
           >
             <Globe className="w-3.5 h-3.5 text-emerald-500" />
             <span>جستجوی زنده مستندات (Search Grounding)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSection('knowledge-base')}
+            data-testid="nav-tab-knowledge-base"
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap ${
+              activeSection === 'knowledge-base'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+            }`}
+          >
+            <Database className="w-3.5 h-3.5 text-blue-500" />
+            <span>کاوشگر پایگاه دانش (Knowledge Base Explorer)</span>
           </button>
         </div>
 
@@ -511,6 +584,12 @@ export default function App() {
                       labelEn: '8 Principal Case Studies',
                       icon: Award,
                     },
+                    {
+                      id: 'knowledge-base',
+                      labelFa: '۶. کاوشگر پایگاه دانش و Context Rot',
+                      labelEn: '.agent/knowledge-base Bento Explorer',
+                      icon: Database,
+                    },
                   ] as const
                 ).map((st) => {
                   const IconComp = st.icon;
@@ -602,6 +681,14 @@ export default function App() {
           )}
 
           {activeSection === 'ai-architect' && <GroundedAiArchitectCopilot />}
+
+          {activeSection === 'knowledge-base' && (
+            <KnowledgeBaseExplorer
+              onExportPdf={(payload) => setPdfPayload(payload)}
+              completedModules={completedModules}
+              onRestoreCompletedModules={(restored) => setCompletedModules(restored)}
+            />
+          )}
         </main>
 
         {/* Sticky On-This-Page Mini-Map (When viewing Curriculum on XL screens) */}
@@ -646,6 +733,26 @@ export default function App() {
       <ScopedPdfExportModal
         payload={pdfPayload}
         onClose={() => setPdfPayload(null)}
+      />
+
+      {/* Mission Milestone Overlay Notification (Confetti + Antigravity Quote) */}
+      <MissionMilestoneOverlay
+        milestone={activeMilestone}
+        onClose={() => setActiveMilestone(null)}
+        onAdvanceNextModule={(nextNum) => {
+          const nextMod = ALL_CURRICULUM_MODULES.find((m) => m.number === nextNum);
+          if (nextMod) {
+            setActiveModuleId(nextMod.id);
+            setActiveSection('curriculum');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+          setActiveMilestone(null);
+        }}
+        onOpenTrophyCase={() => {
+          setActiveSection('achievements');
+          setActiveMilestone(null);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
       />
 
       {/* Resume Recent Session Startup Modal */}

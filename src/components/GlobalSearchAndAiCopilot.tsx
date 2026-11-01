@@ -27,6 +27,7 @@ export const GlobalCommandSearchModal: React.FC<{
       | 'cheatsheets'
       | 'scenarios'
       | 'ai-architect'
+      | 'knowledge-base'
   ) => void;
 }> = ({ isOpen, onClose, onNavigateToModule, onNavigateToStudio }) => {
   const [query, setQuery] = useState<string>('');
@@ -56,10 +57,16 @@ export const GlobalCommandSearchModal: React.FC<{
       | 'mcp'
       | 'cheatsheets'
       | 'scenarios'
-      | 'ai-architect';
+      | 'ai-architect'
+      | 'knowledge-base';
     titleFa: string;
     titleEn: string;
   }[] = [
+    {
+      id: 'knowledge-base',
+      titleFa: 'کاوشگر پایگاه دانش (.agent/knowledge-base) و مهار Context Rot',
+      titleEn: 'Knowledge Base Explorer & Context Rot Bento Grid',
+    },
     {
       id: 'achievements',
       titleFa: 'دستاوردها، پیوستگی مطالعه و کارنامه گواهینامه (Achievements & Certification)',

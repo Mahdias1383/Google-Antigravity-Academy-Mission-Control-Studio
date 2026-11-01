@@ -59,6 +59,8 @@ import {
   appendSectionChangeEvent,
   calculateActivityLogStats,
   filterActivityLogEvents,
+  formatActivityDateDisplay,
+  normalizeDigitsToAscii,
   serializeActivityLogsToStorage,
   parseActivityLogsFromStorage,
   NavigationActivityEvent,
@@ -1267,7 +1269,7 @@ test('Activity Logger: createSectionChangeEvent, appendSectionChangeEvent, stats
   assert.equal(stats.topSection, 'curriculum');
   assert.equal(stats.lastEventIso, '2026-11-01T08:10:00.000Z');
 
-  // 5. Filter by category and search query
+  // 5. Filter by category, section name (EN & FA), and date (ISO YYYY-MM-DD & formatted)
   const studioOnly = filterActivityLogEvents(logs, 'studio', '');
   assert.equal(studioOnly.length, 1);
   assert.equal(studioOnly[0].toSection, 'simulator');
@@ -1276,6 +1278,37 @@ test('Activity Logger: createSectionChangeEvent, appendSectionChangeEvent, stats
   assert.equal(searchMod3.length, 1);
   assert.equal(searchMod3[0].moduleId, 'module-3');
 
+  const searchSectionEn = filterActivityLogEvents(logs, 'all', 'Mission Control Simulator');
+  assert.equal(searchSectionEn.length, 2); // evt2 (toSection) and evt3 (fromSection)
+
+  const searchSectionFa = filterActivityLogEvents(logs, 'all', 'شبیه‌ساز زنده');
+  assert.equal(searchSectionFa.length, 2);
+
+  // Add an event on a different date to verify date filtering
+  const evtDifferentDate = createSectionChangeEvent({
+    fromSection: 'curriculum',
+    toSection: 'guardrails',
+    timestampIso: '2026-10-25T14:30:00.000Z',
+    modules: sampleModules,
+  });
+  const logsWithMultiDates = appendSectionChangeEvent(logs, evtDifferentDate);
+  assert.equal(logsWithMultiDates.length, 4);
+
+  const filterByOctDate = filterActivityLogEvents(logsWithMultiDates, 'all', '2026-10-25');
+  assert.equal(filterByOctDate.length, 1);
+  assert.equal(filterByOctDate[0].toSection, 'guardrails');
+
+  const filterByNovDate = filterActivityLogEvents(logsWithMultiDates, 'all', '2026-11-01');
+  assert.equal(filterByNovDate.length, 3);
+
+  const filterByPersianDigitsDate = filterActivityLogEvents(logsWithMultiDates, 'all', '۲۰۲۶-۱۰-۲۵');
+  assert.equal(filterByPersianDigitsDate.length, 1);
+  assert.equal(filterByPersianDigitsDate[0].toSection, 'guardrails');
+
+  const dateDisplay = formatActivityDateDisplay('2026-11-01T08:10:00.000Z', 'en');
+  assert.equal(dateDisplay.isoDate, '2026-11-01');
+  assert.equal(normalizeDigitsToAscii('۱۴۰۵/۰۸/۱۰'), '1405/08/10');
+
   // 6. Serialization & restoration
   const rawJson = serializeActivityLogsToStorage(logs);
   const restored = parseActivityLogsFromStorage(rawJson);
@@ -1283,4 +1316,5 @@ test('Activity Logger: createSectionChangeEvent, appendSectionChangeEvent, stats
   assert.equal(restored[0].id, evt3.id);
   assert.deepEqual(parseActivityLogsFromStorage('invalid-json'), []);
 });
+
 

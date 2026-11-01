@@ -242,26 +242,153 @@ export function calculateActivityLogStats(
   };
 }
 
+export function normalizeDigitsToAscii(value: string): string {
+  return value
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660));
+}
+
+export function formatActivityDateDisplay(
+  timestampIso: string,
+  language: 'en' | 'fa' = 'en'
+): {
+  isoDate: string;
+  localizedDate: string;
+  localizedTime: string;
+} {
+  const isoDateFallback =
+    typeof timestampIso === 'string' && timestampIso.length >= 10
+      ? timestampIso.slice(0, 10)
+      : timestampIso;
+
+  try {
+    const date = new Date(timestampIso);
+    if (Number.isNaN(date.getTime())) {
+      return {
+        isoDate: isoDateFallback,
+        localizedDate: isoDateFallback,
+        localizedTime: timestampIso,
+      };
+    }
+
+    const isoDate = date.toISOString().slice(0, 10);
+    const locale = language === 'en' ? 'en-US' : 'fa-IR';
+    const localizedDate = date.toLocaleDateString(locale, {
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit',
+    });
+    const localizedTime = date.toLocaleTimeString(locale, {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+
+    return {
+      isoDate,
+      localizedDate,
+      localizedTime,
+    };
+  } catch {
+    return {
+      isoDate: isoDateFallback,
+      localizedDate: isoDateFallback,
+      localizedTime: timestampIso,
+    };
+  }
+}
+
+export function buildEventSearchableDateTokens(timestampIso: string): string {
+  const tokens: string[] = [timestampIso];
+  if (typeof timestampIso === 'string' && timestampIso.length >= 10) {
+    tokens.push(timestampIso.slice(0, 10));
+  }
+
+  try {
+    const date = new Date(timestampIso);
+    if (!Number.isNaN(date.getTime())) {
+      const isoString = date.toISOString();
+      tokens.push(isoString, isoString.slice(0, 10));
+
+      const localYear = date.getFullYear();
+      const localMonth = String(date.getMonth() + 1).padStart(2, '0');
+      const localDay = String(date.getDate()).padStart(2, '0');
+      tokens.push(`${localYear}-${localMonth}-${localDay}`);
+      tokens.push(`${localMonth}/${localDay}/${localYear}`);
+
+      const enShort = date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+      const enLong = date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: '2-digit',
+      });
+      const enNumeric = date.toLocaleDateString('en-US');
+      const faShort = date.toLocaleDateString('fa-IR', {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+      });
+      const faNumeric = date.toLocaleDateString('fa-IR');
+
+      tokens.push(
+        enShort,
+        enLong,
+        enNumeric,
+        faShort,
+        faNumeric,
+        normalizeDigitsToAscii(faShort),
+        normalizeDigitsToAscii(faNumeric)
+      );
+    }
+  } catch {
+    // Ignore invalid date formatting errors
+  }
+
+  return tokens.join(' ').toLowerCase();
+}
+
 export function filterActivityLogEvents(
   logs: NavigationActivityEvent[],
   filterCategory: 'all' | 'curriculum' | 'studio' = 'all',
   searchQuery: string = ''
 ): NavigationActivityEvent[] {
-  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const rawQuery = searchQuery.trim().toLowerCase();
+  const normalizedQuery = normalizeDigitsToAscii(rawQuery);
 
   return logs.filter((entry) => {
     if (filterCategory !== 'all' && entry.category !== filterCategory) {
       return false;
     }
-    if (!normalizedQuery) {
+    if (!rawQuery) {
       return true;
     }
+
+    const sectionHaystack = normalizeDigitsToAscii(
+      [
+        entry.targetTitleFa,
+        entry.targetTitleEn,
+        entry.fromTitleFa,
+        entry.fromTitleEn,
+        entry.toSection,
+        entry.fromSection || '',
+        entry.badgeCode,
+        entry.moduleId || '',
+      ]
+        .join(' ')
+        .toLowerCase()
+    );
+
+    const dateHaystack = buildEventSearchableDateTokens(entry.timestampIso);
+
     return (
-      entry.targetTitleFa.toLowerCase().includes(normalizedQuery) ||
-      entry.targetTitleEn.toLowerCase().includes(normalizedQuery) ||
-      entry.toSection.toLowerCase().includes(normalizedQuery) ||
-      entry.badgeCode.toLowerCase().includes(normalizedQuery) ||
-      (entry.moduleId && entry.moduleId.toLowerCase().includes(normalizedQuery))
+      sectionHaystack.includes(normalizedQuery) ||
+      sectionHaystack.includes(rawQuery) ||
+      dateHaystack.includes(normalizedQuery) ||
+      dateHaystack.includes(rawQuery)
     );
   });
 }

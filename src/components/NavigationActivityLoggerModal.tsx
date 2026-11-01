@@ -11,12 +11,14 @@ import {
   Compass,
   Filter,
   Check,
+  Calendar,
 } from 'lucide-react';
 import {
   NavigationActivityEvent,
   WorkspaceSectionId,
   calculateActivityLogStats,
   filterActivityLogEvents,
+  formatActivityDateDisplay,
   serializeActivityLogsToStorage,
 } from '../utils/activityLogger';
 import { useLanguage } from '../context/LanguageContext';
@@ -48,19 +50,6 @@ export const NavigationActivityLoggerModal: React.FC<NavigationActivityLoggerMod
   );
 
   if (!isOpen) return null;
-
-  const formatTimeDisplay = (iso: string) => {
-    try {
-      const date = new Date(iso);
-      return date.toLocaleTimeString(language === 'en' ? 'en-US' : 'fa-IR', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-      });
-    } catch {
-      return iso;
-    }
-  };
 
   const handleCopyOrDownloadJson = () => {
     const jsonPayload = serializeActivityLogsToStorage(logs);
@@ -220,26 +209,57 @@ export const NavigationActivityLoggerModal: React.FC<NavigationActivityLoggerMod
             ))}
           </div>
 
-          <div className="relative flex-1 min-w-[200px] max-w-xs">
-            <Search
-              className={`w-3.5 h-3.5 text-slate-400 absolute top-1/2 -translate-y-1/2 ${
-                isRTL ? 'right-3' : 'left-3'
-              }`}
-            />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              aria-label={language === 'en' ? 'Filter navigation history' : 'جستجو در تاریخچه ناوبری'}
-              placeholder={
-                language === 'en'
-                  ? 'Filter by section or module...'
-                  : 'جستجوی نام بخش یا کد فصل...'
-              }
-              className={`w-full ${
-                isRTL ? 'pr-8 pl-3' : 'pl-8 pr-3'
-              } py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500`}
-            />
+          <div className="flex items-center gap-2 flex-1 min-w-[240px] max-w-md">
+            <div className="relative flex-1">
+              <Search
+                className={`w-3.5 h-3.5 text-slate-400 absolute top-1/2 -translate-y-1/2 pointer-events-none ${
+                  isRTL ? 'right-3' : 'left-3'
+                }`}
+              />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                data-testid="activity-logger-search-input"
+                aria-label={
+                  language === 'en'
+                    ? 'Filter navigation history by section name or date'
+                    : 'فیلتر تاریخچه ناوبری بر اساس نام بخش یا تاریخ'
+                }
+                placeholder={
+                  language === 'en'
+                    ? 'Filter by section name or date (YYYY-MM-DD)...'
+                    : 'فیلتر بر اساس نام بخش یا تاریخ (YYYY-MM-DD)...'
+                }
+                className={`w-full ${
+                  isRTL ? 'pr-8 pl-8' : 'pl-8 pr-8'
+                } py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500`}
+              />
+              {searchQuery.trim().length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  data-testid="activity-logger-clear-search-btn"
+                  aria-label={
+                    language === 'en'
+                      ? 'Clear section or date filter'
+                      : 'پاک کردن فیلتر نام بخش یا تاریخ'
+                  }
+                  className={`absolute top-1/2 -translate-y-1/2 ${
+                    isRTL ? 'left-2' : 'right-2'
+                  } p-0.5 rounded text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer`}
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+            <span
+              dir="ltr"
+              data-testid="activity-logger-filtered-count"
+              className="ltr-inline px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px] font-mono font-semibold text-slate-600 dark:text-slate-300 shrink-0 tabular-nums"
+            >
+              {filteredLogs.length}/{logs.length}
+            </span>
           </div>
         </div>
 
@@ -266,7 +286,9 @@ export const NavigationActivityLoggerModal: React.FC<NavigationActivityLoggerMod
               </p>
             </div>
           ) : (
-            filteredLogs.map((item, idx) => (
+            filteredLogs.map((item, idx) => {
+              const dateMeta = formatActivityDateDisplay(item.timestampIso, language);
+              return (
               <div
                 key={item.id}
                 data-testid="activity-log-entry"
@@ -286,17 +308,25 @@ export const NavigationActivityLoggerModal: React.FC<NavigationActivityLoggerMod
                     >
                       {item.badgeCode}
                     </span>
-                    {idx === 0 && (
-                      <span className="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
+                    {logs[0]?.id === item.id && (
+                      <span className="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold whitespace-nowrap">
                         {language === 'en' ? 'Current Active' : 'نمای فعلی'}
                       </span>
                     )}
                     <span
                       dir="ltr"
-                      className="ltr-inline text-[11px] font-mono text-slate-400 flex items-center gap-1"
+                      data-testid="activity-log-entry-date"
+                      className="ltr-code px-2 py-0.5 rounded bg-slate-200/60 dark:bg-slate-800/80 text-[10px] font-mono text-slate-600 dark:text-slate-300 inline-flex items-center gap-1.5 whitespace-nowrap"
                     >
-                      <Clock className="w-3 h-3" />
-                      {formatTimeDisplay(item.timestampIso)}
+                      <Calendar className="w-3 h-3 text-indigo-500 shrink-0" />
+                      <span>{dateMeta.isoDate}</span>
+                    </span>
+                    <span
+                      dir="ltr"
+                      className="ltr-code text-[11px] font-mono text-slate-400 inline-flex items-center gap-1 whitespace-nowrap"
+                    >
+                      <Clock className="w-3 h-3 shrink-0" />
+                      <span>{dateMeta.localizedTime}</span>
                     </span>
                   </div>
 
@@ -331,7 +361,8 @@ export const NavigationActivityLoggerModal: React.FC<NavigationActivityLoggerMod
                   <ArrowUpRight className="w-3.5 h-3.5" />
                 </button>
               </div>
-            ))
+              );
+            })
           )}
         </div>
 

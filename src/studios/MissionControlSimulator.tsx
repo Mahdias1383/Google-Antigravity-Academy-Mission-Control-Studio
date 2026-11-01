@@ -363,34 +363,26 @@ export const MissionControlSimulator: React.FC<{
   return (
     <div className="space-y-6 pb-12">
       {/* Studio Header */}
-      <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/75 p-6 sm:p-8 space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
-          <div>
-            <div className="text-xs font-bold text-blue-600 dark:text-blue-400">
-              {language === 'en'
-                ? 'Studio 1 · Google Antigravity Interactive Environment Simulator'
-                : 'استودیو ۱ · شبیه‌ساز تعاملی محیط Google Antigravity'}
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">
-              {language === 'en'
-                ? 'Live Mission Control Simulator & Artifact PR-Style Review'
-                : 'شبیه‌ساز زنده Mission Control و ممیزی خطی آرتیفکت‌ها'}
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1">
-              {language === 'en'
-                ? 'Select an engineering task, click any line of implementation_plan.md to submit PR-style review comments, and observe autonomous agent execution producing walkthrough.md.'
-                : 'یک تسک مهندسی را انتخاب کنید، روی هر خط از implementation_plan.md کلیک کرده و کامنت ممیزی PR-Style ثبت کنید، سپس اجرای خودکار ایجنت و تولید walkthrough.md را مشاهده نمایید.'}
-            </p>
+      <div className="rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-white dark:bg-[#0c121e] p-6 sm:p-8 space-y-5 shadow-xs">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/70 dark:border-white/[0.06] pb-4">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <span className="font-bold text-blue-600 dark:text-blue-400">
+              {language === 'en' ? 'Studio 01' : 'استودیو ۰۱'}
+            </span>
+            <span aria-hidden="true" className="opacity-40">·</span>
+            <span dir="ltr" className="ltr-inline font-mono">
+              Mission Control &amp; Artifact Review Gate
+            </span>
           </div>
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={() => handleSyncAndExportWorkspace(true)}
               data-testid="sync-workspace-btn"
-              className="px-3.5 py-2 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors flex items-center gap-2 cursor-pointer whitespace-nowrap"
+              className="px-3.5 py-2 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors flex items-center gap-2 cursor-pointer whitespace-nowrap"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>{language === 'en' ? 'Sync Workspace' : 'همگام‌سازی محیط کار (Sync Workspace)'}</span>
+              <span>{language === 'en' ? 'Sync Workspace' : 'همگام‌سازی محیط کار'}</span>
             </button>
             <ExportSectionPdfButton
               label={language === 'en' ? 'Export Section PDF' : 'دریافت PDF این بخش'}
@@ -398,6 +390,19 @@ export const MissionControlSimulator: React.FC<{
               onExport={onExportPdf}
             />
           </div>
+        </div>
+
+        <div className="space-y-2.5">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+            {language === 'en'
+              ? 'Live Mission Control Simulator & Artifact PR-Style Review'
+              : 'شبیه‌ساز زنده Mission Control و ممیزی خطی آرتیفکت‌ها'}
+          </h1>
+          <p className="text-xs sm:text-sm leading-7 text-slate-600 dark:text-slate-300 max-w-4xl">
+            {language === 'en'
+              ? 'Select an engineering task, click any line of implementation_plan.md to submit PR-style review comments, and observe autonomous agent execution producing walkthrough.md.'
+              : 'یک تسک مهندسی را انتخاب کنید، روی هر خط از implementation_plan.md کلیک کرده و کامنت ممیزی PR-Style ثبت کنید، سپس اجرای خودکار ایجنت و تولید walkthrough.md را مشاهده نمایید.'}
+          </p>
         </div>
 
         {syncStatusBanner && (

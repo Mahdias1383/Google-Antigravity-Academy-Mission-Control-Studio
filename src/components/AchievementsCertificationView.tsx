@@ -1059,21 +1059,21 @@ export const AchievementsCertificationView: React.FC<{
 
       {/* Header Banner */}
       <div
-        className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/75 p-6 sm:p-8 space-y-5"
+        className="rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-white dark:bg-[#0c121e] p-6 sm:p-8 space-y-5 shadow-xs"
         data-testid="achievements-header-banner"
       >
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/70 dark:border-white/[0.06] pb-4">
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <span className="font-bold text-blue-600 dark:text-blue-400">
               {language === 'en'
-                ? 'Engineering Academy · Achievements, Mastery Rank & Official Certification'
-                : 'آکادمی مهندسی · دستاوردها، رتبه مهارت (Mastery Rank) و گواهینامه رسمی'}
+                ? 'Studio 08 · Achievements, Mastery Rank & Certification'
+                : 'استودیو ۰۸ · دستاوردها، رتبه مهارت و گواهینامه رسمی'}
             </span>
-            <span aria-hidden="true">·</span>
+            <span aria-hidden="true" className="opacity-40">·</span>
             <span dir="ltr" className="ltr-inline font-mono">
               {metrics.certificateSerial}
             </span>
-            <span aria-hidden="true">·</span>
+            <span aria-hidden="true" className="opacity-40">·</span>
             <span dir="ltr" className="ltr-inline font-mono text-emerald-500 font-bold">
               LVL {xpProgression.currentLevel} · {xpProgression.totalCombinedXp} Total XP
             </span>
@@ -1097,8 +1097,8 @@ export const AchievementsCertificationView: React.FC<{
                 className="px-3.5 py-2 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors cursor-pointer whitespace-nowrap"
               >
                 {language === 'en'
-                  ? 'Unlock All 8 Modules (Full Certification)'
-                  : 'تکمیل تمام ۸ فصل (Unlock Full Certification)'}
+                  ? 'Unlock All 8 Modules'
+                  : 'تکمیل تمام ۸ فصل'}
               </button>
             )}
           </div>
@@ -1106,7 +1106,7 @@ export const AchievementsCertificationView: React.FC<{
 
         {/* Architect Identity & Mastery Rank Header Bar (User Name + Assigned Mastery Rank Next to Name) */}
         <div
-          className="rounded-xl border border-blue-500/30 bg-slate-50/90 dark:bg-slate-950/80 p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+          className="rounded-xl border border-slate-200/80 dark:border-white/[0.07] bg-slate-50/80 dark:bg-[#090d16] p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4"
           data-testid="achievements-header-identity-bar"
         >
           <div className="flex flex-wrap items-center gap-3">

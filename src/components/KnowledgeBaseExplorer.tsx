@@ -1128,168 +1128,155 @@ export const KnowledgeBaseExplorer: React.FC<{
   return (
     <div className="space-y-6" data-testid="knowledge-base-explorer">
       {/* Studio Header Card */}
-      <header className="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827]/90 shadow-lg space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2 text-xs">
+      <header className="p-6 sm:p-8 rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-white dark:bg-[#0c121e] shadow-xs space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/70 dark:border-white/[0.06] pb-4">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <span className="text-blue-600 dark:text-blue-400 font-bold flex items-center gap-1.5">
               <Database className="w-3.5 h-3.5" />
               <span>
-                {language === 'en'
-                  ? 'Knowledge Base & Agent Memory Explorer'
-                  : 'کاوشگر پایگاه دانش و حافظه ایجنت'}
+                {language === 'en' ? 'Studio 06' : 'استودیو ۰۶'}
               </span>
             </span>
-            <span aria-hidden="true" className="text-slate-400">·</span>
-            <span
-              dir="ltr"
-              className="ltr-inline font-mono text-slate-500 dark:text-slate-400"
-            >
+            <span aria-hidden="true" className="opacity-40">·</span>
+            <span dir="ltr" className="ltr-inline font-mono">
               .agent/knowledge-base/* · Context Rot Manager
             </span>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json,application/json"
-              onChange={handleImportFileChange}
-              data-testid="kb-import-file-input"
-              className="hidden"
-            />
-
-            <button
-              type="button"
-              onClick={handleExportKnowledgeBaseJson}
-              data-testid="kb-export-json-btn"
-              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>
-                {language === 'en'
-                  ? 'Export Knowledge Base JSON'
-                  : 'خروجی JSON پایگاه دانش (Export JSON)'}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleToggleImportDrawer}
-              data-testid="kb-import-json-toggle-btn"
-              className="px-3.5 py-2 rounded-xl border border-indigo-500/40 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <Upload className="w-3.5 h-3.5" />
-              <span>
-                {language === 'en'
-                  ? 'Restore from JSON (Import)'
-                  : 'بازیابی از فایل JSON (Import)'}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleResyncWithLocalStorage}
-              data-testid="kb-resync-storage-btn"
-              className="px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/90 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <RefreshCw className="w-3.5 h-3.5 text-blue-500" />
-              <span>
-                {language === 'en'
-                  ? 'Resync with localStorage'
-                  : 'همگام‌سازی مجدد با localStorage'}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setShowAddForm((prev) => !prev)}
-              data-testid="kb-add-entry-btn"
-              className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>
-                {language === 'en'
-                  ? 'Add New Knowledge Entry'
-                  : 'افزودن آیتم دانشی جدید'}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setShowQuizSection((prev) => !prev);
-                if (!showQuizSection) {
-                  setTimeout(() => {
-                    quizSectionRef.current?.scrollIntoView({
-                      behavior: 'smooth',
-                      block: 'start',
-                    });
-                  }, 80);
-                }
-              }}
-              data-testid="kb-open-quiz-btn"
-              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-extrabold flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
-            >
-              <HelpCircle className="w-3.5 h-3.5" />
-              <span>
-                {showQuizSection
-                  ? language === 'en'
-                    ? 'Close Quiz Panel'
-                    : 'بستن پنل آزمون'
-                  : language === 'en'
-                  ? 'Knowledge Base Quiz'
-                  : 'آزمون دانشی پایگاه دانش'}
-              </span>
-              <span
-                dir="ltr"
-                className="ltr-inline font-mono text-[10px] bg-white/20 px-1.5 py-0.5 rounded font-bold"
-              >
-                Quiz &amp; XP
-              </span>
-            </button>
-
             <ExportSectionPdfButton
               label={
                 language === 'en'
-                  ? 'Export KB Audit PDF'
-                  : 'دریافت PDF گزارش پایگاه دانش'
+                  ? 'Export KB PDF'
+                  : 'دریافت PDF این بخش'
               }
               payload={kbPdfPayload}
               onExport={onExportPdf}
             />
+            <button
+              type="button"
+              onClick={() => setShowAddForm((prev) => !prev)}
+              data-testid="kb-add-entry-btn"
+              className="px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>
+                {language === 'en'
+                  ? 'Add Knowledge Entry'
+                  : 'افزودن آیتم دانشی'}
+              </span>
+            </button>
           </div>
         </div>
 
-        <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
-          {language === 'en' ? (
-            <>
-              Visual <code dir="ltr" className="ltr-inline">Knowledge Base Explorer</code> &amp; Manual{' '}
-              <code dir="ltr" className="ltr-inline">Context Rot</code> Mitigation
-            </>
-          ) : (
-            <>
-              کاوشگر بصری پایگاه دانش (<code dir="ltr" className="ltr-inline">Knowledge Base Explorer</code>) و مهار دستی <code dir="ltr" className="ltr-inline">Context Rot</code>
-            </>
-          )}
-        </h1>
+        <div className="space-y-2.5">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+            {language === 'en' ? (
+              <>
+                Visual <code dir="ltr" className="ltr-inline">Knowledge Base Explorer</code> &amp; Manual{' '}
+                <code dir="ltr" className="ltr-inline">Context Rot</code> Mitigation
+              </>
+            ) : (
+              <>
+                کاوشگر بصری پایگاه دانش و مهار دستی <code dir="ltr" className="ltr-inline">Context Rot</code>
+              </>
+            )}
+          </h1>
 
-        <p className="text-xs sm:text-sm leading-7 text-slate-600 dark:text-slate-300">
-          {language === 'en' ? (
-            <>
-              In the <strong className="text-slate-900 dark:text-white">Google Antigravity</strong> architecture, accumulating outdated logs, deprecated rules, and stale state inside{' '}
-              <code dir="ltr" className="ltr-inline">.agent/knowledge-base/</code> and{' '}
-              <code dir="ltr" className="ltr-inline">localStorage</code> triggers destructive{' '}
-              <strong className="text-amber-600 dark:text-amber-400">Context Rot</strong>. In this searchable Bento Grid, you can inspect, edit, or prune persistent user state and knowledge items in real time.
-            </>
-          ) : (
-            <>
-              در معماری <strong className="text-slate-900 dark:text-white">Google Antigravity</strong>، انباشت لاگ‌های قدیمی، قوانین منسوخ و وضعیت‌های تاریخ‌گذشته در دایرکتوری{' '}
-              <code dir="ltr" className="ltr-inline">.agent/knowledge-base/</code> و حافظه{' '}
-              <code dir="ltr" className="ltr-inline">localStorage</code> منجر به پدیده مخرب{' '}
-              <strong className="text-amber-600 dark:text-amber-400">پوسیدگی زمینه (Context Rot)</strong> می‌شود. در این شبکه Bento قابل جستجو، می‌توانید وضعیت پایدار کاربر و آیتم‌های دانشی را به‌صورت زنده بررسی، ویرایش یا هرس (Prune) کنید.
-            </>
-          )}
-        </p>
+          <p className="text-xs sm:text-sm leading-7 text-slate-600 dark:text-slate-300 max-w-4xl">
+            {language === 'en' ? (
+              <>
+                In the <strong className="text-slate-900 dark:text-white">Google Antigravity</strong> architecture, accumulating outdated logs, deprecated rules, and stale state inside{' '}
+                <code dir="ltr" className="ltr-inline">.agent/knowledge-base/</code> and{' '}
+                <code dir="ltr" className="ltr-inline">localStorage</code> triggers destructive{' '}
+                <strong className="text-amber-600 dark:text-amber-400">Context Rot</strong>. In this searchable Bento Grid, you can inspect, edit, or prune persistent user state and knowledge items in real time.
+              </>
+            ) : (
+              <>
+                در معماری <strong className="text-slate-900 dark:text-white">Google Antigravity</strong>، انباشت لاگ‌های قدیمی، قوانین منسوخ و وضعیت‌های تاریخ‌گذشته در دایرکتوری{' '}
+                <code dir="ltr" className="ltr-inline">.agent/knowledge-base/</code> و حافظه{' '}
+                <code dir="ltr" className="ltr-inline">localStorage</code> منجر به پدیده مخرب{' '}
+                <strong className="text-amber-600 dark:text-amber-400">پوسیدگی زمینه</strong> می‌شود. در این شبکه Bento قابل جستجو، می‌توانید وضعیت پایدار کاربر و آیتم‌های دانشی را به‌صورت زنده بررسی، ویرایش یا هرس کنید.
+              </>
+            )}
+          </p>
+        </div>
+
+        {/* Secondary Knowledge Base Operations Bar */}
+        <div className="pt-2 border-t border-slate-200/70 dark:border-white/[0.06] flex flex-wrap items-center gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,application/json"
+            onChange={handleImportFileChange}
+            data-testid="kb-import-file-input"
+            className="hidden"
+          />
+
+          <button
+            type="button"
+            onClick={handleExportKnowledgeBaseJson}
+            data-testid="kb-export-json-btn"
+            className="px-3 py-1.5 rounded-lg bg-emerald-600/10 border border-emerald-500/30 hover:bg-emerald-600/20 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>
+              {language === 'en' ? 'Export JSON' : 'خروجی JSON'}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleToggleImportDrawer}
+            data-testid="kb-import-json-toggle-btn"
+            className="px-3 py-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <Upload className="w-3.5 h-3.5" />
+            <span>
+              {language === 'en' ? 'Import JSON' : 'بازیابی از JSON'}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleResyncWithLocalStorage}
+            data-testid="kb-resync-storage-btn"
+            className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.04] hover:bg-slate-100 dark:hover:bg-white/[0.08] text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <RefreshCw className="w-3.5 h-3.5 text-blue-500" />
+            <span>
+              {language === 'en' ? 'Resync localStorage' : 'همگام‌سازی localStorage'}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setShowQuizSection((prev) => !prev);
+              if (!showQuizSection) {
+                setTimeout(() => {
+                  quizSectionRef.current?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start',
+                  });
+                }, 80);
+              }
+            }}
+            data-testid="kb-open-quiz-btn"
+            className="px-3 py-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-300 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <HelpCircle className="w-3.5 h-3.5" />
+            <span>
+              {showQuizSection
+                ? language === 'en'
+                  ? 'Close Quiz'
+                  : 'بستن آزمون'
+                : language === 'en'
+                ? 'Knowledge Quiz'
+                : 'آزمون پایگاه دانش'}
+            </span>
+          </button>
+        </div>
 
         {statusBanner && (
           <div

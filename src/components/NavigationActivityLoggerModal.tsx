@@ -98,12 +98,12 @@ export const NavigationActivityLoggerModal: React.FC<NavigationActivityLoggerMod
     >
       <div
         dir={isRTL ? 'rtl' : 'ltr'}
-        className="w-full max-w-3xl rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0d1322] text-slate-900 dark:text-slate-100 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+        className="w-full max-w-3xl rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0c121e] text-slate-900 dark:text-slate-100 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
       >
         {/* Header */}
-        <div className="px-6 py-3.5 bg-slate-100 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
+        <div className="px-6 py-4 bg-slate-50/90 dark:bg-[#090d16] border-b border-slate-200/80 dark:border-white/[0.07] flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-600/15 border border-indigo-500/40 flex items-center justify-center text-indigo-500 shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-500 shrink-0">
               <Activity className="w-5 h-5" />
             </div>
             <div>
@@ -129,7 +129,7 @@ export const NavigationActivityLoggerModal: React.FC<NavigationActivityLoggerMod
             onClick={onClose}
             aria-label={language === 'en' ? 'Close Navigation Activity Logger' : 'بستن پنجره تاریخچه ناوبری'}
             data-testid="close-activity-logger-btn"
-            className="p-2 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            className="p-2 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/[0.06] transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -668,14 +668,14 @@ export const NavigationActivityLoggerModal: React.FC<NavigationActivityLoggerMod
         </div>
 
         {/* Footer Actions */}
-        <div className="px-6 py-3.5 bg-slate-100 dark:bg-slate-900/90 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+        <div className="px-6 py-3.5 bg-slate-50/90 dark:bg-[#090d16] border-t border-slate-200/80 dark:border-white/[0.07] flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={handleCopyOrDownloadJson}
               disabled={logs.length === 0}
               data-testid="export-activity-json-btn"
-              className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:border-indigo-500/50 disabled:opacity-40 flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[0.04] text-xs font-semibold text-slate-700 dark:text-slate-200 hover:border-indigo-500/50 disabled:opacity-40 flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               {copiedJson ? (
                 <>
@@ -705,7 +705,7 @@ export const NavigationActivityLoggerModal: React.FC<NavigationActivityLoggerMod
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-1.5 rounded-lg bg-slate-800 dark:bg-slate-700 text-white text-xs font-bold hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors cursor-pointer"
+            className="px-4 py-1.5 rounded-lg bg-slate-900 dark:bg-white/[0.08] text-white text-xs font-bold hover:bg-slate-800 dark:hover:bg-white/[0.12] transition-colors cursor-pointer"
           >
             {language === 'en' ? 'Close' : 'بستن'}
           </button>

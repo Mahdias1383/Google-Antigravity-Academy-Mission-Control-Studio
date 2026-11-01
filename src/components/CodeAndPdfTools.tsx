@@ -59,16 +59,18 @@ export const ScopedPdfExportModal: React.FC<{
       aria-modal="true"
       aria-labelledby="pdf-modal-title"
     >
-      <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col rounded-xl bg-white text-slate-900 border border-slate-200 shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col rounded-2xl bg-white text-slate-900 border border-slate-200/80 shadow-2xl overflow-hidden">
         {/* Top Action Bar (Hidden in Print) */}
-        <div className="flex items-center justify-between px-6 py-4 bg-slate-900 text-white border-b border-slate-800 print:hidden">
+        <div className="flex items-center justify-between px-6 py-4 bg-[#090d16] text-white border-b border-white/[0.08] print:hidden">
           <div className="flex items-center gap-3">
-            <Printer className="w-5 h-5 text-blue-400" />
+            <div className="w-9 h-9 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0">
+              <Printer className="w-4 h-4" />
+            </div>
             <div>
               <h3 id="pdf-modal-title" className="text-sm font-bold">
                 {language === 'en'
-                  ? 'Standard PDF Export Preview (Scoped Section Export)'
-                  : 'پیش‌نمایش و خروجی استاندارد PDF (Scoped Section Export)'}
+                  ? 'Scoped Section PDF Export Preview'
+                  : 'پیش‌نمایش و خروجی استاندارد PDF این بخش'}
               </h3>
               <p className="text-xs text-slate-400">
                 {language === 'en'
@@ -90,7 +92,7 @@ export const ScopedPdfExportModal: React.FC<{
               type="button"
               onClick={onClose}
               aria-label={language === 'en' ? 'Close PDF modal' : 'بستن پنجره PDF'}
-              className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+              className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/[0.06] transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -189,10 +191,49 @@ export const CodeSandboxTabs: React.FC<{ examples: CodeExample[] }> = ({ example
   };
 
   return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-950 text-slate-100 overflow-hidden my-4">
-      {/* Tab Selector Header */}
+    <div className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-[#090d16] text-slate-100 overflow-hidden my-4 shadow-xs">
+      {/* Unified IDE Top Header Bar */}
+      <div
+        dir="ltr"
+        className="ltr-code flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 bg-[#0c121e] border-b border-white/[0.07] text-xs font-mono"
+      >
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex items-center gap-1.5 shrink-0" aria-hidden="true">
+            <span className="w-2.5 h-2.5 rounded-full bg-slate-700/80" />
+            <span className="w-2.5 h-2.5 rounded-full bg-slate-700/80" />
+            <span className="w-2.5 h-2.5 rounded-full bg-slate-700/80" />
+          </div>
+          <span className="h-3.5 w-px bg-white/10 mx-0.5 shrink-0" aria-hidden="true" />
+          <Terminal className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+          <span className="text-slate-200 font-semibold truncate">{activeExample.filename}</span>
+          <span className="px-1.5 py-0.5 rounded bg-white/[0.05] border border-white/[0.07] text-[10px] text-slate-400 uppercase">
+            {activeExample.language}
+          </span>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => handleCopy(activeExample.code, activeExample.id)}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.09] text-slate-200 transition-colors cursor-pointer shrink-0"
+          aria-label={`Copy ${activeExample.filename}`}
+        >
+          {copiedId === activeExample.id ? (
+            <>
+              <Check className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="text-emerald-400">Copied</span>
+            </>
+          ) : (
+            <>
+              <Copy className="w-3.5 h-3.5" />
+              <span>Copy Code</span>
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* Multi-File Tab Strip (when multiple code examples exist) */}
       {examples.length > 1 && (
-        <div className="flex items-center gap-1 px-3 pt-2.5 bg-slate-900/90 border-b border-slate-800 overflow-x-auto">
+        <div className="flex items-center gap-1 px-3 py-1.5 bg-[#0b101b] border-b border-white/[0.06] overflow-x-auto">
           {examples.map((ex, idx) => {
             const exEn = CODE_EXAMPLE_EN_MAP[ex.id];
             return (
@@ -200,10 +241,10 @@ export const CodeSandboxTabs: React.FC<{ examples: CodeExample[] }> = ({ example
                 key={ex.id}
                 type="button"
                 onClick={() => setActiveIndex(idx)}
-                className={`px-3.5 py-2 text-xs font-medium rounded-t-lg transition-colors flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer ${
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer ${
                   idx === activeIndex
-                    ? 'bg-slate-950 text-blue-400 border-t border-x border-slate-800'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-blue-600/15 text-blue-400 border border-blue-500/30 font-semibold'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
                 }`}
               >
                 <FileCode className="w-3.5 h-3.5 shrink-0" />
@@ -214,43 +255,14 @@ export const CodeSandboxTabs: React.FC<{ examples: CodeExample[] }> = ({ example
         </div>
       )}
 
-      {/* Description Bar */}
-      <div className="px-4 py-2.5 bg-slate-900/50 border-b border-slate-800/80 text-xs text-slate-300 flex flex-wrap items-center justify-between gap-2">
+      {/* Context Description Sub-Header */}
+      <div className="px-4 py-2 bg-[#0b101b]/60 border-b border-white/[0.06] text-xs text-slate-300">
         <span>{language === 'en' && activeEn ? activeEn.descriptionEn : activeExample.description}</span>
-        <div dir="ltr" className="ltr-inline flex items-center gap-3 text-slate-400 font-mono">
-          <span>{activeExample.filename}</span>
-          <span>·</span>
-          <span>{activeExample.language}</span>
-        </div>
       </div>
 
-      {/* Strict LTR Code Header & Body */}
+      {/* Strict LTR Code Body */}
       <div dir="ltr" className="ltr-code relative">
-        <div className="flex items-center justify-between px-4 py-2 bg-slate-900/80 border-b border-slate-800/80 text-xs font-mono text-slate-400">
-          <div className="flex items-center gap-2">
-            <Terminal className="w-3.5 h-3.5 text-blue-400" />
-            <span className="text-slate-200 font-medium">{activeExample.filename}</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => handleCopy(activeExample.code, activeExample.id)}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors cursor-pointer"
-            aria-label={`Copy ${activeExample.filename}`}
-          >
-            {copiedId === activeExample.id ? (
-              <>
-                <Check className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="text-emerald-400">Copied</span>
-              </>
-            ) : (
-              <>
-                <Copy className="w-3.5 h-3.5" />
-                <span>Copy Code</span>
-              </>
-            )}
-          </button>
-        </div>
-        <pre className="p-4 text-xs sm:text-[13px] leading-relaxed font-mono overflow-x-auto text-slate-100">
+        <pre className="p-4 sm:p-5 text-xs sm:text-[13px] leading-relaxed font-mono overflow-x-auto text-slate-100">
           <code>{activeExample.code}</code>
         </pre>
       </div>

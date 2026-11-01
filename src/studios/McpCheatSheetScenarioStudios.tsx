@@ -88,34 +88,39 @@ export const McpVisualStudio: React.FC<{
 
   return (
     <div className="space-y-6 pb-12">
-      <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/75 p-6 sm:p-8 space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
-          <div>
-            <div className="text-xs font-bold text-blue-600 dark:text-blue-400">
-              {language === 'en'
-                ? 'Studio 03 · Model Context Protocol (MCP) Integration'
-                : 'استودیو ۳ · یکپارچه‌سازی Model Context Protocol (MCP)'}
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">
-              {language === 'en' ? (
-                <>Visual Studio for Python <code dir="ltr" className="ltr-inline">FastMCP</code> &amp; <code dir="ltr" className="ltr-inline">mcp_config.json</code></>
-              ) : (
-                <>استودیوی بصری ساخت سرور پایتون <code dir="ltr" className="ltr-inline">FastMCP</code> و <code dir="ltr" className="ltr-inline">mcp_config.json</code></>
-              )}
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1">
-              {language === 'en' ? (
-                <>Select your infrastructure connectors to generate both client <code dir="ltr" className="ltr-inline">mcp_config.json</code> and full async Python server code with <code dir="ltr" className="ltr-inline">httpx.AsyncClient</code> in real time.</>
-              ) : (
-                <>سرویس‌های زیرساختی سازمان خود را انتخاب کنید تا هم فایل پیکربندی <code dir="ltr" className="ltr-inline">mcp_config.json</code> و هم کد کامل سرور پایتون با <code dir="ltr" className="ltr-inline">httpx.AsyncClient</code> به صورت بلادرنگ تولید شود.</>
-              )}
-            </p>
+      <div className="rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-white dark:bg-[#0c121e] p-6 sm:p-8 space-y-5 shadow-xs">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/70 dark:border-white/[0.06] pb-4">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <span className="font-bold text-blue-600 dark:text-blue-400">
+              {language === 'en' ? 'Studio 03' : 'استودیو ۰۳'}
+            </span>
+            <span aria-hidden="true" className="opacity-40">·</span>
+            <span dir="ltr" className="ltr-inline font-mono">
+              Model Context Protocol (MCP) · FastMCP Python
+            </span>
           </div>
           <ExportSectionPdfButton
             label={language === 'en' ? 'Export Section PDF' : 'دریافت PDF این بخش'}
             payload={mcpPdfPayload}
             onExport={onExportPdf}
           />
+        </div>
+
+        <div className="space-y-2.5">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+            {language === 'en' ? (
+              <>Visual Studio for Python <code dir="ltr" className="ltr-inline">FastMCP</code> &amp; <code dir="ltr" className="ltr-inline">mcp_config.json</code></>
+            ) : (
+              <>استودیوی بصری ساخت سرور پایتون <code dir="ltr" className="ltr-inline">FastMCP</code> و <code dir="ltr" className="ltr-inline">mcp_config.json</code></>
+            )}
+          </h1>
+          <p className="text-xs sm:text-sm leading-7 text-slate-600 dark:text-slate-300 max-w-4xl">
+            {language === 'en' ? (
+              <>Select your infrastructure connectors to generate both client <code dir="ltr" className="ltr-inline">mcp_config.json</code> and full async Python server code with <code dir="ltr" className="ltr-inline">httpx.AsyncClient</code> in real time.</>
+            ) : (
+              <>سرویس‌های زیرساختی سازمان خود را انتخاب کنید تا هم فایل پیکربندی <code dir="ltr" className="ltr-inline">mcp_config.json</code> و هم کد کامل سرور پایتون با <code dir="ltr" className="ltr-inline">httpx.AsyncClient</code> به صورت بلادرنگ تولید شود.</>
+            )}
+          </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-2">
@@ -312,32 +317,37 @@ export const CheatSheetsStudio: React.FC<{
 
   return (
     <div className="space-y-6 pb-12">
-      <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/75 p-6 sm:p-8 space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
-          <div>
-            <div className="text-xs font-bold text-blue-600 dark:text-blue-400">
-              {language === 'en'
-                ? 'Studio 04 · Quick Reference Cards & Modular PDF Export'
-                : 'استودیو ۴ · کارت‌های مرجع سریع و خروجی PDF موضوعی'}
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">
-              {language === 'en'
-                ? 'Interactive Master Cheat Sheets & Modular PDF Export Center'
-                : 'مرکز چیت‌شیت‌های تعاملی و خروجی PDF ماژولار'}
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1">
-              {language === 'en' ? (
-                <>Every reference card features a dedicated <span className="font-bold text-blue-500">"Export Section PDF"</span> button to generate isolated printable cheat sheets for your engineering team.</>
-              ) : (
-                <>هر کارت مرجع دارای دکمه اختصاصی <span className="font-bold text-blue-500">«دریافت PDF این بخش»</span> است تا بتوانید برگه‌های تقلب مجزا برای تیم خود چاپ یا ذخیره کنید.</>
-              )}
-            </p>
+      <div className="rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-white dark:bg-[#0c121e] p-6 sm:p-8 space-y-5 shadow-xs">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/70 dark:border-white/[0.06] pb-4">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <span className="font-bold text-blue-600 dark:text-blue-400">
+              {language === 'en' ? 'Studio 04' : 'استودیو ۰۴'}
+            </span>
+            <span aria-hidden="true" className="opacity-40">·</span>
+            <span dir="ltr" className="ltr-inline font-mono">
+              Quick Reference Cards &amp; Scoped PDF Export
+            </span>
           </div>
           <ExportSectionPdfButton
             label={language === 'en' ? 'Export All Cheat Sheets PDF' : 'دریافت PDF تمام چیت‌شیت‌ها'}
             payload={allCheatSheetsPdf}
             onExport={onExportPdf}
           />
+        </div>
+
+        <div className="space-y-2.5">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+            {language === 'en'
+              ? 'Interactive Master Cheat Sheets & Modular PDF Export Center'
+              : 'مرکز چیت‌شیت‌های تعاملی و خروجی PDF ماژولار'}
+          </h1>
+          <p className="text-xs sm:text-sm leading-7 text-slate-600 dark:text-slate-300 max-w-4xl">
+            {language === 'en' ? (
+              <>Every reference card features a dedicated <span className="font-bold text-blue-500">"Export Section PDF"</span> button to generate isolated printable cheat sheets for your engineering team.</>
+            ) : (
+              <>هر کارت مرجع دارای دکمه اختصاصی <span className="font-bold text-blue-500">«دریافت PDF این بخش»</span> است تا بتوانید برگه‌های تقلب مجزا برای تیم خود چاپ یا ذخیره کنید.</>
+            )}
+          </p>
         </div>
 
         {/* Search & Category Filter */}
@@ -485,34 +495,26 @@ export const ArchitectScenarioLab: React.FC<{
 
   return (
     <div className="space-y-6 pb-12">
-      <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/75 p-6 sm:p-8 space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
-          <div>
-            <div className="text-xs font-bold text-blue-600 dark:text-blue-400">
-              {language === 'en'
-                ? 'Studio 05 · Architectural Decision Evaluation (Principal Architect Lab)'
-                : 'استودیو ۵ · ارزیابی تصمیم‌گیری معماری (Principal Architect Lab)'}
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">
-              {language === 'en'
-                ? 'Google Antigravity 8 Production Case Studies Lab'
-                : 'آزمایشگاه ۸ چالش واقعی معماری Google Antigravity'}
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1">
-              {language === 'en'
-                ? 'Select the optimal architectural decision for each production scenario to view technical analysis, impact metrics, and trade-offs.'
-                : 'در هر سناریوی واقعی، تصمیم معماری بهینه را انتخاب کنید تا تحلیل فنی و متریک‌های اثرگذاری آن را مشاهده نمایید.'}
-            </p>
+      <div className="rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-white dark:bg-[#0c121e] p-6 sm:p-8 space-y-5 shadow-xs">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/70 dark:border-white/[0.06] pb-4">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <span className="font-bold text-blue-600 dark:text-blue-400">
+              {language === 'en' ? 'Studio 05' : 'استودیو ۰۵'}
+            </span>
+            <span aria-hidden="true" className="opacity-40">·</span>
+            <span dir="ltr" className="ltr-inline font-mono">
+              Principal Architect Decision Lab
+            </span>
           </div>
-          <div className="flex items-center gap-3">
-            <div dir="ltr" className="ltr-inline px-3.5 py-2 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-mono font-bold text-blue-500">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div dir="ltr" className="ltr-inline px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-[#090d16] border border-slate-200/80 dark:border-white/[0.07] text-xs font-mono font-bold text-blue-600 dark:text-blue-400">
               Score: {correctCount} / {ARCHITECT_SCENARIOS.length} ({answeredCount} Answered)
             </div>
             {answeredCount > 0 && (
               <button
                 type="button"
                 onClick={() => setSelectedAnswers({})}
-                className="p-2 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                className="p-2 rounded-lg border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.05] cursor-pointer"
                 aria-label="Reset scenarios"
               >
                 <RotateCcw className="w-4 h-4" />
@@ -524,6 +526,19 @@ export const ArchitectScenarioLab: React.FC<{
               onExport={onExportPdf}
             />
           </div>
+        </div>
+
+        <div className="space-y-2.5">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+            {language === 'en'
+              ? 'Google Antigravity 8 Production Case Studies Lab'
+              : 'آزمایشگاه ۸ چالش واقعی معماری Google Antigravity'}
+          </h1>
+          <p className="text-xs sm:text-sm leading-7 text-slate-600 dark:text-slate-300 max-w-4xl">
+            {language === 'en'
+              ? 'Select the optimal architectural decision for each production scenario to view technical analysis, impact metrics, and trade-offs.'
+              : 'در هر سناریوی واقعی، تصمیم معماری بهینه را انتخاب کنید تا تحلیل فنی و متریک‌های اثرگذاری آن را مشاهده نمایید.'}
+          </p>
         </div>
       </div>
 

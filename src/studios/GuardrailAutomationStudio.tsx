@@ -161,26 +161,16 @@ export const GuardrailAutomationStudio: React.FC<{
   return (
     <div className="space-y-6 pb-12">
       {/* Studio Header */}
-      <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/75 p-6 sm:p-8 space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
-          <div>
-            <div className="text-xs font-bold text-blue-600 dark:text-blue-400">
-              {language === 'en'
-                ? 'Studio 02 · Guardrails Engineering & Automation Pipelines'
-                : 'استودیو ۲ · مهندسی گاردریل‌ها و پایپ‌لاین‌های اتوماسیون'}
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">
-              {language === 'en'
-                ? 'Rule Designer, Workflow Sequencer & Terminal Policy Calibrator'
-                : 'استودیوی طراحی Rule، Workflow و کالیبراسیون پالیسی ترمینال'}
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1">
-              {language === 'en' ? (
-                <>Interactive generation of standardized <code dir="ltr" className="ltr-inline">.agent/rules/*.md</code> rules, <code dir="ltr" className="ltr-inline">.agent/workflows/*.md</code> slash commands, and terminal autonomy levels.</>
-              ) : (
-                <>ساخت تعاملی فایل‌های استاندارد <code dir="ltr" className="ltr-inline">.agent/rules/*.md</code>، دستورات اسلش <code dir="ltr" className="ltr-inline">.agent/workflows/*.md</code> و تنظیم سطح خودمختاری ترمینال.</>
-              )}
-            </p>
+      <div className="rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-white dark:bg-[#0c121e] p-6 sm:p-8 space-y-5 shadow-xs">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/70 dark:border-white/[0.06] pb-4">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <span className="font-bold text-blue-600 dark:text-blue-400">
+              {language === 'en' ? 'Studio 02' : 'استودیو ۰۲'}
+            </span>
+            <span aria-hidden="true" className="opacity-40">·</span>
+            <span dir="ltr" className="ltr-inline font-mono">
+              .agent/rules · .agent/workflows · Terminal Policy
+            </span>
           </div>
           <ExportSectionPdfButton
             label={language === 'en' ? 'Export Section PDF' : 'دریافت PDF این بخش'}
@@ -189,41 +179,56 @@ export const GuardrailAutomationStudio: React.FC<{
           />
         </div>
 
+        <div className="space-y-2.5">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+            {language === 'en'
+              ? 'Rule Designer, Workflow Sequencer & Terminal Policy Calibrator'
+              : 'استودیوی طراحی Rule، Workflow و کالیبراسیون پالیسی ترمینال'}
+          </h1>
+          <p className="text-xs sm:text-sm leading-7 text-slate-600 dark:text-slate-300 max-w-4xl">
+            {language === 'en' ? (
+              <>Interactive generation of standardized <code dir="ltr" className="ltr-inline">.agent/rules/*.md</code> rules, <code dir="ltr" className="ltr-inline">.agent/workflows/*.md</code> slash commands, and terminal autonomy levels.</>
+            ) : (
+              <>ساخت تعاملی فایل‌های استاندارد <code dir="ltr" className="ltr-inline">.agent/rules/*.md</code>، دستورات اسلش <code dir="ltr" className="ltr-inline">.agent/workflows/*.md</code> و تنظیم سطح خودمختاری ترمینال.</>
+            )}
+          </p>
+        </div>
+
         {/* Sub-Studio Switcher */}
-        <div className="flex flex-wrap items-center gap-2 pt-1">
+        <div className="pt-2 border-t border-slate-200/70 dark:border-white/[0.06] flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setActiveSubStudio('rule')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer ${
+            className={`px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer ${
               activeSubStudio === 'rule'
                 ? 'bg-blue-600 text-white'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                : 'bg-slate-100/80 dark:bg-white/[0.04] text-slate-700 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-white/[0.08]'
             }`}
           >
             <Shield className="w-4 h-4 shrink-0" />
             <span>{language === 'en' ? '1. Smart Rule Builder' : '۱. سازنده هوشمند قوانین'}</span>
-            <span dir="ltr" className="ltr-inline font-mono text-[11px] opacity-90">(.agent/rules)</span>
+            <span dir="ltr" className="ltr-inline font-mono text-[11px] opacity-85">(.agent/rules)</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveSubStudio('workflow')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer ${
+            className={`px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer ${
               activeSubStudio === 'workflow'
                 ? 'bg-blue-600 text-white'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                : 'bg-slate-100/80 dark:bg-white/[0.04] text-slate-700 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-white/[0.08]'
             }`}
           >
             <Workflow className="w-4 h-4 shrink-0" />
             <span>{language === 'en' ? '2. Workflow Sequencer' : '۲. سکوئنسر ورک‌فلو'}</span>
-            <span dir="ltr" className="ltr-inline font-mono text-[11px] opacity-90">(// turbo &amp; /slash)</span>
+            <span dir="ltr" className="ltr-inline font-mono text-[11px] opacity-85">(// turbo &amp; /slash)</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveSubStudio('autonomy')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer ${
+            className={`px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer ${
               activeSubStudio === 'autonomy'
                 ? 'bg-blue-600 text-white'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                : 'bg-slate-100/80 dark:bg-white/[0.04] text-slate-700 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-white/[0.08]'
             }`}
           >
             <Terminal className="w-4 h-4 shrink-0" />

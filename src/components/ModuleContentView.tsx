@@ -872,35 +872,120 @@ export const ModuleContentView: React.FC<{
         })}
       </div>
 
-      {/* Next / Prev Module Footer Navigation */}
-      <div className="flex flex-wrap items-center justify-between gap-4 pt-6 border-t border-slate-200/80 dark:border-white/[0.07]">
-        {prevMod ? (
-          <button
-            type="button"
-            onClick={() => onSelectModule(prevMod.id)}
-            className="px-4 py-2.5 rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0c121e] hover:border-blue-500/50 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer transition-colors"
-          >
-            {language === 'en'
-              ? `Previous Module: ${prevMod.number}. ${prevMod.titleEn}`
-              : `فصل قبلی: ${prevMod.number}. ${prevMod.titleFa}`}
-          </button>
-        ) : (
-          <div />
-        )}
-        {nextMod && (
-          <button
-            type="button"
-            onClick={() => onSelectModule(nextMod.id)}
-            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white flex items-center gap-2 cursor-pointer transition-colors shadow-xs"
-          >
-            <span>
+      {/* Module Chapter Completion & Pagination Footer */}
+      <div className="pt-8 border-t border-slate-200/80 dark:border-white/[0.07] space-y-6">
+        {/* Chapter Status & Quick PDF Bar */}
+        <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-white dark:bg-[#0c121e] flex flex-wrap items-center justify-between gap-4">
+          <div className="space-y-0.5">
+            <div className="text-xs font-bold text-slate-900 dark:text-white">
               {language === 'en'
-                ? `Next Module: ${nextMod.number}. ${nextMod.titleEn}`
-                : `فصل بعدی: ${nextMod.number}. ${nextMod.titleFa}`}
-            </span>
-            <ArrowRight className={`w-4 h-4 ${isRTL ? 'rotate-180' : ''}`} />
-          </button>
-        )}
+                ? `End of Module 0${module.number}: ${module.titleEn}`
+                : `پایان فصل ۰${module.number}: ${module.titleFa}`}
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {language === 'en'
+                ? 'Mark this chapter as completed to record your progress and unlock certification XP.'
+                : 'برای ثبت پیشرفت در کارنامه مهندسی و دریافت امتیاز XP، وضعیت مطالعه این فصل را تکمیل کنید.'}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <ExportSectionPdfButton
+              label={t('exportPdfBtn')}
+              payload={fullModulePdfPayload}
+              onExport={onExportPdf}
+              compact
+            />
+            <button
+              type="button"
+              onClick={() => onToggleComplete(module.id)}
+              className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer whitespace-nowrap ${
+                isCompleted
+                  ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300'
+                  : 'border-blue-500/40 bg-blue-600 text-white hover:bg-blue-500'
+              }`}
+            >
+              {isCompleted ? (
+                <>
+                  <CheckSquare className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>{t('completedBadge')}</span>
+                </>
+              ) : (
+                <>
+                  <Square className="w-3.5 h-3.5" />
+                  <span>{t('markCompleted')}</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Next / Previous Chapter Pagination Cards (Docs-grade 2-Column Grid) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {prevMod ? (
+            <button
+              type="button"
+              onClick={() => onSelectModule(prevMod.id)}
+              className={`group p-5 rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-white dark:bg-[#0c121e] hover:border-blue-500/50 dark:hover:border-blue-500/40 transition-all flex flex-col justify-between gap-2 cursor-pointer ${
+                isRTL ? 'text-right' : 'text-left'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2 text-[11px] font-semibold text-slate-400 dark:text-slate-500">
+                <span>{language === 'en' ? '← Previous Chapter' : '→ فصل قبلی'}</span>
+                <span dir="ltr" className="ltr-inline font-mono text-blue-600 dark:text-blue-400">
+                  MOD-0{prevMod.number}
+                </span>
+              </div>
+              <div className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                {language === 'en'
+                  ? `${prevMod.number}. ${prevMod.titleEn}`
+                  : `${prevMod.number}. ${prevMod.titleFa}`}
+              </div>
+              {language !== 'en' && (
+                <div className={isRTL ? 'text-right' : 'text-left'}>
+                  <span dir="ltr" className="ltr-inline text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                    {prevMod.titleEn}
+                  </span>
+                </div>
+              )}
+            </button>
+          ) : (
+            <div className="hidden sm:block" />
+          )}
+
+          {nextMod ? (
+            <button
+              type="button"
+              onClick={() => onSelectModule(nextMod.id)}
+              className={`group p-5 rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-white dark:bg-[#0c121e] hover:border-blue-500/50 dark:hover:border-blue-500/40 transition-all flex flex-col justify-between gap-2 cursor-pointer ${
+                isRTL ? 'text-right' : 'text-left'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2 text-[11px] font-semibold text-blue-600 dark:text-blue-400">
+                <span dir="ltr" className="ltr-inline font-mono">
+                  MOD-0{nextMod.number}
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <span>{language === 'en' ? 'Next Chapter' : 'فصل بعدی'}</span>
+                  <ArrowRight className={`w-3.5 h-3.5 ${isRTL ? 'rotate-180' : ''}`} />
+                </span>
+              </div>
+              <div className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                {language === 'en'
+                  ? `${nextMod.number}. ${nextMod.titleEn}`
+                  : `${nextMod.number}. ${nextMod.titleFa}`}
+              </div>
+              {language !== 'en' && (
+                <div className={isRTL ? 'text-right' : 'text-left'}>
+                  <span dir="ltr" className="ltr-inline text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                    {nextMod.titleEn}
+                  </span>
+                </div>
+              )}
+            </button>
+          ) : (
+            <div className="hidden sm:block" />
+          )}
+        </div>
       </div>
     </div>
   );

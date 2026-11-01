@@ -137,8 +137,8 @@ export const GlobalCommandSearchModal: React.FC<{
       aria-modal="true"
       aria-label="Global Command Search"
     >
-      <div className="w-full max-w-2xl rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl overflow-hidden">
-        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-slate-200 dark:border-slate-800">
+      <div className="w-full max-w-2xl rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0c121e] shadow-2xl overflow-hidden">
+        <div className="flex items-center gap-3 px-5 py-4 bg-slate-50/80 dark:bg-[#090d16] border-b border-slate-200/80 dark:border-white/[0.07]">
           <Search className="w-4 h-4 text-blue-500 shrink-0" />
           <input
             type="text"
@@ -148,11 +148,17 @@ export const GlobalCommandSearchModal: React.FC<{
             placeholder={t('searchModalPlaceholder')}
             className="flex-1 bg-transparent text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none"
           />
+          <kbd
+            dir="ltr"
+            className="ltr-inline hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono text-slate-400 border border-slate-200 dark:border-white/10 rounded"
+          >
+            ESC
+          </kbd>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close search modal"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/[0.06] cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -578,27 +584,27 @@ export const GroundedAiArchitectCopilot: React.FC<{
   return (
     <div className="space-y-6 pb-12" data-testid="ai-architect-studio-root">
       {/* Top Banner: Firebase Auth & Cloud Firestore Telemetry + 3D Game Quick Launch */}
-      <div className="rounded-xl border border-blue-500/30 bg-gradient-to-r from-slate-900 via-slate-900/95 to-blue-950/60 p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 text-white">
+      <div className="rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-white dark:bg-[#0c121e] p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-400/40 flex items-center justify-center text-blue-400 shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-500 shrink-0">
             <Cloud className="w-5 h-5" />
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs sm:text-sm font-extrabold">
+              <span className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white">
                 {language === 'en'
                   ? 'Firebase Auth & Cloud Firestore Telemetry'
                   : 'احراز هویت Firebase و پایگاه داده ابری Firestore'}
               </span>
-              <span aria-hidden="true" className="text-slate-500">·</span>
+              <span aria-hidden="true" className="text-slate-400">·</span>
               <span
                 dir="ltr"
-                className="ltr-inline text-emerald-300 font-mono text-[11px] font-bold"
+                className="ltr-inline text-emerald-600 dark:text-emerald-400 font-mono text-[11px] font-bold"
               >
                 /users/&#123;uid&#125; · Verified
               </span>
             </div>
-            <p className="text-[11px] text-slate-300 mt-0.5">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
               {currentUser
                 ? language === 'en'
                   ? `Signed in as ${currentUser.displayName || currentUser.email}`
@@ -608,7 +614,7 @@ export const GroundedAiArchitectCopilot: React.FC<{
                 : 'برای ذخیره ابری XP، اهداف مطالعه روزانه و امتیاز میدان نبرد سه‌بعدی با حساب گوگل وارد شوید.'}
             </p>
             {cloudSyncStatus && (
-              <div className="text-[11px] font-mono text-emerald-400 mt-1 flex items-center gap-1">
+              <div className="text-[11px] font-mono text-emerald-500 mt-1 flex items-center gap-1">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>{cloudSyncStatus}</span>
               </div>
@@ -622,7 +628,7 @@ export const GroundedAiArchitectCopilot: React.FC<{
               type="button"
               onClick={onLaunch3DGame}
               data-testid="ai-studio-launch-3d-game-btn"
-              className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3.5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Gamepad2 className="w-4 h-4" />
               <span>
@@ -638,7 +644,7 @@ export const GroundedAiArchitectCopilot: React.FC<{
               type="button"
               onClick={() => void signOutArchitect()}
               data-testid="firebase-signout-btn"
-              className="px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+              className="px-3.5 py-2 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/[0.04] hover:bg-slate-200 dark:hover:bg-white/[0.08] text-xs font-bold flex items-center gap-1.5 cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5 text-rose-400" />
               <span>{language === 'en' ? 'Sign Out' : 'خروج از حساب'}</span>
@@ -649,7 +655,7 @@ export const GroundedAiArchitectCopilot: React.FC<{
               onClick={() => void handleGoogleSignIn()}
               disabled={cloudSyncBusy}
               data-testid="firebase-google-signin-btn"
-              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
             >
               <LogIn className="w-3.5 h-3.5" />
               <span>
@@ -661,18 +667,18 @@ export const GroundedAiArchitectCopilot: React.FC<{
       </div>
 
       {/* Main AI Architect & Nano Banana 2.1 Visual Studio Card */}
-      <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 p-5 sm:p-7 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
-          <div>
+      <div className="rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-white dark:bg-[#0c121e] p-6 sm:p-8 space-y-6 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/70 dark:border-white/[0.06] pb-4">
+          <div className="space-y-1">
             <div className="text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5" />
               <span>
                 {language === 'en'
-                  ? 'Gemini Multi-Turn Chatbot · Google Search Grounding · Nano Banana 2.1 Visual Studio'
-                  : 'چت‌بات چندنوبته Gemini · مجهز به Google Search Grounding · استودیوی تصویر Nano Banana 2.1'}
+                  ? 'Studio 07 · Gemini Multi-Turn · Search Grounding · Nano Banana 2.1'
+                  : 'استودیو ۰۷ · چت‌بات Gemini · جستجوی زنده · استودیوی تصویر Nano Banana 2.1'}
               </span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white mt-1">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               {language === 'en'
                 ? 'AI Systems Architect & Visual Blueprint Studio'
                 : 'میز کار هوش مصنوعی معمار سیستم و تولید/ویرایش دیاگرام'}
@@ -680,12 +686,12 @@ export const GroundedAiArchitectCopilot: React.FC<{
           </div>
 
           {/* Studio Mode Switcher Tabs */}
-          <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800 shrink-0">
+          <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-[#090d16] p-1 rounded-xl border border-slate-200/80 dark:border-white/[0.07] shrink-0">
             <button
               type="button"
               onClick={() => setActiveStudioTab('chat')}
               data-testid="tab-gemini-chat"
-              className={`px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
+              className={`px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
                 activeStudioTab === 'chat'
                   ? 'bg-blue-600 text-white'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -700,7 +706,7 @@ export const GroundedAiArchitectCopilot: React.FC<{
               type="button"
               onClick={() => setActiveStudioTab('image-studio')}
               data-testid="tab-nano-banana-image"
-              className={`px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
+              className={`px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
                 activeStudioTab === 'image-studio'
                   ? 'bg-blue-600 text-white'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'

@@ -554,16 +554,20 @@ export const ModuleContentView: React.FC<{
   return (
     <div className="space-y-10 pb-16">
       {/* Module Hero Header Surface */}
-      <div className="rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-white dark:bg-[#0c121e] p-6 sm:p-9 space-y-7 shadow-xs">
+      <div className="rounded-2xl border border-slate-200/90 dark:border-white/[0.08] bg-gradient-to-b from-white via-white to-slate-50/60 dark:from-[#0d1424] dark:via-[#0c121e] dark:to-[#080d17] p-6 sm:p-9 space-y-7 shadow-xs">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/70 dark:border-white/[0.06] pb-4">
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-            <span className="font-bold text-blue-600 dark:text-blue-400">
+            <span className="font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-md">
               {language === 'en' ? `Module 0${module.number} of 08` : `فصل ۰${module.number} از ۰۸`}
             </span>
-            <span aria-hidden="true" className="opacity-40">·</span>
-            <span dir="ltr" className="ltr-inline">{module.readingTime}</span>
-            <span aria-hidden="true" className="opacity-40">·</span>
-            <span dir="ltr" className="ltr-inline">{module.difficulty}</span>
+            <span aria-hidden="true" className="opacity-30">|</span>
+            <span dir="ltr" className="ltr-inline bg-slate-100 dark:bg-white/[0.04] px-2.5 py-1 rounded-md text-[11px] font-mono">
+              {module.readingTime}
+            </span>
+            <span aria-hidden="true" className="opacity-30">|</span>
+            <span dir="ltr" className="ltr-inline bg-slate-100 dark:bg-white/[0.04] px-2.5 py-1 rounded-md text-[11px] font-mono">
+              {module.difficulty}
+            </span>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -598,26 +602,26 @@ export const ModuleContentView: React.FC<{
         </div>
 
         <div className="space-y-3.5">
-          <h1 className="text-2xl sm:text-3xl lg:text-[32px] font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight">
+          <h1 className="text-2xl sm:text-3xl lg:text-[34px] font-black text-slate-900 dark:text-white tracking-tight leading-snug">
             {displayTitle}
           </h1>
           {language !== 'en' && (
             <div className={isRTL ? 'text-right' : 'text-left'}>
               <span
                 dir="ltr"
-                className="ltr-inline text-xs sm:text-sm font-mono text-blue-600/90 dark:text-blue-400/90"
+                className="ltr-inline text-xs sm:text-sm font-mono text-blue-600 dark:text-blue-400 font-medium"
               >
                 {displaySubtitle}
               </span>
             </div>
           )}
-          <p className="text-sm sm:text-base leading-8 text-slate-600 dark:text-slate-300 max-w-4xl">
+          <p className="text-sm sm:text-base leading-relaxed text-slate-600 dark:text-slate-300 max-w-4xl font-normal">
             {displaySummary}
           </p>
         </div>
 
         {/* Key Takeaways 2-Column Architectural Grid */}
-        <div className="space-y-3 pt-2 border-t border-slate-200/70 dark:border-white/[0.06]">
+        <div className="space-y-3.5 pt-3 border-t border-slate-200/70 dark:border-white/[0.06]">
           <div className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
             {t('keyTakeawaysTitle')}
           </div>
@@ -626,7 +630,7 @@ export const ModuleContentView: React.FC<{
               ? enContent.keyTakeaways.map((kt) => (
                   <div
                     key={kt.titleEn}
-                    className="p-4 sm:p-5 rounded-xl border border-slate-200/80 dark:border-white/[0.06] bg-slate-50/70 dark:bg-white/[0.02] space-y-1.5"
+                    className="p-4 sm:p-5 rounded-xl border border-slate-200/80 dark:border-white/[0.07] bg-slate-50/70 dark:bg-slate-900/30 hover:border-blue-500/30 transition-all space-y-1.5"
                   >
                     <div dir="ltr" className="ltr-inline text-[11px] font-mono font-semibold text-blue-600 dark:text-blue-400">
                       {kt.metricOrBadge}
@@ -642,7 +646,7 @@ export const ModuleContentView: React.FC<{
               : module.keyTakeaways.map((kt) => (
                   <div
                     key={kt.titleFa}
-                    className="p-4 sm:p-5 rounded-xl border border-slate-200/80 dark:border-white/[0.06] bg-slate-50/70 dark:bg-white/[0.02] space-y-1.5"
+                    className="p-4 sm:p-5 rounded-xl border border-slate-200/80 dark:border-white/[0.07] bg-slate-50/70 dark:bg-slate-900/30 hover:border-blue-500/30 transition-all space-y-1.5"
                   >
                     <div dir="ltr" className="ltr-inline text-[11px] font-mono font-semibold text-blue-600 dark:text-blue-400">
                       {kt.metricOrBadge}
@@ -658,8 +662,8 @@ export const ModuleContentView: React.FC<{
           </div>
         </div>
 
-        {/* Inline Chapter Subsections Jump Bar (Replaces cramped 256px right sidebar) */}
-        <div className="pt-2 border-t border-slate-200/70 dark:border-white/[0.06] flex flex-wrap items-center gap-2">
+        {/* Inline Chapter Subsections Jump Bar */}
+        <div className="pt-3 border-t border-slate-200/70 dark:border-white/[0.06] flex flex-wrap items-center gap-2">
           <span className="text-xs font-bold text-slate-400 dark:text-slate-500 me-1">
             {t('onThisPageTitle')}:
           </span>

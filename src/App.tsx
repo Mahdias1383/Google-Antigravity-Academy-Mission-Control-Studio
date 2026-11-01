@@ -24,6 +24,7 @@ import { ALL_CURRICULUM_MODULES } from './data/curriculumIndex';
 import {
   NavigationActivityEvent,
   NAVIGATION_ACTIVITY_STORAGE_KEY,
+  buildSeedNavigationActivityEvents,
   createSectionChangeEvent,
   appendSectionChangeEvent,
   parseActivityLogsFromStorage,
@@ -92,11 +93,25 @@ function MainWorkspace() {
 
   // Browser-Based Navigation Activity Logger State ('section_change' events)
   const [activityLogs, setActivityLogs] = useState<NavigationActivityEvent[]>(() => {
+    const moduleSummaries = ALL_CURRICULUM_MODULES.map((m) => ({
+      id: m.id,
+      number: m.number,
+      titleFa: m.titleFa,
+      titleEn: m.titleEn,
+    }));
     try {
       const raw = window.localStorage.getItem(NAVIGATION_ACTIVITY_STORAGE_KEY);
+      if (!raw) {
+        const seeded = buildSeedNavigationActivityEvents(moduleSummaries);
+        window.localStorage.setItem(
+          NAVIGATION_ACTIVITY_STORAGE_KEY,
+          serializeActivityLogsToStorage(seeded)
+        );
+        return seeded;
+      }
       return parseActivityLogsFromStorage(raw);
     } catch {
-      return [];
+      return buildSeedNavigationActivityEvents(moduleSummaries);
     }
   });
   const [activityModalOpen, setActivityModalOpen] = useState<boolean>(false);
@@ -154,7 +169,9 @@ function MainWorkspace() {
       );
       if (resolved) {
         setDetectedSession(resolved);
-        setResumeModalOpen(true);
+        if (searchParams.get('autostart') !== '1') {
+          setResumeModalOpen(true);
+        }
       }
     } catch {
       // Ignore storage access errors

@@ -57,9 +57,12 @@ import {
 import {
   createSectionChangeEvent,
   appendSectionChangeEvent,
+  aggregateActivityEventsByDateAndSection,
+  buildSeedNavigationActivityEvents,
   calculateActivityLogStats,
   filterActivityLogEvents,
   formatActivityDateDisplay,
+  formatSessionDuration,
   normalizeDigitsToAscii,
   serializeActivityLogsToStorage,
   parseActivityLogsFromStorage,
@@ -1262,12 +1265,40 @@ test('Activity Logger: createSectionChangeEvent, appendSectionChangeEvent, stats
   logs = appendSectionChangeEvent(logs, evt3);
   assert.equal(logs.length, 3);
 
-  // 4. Summary stats
+  // 4. Summary stats (Total Session Time & Most Visited Section)
+  const emptyStats = calculateActivityLogStats([]);
+  assert.equal(emptyStats.totalEvents, 0);
+  assert.equal(emptyStats.topSection, null);
+  assert.equal(emptyStats.topSectionCount, 0);
+  assert.equal(emptyStats.totalSessionTimeSeconds, 0);
+  assert.equal(emptyStats.totalSessionTimeFormatted, '0m 0s');
+  assert.equal(emptyStats.activeSessionsCount, 0);
+
   const stats = calculateActivityLogStats(logs);
   assert.equal(stats.totalEvents, 3);
   assert.equal(stats.uniqueSectionsCount, 2);
   assert.equal(stats.topSection, 'curriculum');
+  assert.equal(stats.topSectionCount, 2);
+  assert.equal(stats.topSectionTitleEn, 'Curriculum (8 Modules)');
+  assert.equal(stats.topSectionBadgeCode, 'SEC-CURRICULUM');
+  assert.equal(stats.totalSessionTimeSeconds, 600); // 08:00 -> 08:05 (300s) + 08:05 -> 08:10 (300s)
+  assert.equal(stats.totalSessionTimeFormatted, '10m 0s');
+  assert.equal(stats.activeSessionsCount, 1);
   assert.equal(stats.lastEventIso, '2026-11-01T08:10:00.000Z');
+
+  assert.equal(formatSessionDuration(0), '0m 0s');
+  assert.equal(formatSessionDuration(45), '0m 45s');
+  assert.equal(formatSessionDuration(5400), '1h 30m');
+  assert.equal(formatSessionDuration(5415), '1h 30m 15s');
+
+  const seededEvents = buildSeedNavigationActivityEvents(sampleModules);
+  const seededStats = calculateActivityLogStats(seededEvents);
+  assert.equal(seededStats.totalEvents, 6);
+  assert.equal(seededStats.topSection, 'curriculum');
+  assert.equal(seededStats.topSectionCount, 2);
+  assert.equal(seededStats.totalSessionTimeSeconds, 5400); // 25m + 30m + 35m = 90m
+  assert.equal(seededStats.totalSessionTimeFormatted, '1h 30m');
+  assert.equal(seededStats.activeSessionsCount, 3);
 
   // 5. Filter by category, section name (EN & FA), and date (ISO YYYY-MM-DD & formatted)
   const studioOnly = filterActivityLogEvents(logs, 'studio', '');
@@ -1309,12 +1340,74 @@ test('Activity Logger: createSectionChangeEvent, appendSectionChangeEvent, stats
   assert.equal(dateDisplay.isoDate, '2026-11-01');
   assert.equal(normalizeDigitsToAscii('۱۴۰۵/۰۸/۱۰'), '1405/08/10');
 
-  // 6. Serialization & restoration
+  // 5b. Date Range Picker filtering (Start Date / End Date) across seeded multi-date events
+  // seededEvents has 2 events on 2026-10-28, 2 events on 2026-10-29, and 2 events on 2026-10-30
+  const startOnlyFiltered = filterActivityLogEvents(seededEvents, 'all', '', '2026-10-29', '');
+  assert.equal(startOnlyFiltered.length, 4); // 2026-10-29 (2) + 2026-10-30 (2)
+
+  const endOnlyFiltered = filterActivityLogEvents(seededEvents, 'all', '', '', '2026-10-29');
+  assert.equal(endOnlyFiltered.length, 4); // 2026-10-28 (2) + 2026-10-29 (2)
+
+  const exactSingleDayRange = filterActivityLogEvents(
+    seededEvents,
+    'all',
+    '',
+    '2026-10-29',
+    '2026-10-29'
+  );
+  assert.equal(exactSingleDayRange.length, 2);
+  assert.equal(
+    exactSingleDayRange.every((e) => e.timestampIso.startsWith('2026-10-29')),
+    true
+  );
+
+  const combinedRangeAndCategory = filterActivityLogEvents(
+    seededEvents,
+    'studio',
+    '',
+    '2026-10-29',
+    '2026-10-30'
+  );
+  assert.equal(combinedRangeAndCategory.length, 3);
+  assert.equal(
+    combinedRangeAndCategory.every((e) => e.category === 'studio'),
+    true
+  );
+
+  const outOfBoundsRange = filterActivityLogEvents(
+    seededEvents,
+    'all',
+    '',
+    '2026-12-01',
+    '2026-12-31'
+  );
+  assert.equal(outOfBoundsRange.length, 0);
+
+  // 6. Date-by-section aggregation for Recharts bar chart
+  const chartAgg = aggregateActivityEventsByDateAndSection(logsWithMultiDates);
+  assert.equal(chartAgg.totalEvents, 4);
+  assert.equal(chartAgg.totalDates, 2);
+  assert.equal(chartAgg.data.length, 2);
+  assert.equal(chartAgg.data[0].date, '2026-10-25');
+  assert.equal(chartAgg.data[0].guardrails, 1);
+  assert.equal(chartAgg.data[0].total, 1);
+  assert.equal(chartAgg.data[1].date, '2026-11-01');
+  assert.equal(chartAgg.data[1].curriculum, 2);
+  assert.equal(chartAgg.data[1].simulator, 1);
+  assert.equal(chartAgg.data[1].total, 3);
+  assert.equal(chartAgg.activeSections.length, 3);
+  assert.equal(
+    chartAgg.activeSections.some((s) => s.sectionId === 'curriculum' && s.count === 2),
+    true
+  );
+
+  // 7. Serialization & restoration
   const rawJson = serializeActivityLogsToStorage(logs);
   const restored = parseActivityLogsFromStorage(rawJson);
   assert.equal(restored.length, 3);
   assert.equal(restored[0].id, evt3.id);
   assert.deepEqual(parseActivityLogsFromStorage('invalid-json'), []);
 });
+
 
 

@@ -32,6 +32,11 @@ export interface ActivityLogSummaryStats {
   topSection: WorkspaceSectionId | null;
   topSectionTitleFa: string;
   topSectionTitleEn: string;
+  topSectionCount: number;
+  topSectionBadgeCode: string;
+  totalSessionTimeSeconds: number;
+  totalSessionTimeFormatted: string;
+  activeSessionsCount: number;
   lastEventIso: string | null;
 }
 
@@ -202,6 +207,26 @@ export function appendSectionChangeEvent(
   return [newEvent, ...existingLogs].slice(0, Math.max(1, maxEntries));
 }
 
+export const MAX_SESSION_GAP_SECONDS = 2 * 3600; // 2 hours max idle gap within a single session
+
+export function formatSessionDuration(totalSeconds: number): string {
+  const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+  if (safeSeconds === 0) {
+    return '0m 0s';
+  }
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const seconds = safeSeconds % 60;
+
+  if (hours > 0) {
+    if (seconds > 0) {
+      return `${hours}h ${minutes}m ${seconds}s`;
+    }
+    return `${hours}h ${minutes}m`;
+  }
+  return `${minutes}m ${seconds}s`;
+}
+
 export function calculateActivityLogStats(
   logs: NavigationActivityEvent[]
 ): ActivityLogSummaryStats {
@@ -212,13 +237,24 @@ export function calculateActivityLogStats(
       topSection: null,
       topSectionTitleFa: '—',
       topSectionTitleEn: '—',
+      topSectionCount: 0,
+      topSectionBadgeCode: '—',
+      totalSessionTimeSeconds: 0,
+      totalSessionTimeFormatted: '0m 0s',
+      activeSessionsCount: 0,
       lastEventIso: null,
     };
   }
 
   const counts = new Map<WorkspaceSectionId, number>();
+  const validTimestampsMs: number[] = [];
+
   for (const item of logs) {
     counts.set(item.toSection, (counts.get(item.toSection) || 0) + 1);
+    const parsedMs = new Date(item.timestampIso).getTime();
+    if (!Number.isNaN(parsedMs)) {
+      validTimestampsMs.push(parsedMs);
+    }
   }
 
   let topSection: WorkspaceSectionId = logs[0].toSection;
@@ -230,6 +266,20 @@ export function calculateActivityLogStats(
     }
   }
 
+  validTimestampsMs.sort((a, b) => a - b);
+
+  let totalSessionTimeSeconds = 0;
+  let activeSessionsCount = validTimestampsMs.length > 0 ? 1 : 0;
+
+  for (let i = 1; i < validTimestampsMs.length; i++) {
+    const deltaSeconds = Math.round((validTimestampsMs[i] - validTimestampsMs[i - 1]) / 1000);
+    if (deltaSeconds >= 0 && deltaSeconds <= MAX_SESSION_GAP_SECONDS) {
+      totalSessionTimeSeconds += deltaSeconds;
+    } else if (deltaSeconds > MAX_SESSION_GAP_SECONDS) {
+      activeSessionsCount += 1;
+    }
+  }
+
   const topMeta = SECTION_CATALOG[topSection] || SECTION_CATALOG.curriculum;
 
   return {
@@ -238,6 +288,11 @@ export function calculateActivityLogStats(
     topSection,
     topSectionTitleFa: topMeta.titleFa,
     topSectionTitleEn: topMeta.titleEn,
+    topSectionCount: maxCount,
+    topSectionBadgeCode: topMeta.badgeCode,
+    totalSessionTimeSeconds,
+    totalSessionTimeFormatted: formatSessionDuration(totalSessionTimeSeconds),
+    activeSessionsCount,
     lastEventIso: logs[0].timestampIso,
   };
 }
@@ -354,15 +409,30 @@ export function buildEventSearchableDateTokens(timestampIso: string): string {
 export function filterActivityLogEvents(
   logs: NavigationActivityEvent[],
   filterCategory: 'all' | 'curriculum' | 'studio' = 'all',
-  searchQuery: string = ''
+  searchQuery: string = '',
+  startDate: string = '',
+  endDate: string = ''
 ): NavigationActivityEvent[] {
   const rawQuery = searchQuery.trim().toLowerCase();
   const normalizedQuery = normalizeDigitsToAscii(rawQuery);
+  const normalizedStartDate = normalizeDigitsToAscii(startDate.trim()).slice(0, 10);
+  const normalizedEndDate = normalizeDigitsToAscii(endDate.trim()).slice(0, 10);
 
   return logs.filter((entry) => {
     if (filterCategory !== 'all' && entry.category !== filterCategory) {
       return false;
     }
+
+    if (normalizedStartDate || normalizedEndDate) {
+      const entryIsoDate = formatActivityDateDisplay(entry.timestampIso, 'en').isoDate;
+      if (normalizedStartDate && entryIsoDate < normalizedStartDate) {
+        return false;
+      }
+      if (normalizedEndDate && entryIsoDate > normalizedEndDate) {
+        return false;
+      }
+    }
+
     if (!rawQuery) {
       return true;
     }
@@ -392,6 +462,185 @@ export function filterActivityLogEvents(
     );
   });
 }
+
+export const ALL_WORKSPACE_SECTION_IDS: WorkspaceSectionId[] = [
+  'curriculum',
+  'achievements',
+  'simulator',
+  'guardrails',
+  'mcp',
+  'cheatsheets',
+  'scenarios',
+  'ai-architect',
+  'knowledge-base',
+];
+
+export const SECTION_CHART_COLORS: Record<WorkspaceSectionId, string> = {
+  curriculum: '#6366f1',
+  achievements: '#f59e0b',
+  simulator: '#3b82f6',
+  guardrails: '#10b981',
+  mcp: '#8b5cf6',
+  cheatsheets: '#06b6d4',
+  scenarios: '#ec4899',
+  'ai-architect': '#14b8a6',
+  'knowledge-base': '#f97316',
+};
+
+export interface ActivityDateSectionDatum {
+  date: string;
+  shortDate: string;
+  total: number;
+  curriculum: number;
+  achievements: number;
+  simulator: number;
+  guardrails: number;
+  mcp: number;
+  cheatsheets: number;
+  scenarios: number;
+  'ai-architect': number;
+  'knowledge-base': number;
+}
+
+export interface ActivitySectionChartSeries {
+  sectionId: WorkspaceSectionId;
+  titleFa: string;
+  titleEn: string;
+  color: string;
+  count: number;
+}
+
+export interface ActivityDateSectionChartSummary {
+  data: ActivityDateSectionDatum[];
+  activeSections: ActivitySectionChartSeries[];
+  totalEvents: number;
+  totalDates: number;
+}
+
+export function aggregateActivityEventsByDateAndSection(
+  logs: NavigationActivityEvent[]
+): ActivityDateSectionChartSummary {
+  if (!logs || logs.length === 0) {
+    return {
+      data: [],
+      activeSections: [],
+      totalEvents: 0,
+      totalDates: 0,
+    };
+  }
+
+  const dateMap = new Map<string, ActivityDateSectionDatum>();
+  const sectionTotals = new Map<WorkspaceSectionId, number>();
+
+  for (const entry of logs) {
+    const { isoDate } = formatActivityDateDisplay(entry.timestampIso, 'en');
+    const dateKey = isoDate || 'unknown';
+    const shortDate = dateKey.length === 10 ? dateKey.slice(5) : dateKey;
+
+    let bucket = dateMap.get(dateKey);
+    if (!bucket) {
+      bucket = {
+        date: dateKey,
+        shortDate,
+        total: 0,
+        curriculum: 0,
+        achievements: 0,
+        simulator: 0,
+        guardrails: 0,
+        mcp: 0,
+        cheatsheets: 0,
+        scenarios: 0,
+        'ai-architect': 0,
+        'knowledge-base': 0,
+      };
+      dateMap.set(dateKey, bucket);
+    }
+
+    const section = entry.toSection in SECTION_CATALOG ? entry.toSection : 'curriculum';
+    bucket[section] = (bucket[section] || 0) + 1;
+    bucket.total += 1;
+    sectionTotals.set(section, (sectionTotals.get(section) || 0) + 1);
+  }
+
+  const data = Array.from(dateMap.values()).sort((a, b) =>
+    a.date.localeCompare(b.date)
+  );
+
+  const activeSections: ActivitySectionChartSeries[] = ALL_WORKSPACE_SECTION_IDS.filter(
+    (secId) => (sectionTotals.get(secId) || 0) > 0
+  ).map((secId) => ({
+    sectionId: secId,
+    titleFa: SECTION_CATALOG[secId].titleFa,
+    titleEn: SECTION_CATALOG[secId].titleEn,
+    color: SECTION_CHART_COLORS[secId],
+    count: sectionTotals.get(secId) || 0,
+  }));
+
+  return {
+    data,
+    activeSections,
+    totalEvents: logs.length,
+    totalDates: data.length,
+  };
+}
+
+export function buildSeedNavigationActivityEvents(
+  modules?: ModuleMetadataSummary[]
+): NavigationActivityEvent[] {
+  const seedSpecs: {
+    fromSection: WorkspaceSectionId | null;
+    toSection: WorkspaceSectionId;
+    moduleId?: string;
+    timestampIso: string;
+  }[] = [
+    {
+      fromSection: null,
+      toSection: 'curriculum',
+      moduleId: 'module-1',
+      timestampIso: '2026-10-28T09:15:00.000Z',
+    },
+    {
+      fromSection: 'curriculum',
+      toSection: 'guardrails',
+      timestampIso: '2026-10-28T09:40:00.000Z',
+    },
+    {
+      fromSection: 'guardrails',
+      toSection: 'simulator',
+      timestampIso: '2026-10-29T10:20:00.000Z',
+    },
+    {
+      fromSection: 'simulator',
+      toSection: 'mcp',
+      timestampIso: '2026-10-29T10:50:00.000Z',
+    },
+    {
+      fromSection: 'mcp',
+      toSection: 'knowledge-base',
+      timestampIso: '2026-10-30T11:10:00.000Z',
+    },
+    {
+      fromSection: 'knowledge-base',
+      toSection: 'curriculum',
+      moduleId: 'module-2',
+      timestampIso: '2026-10-30T11:45:00.000Z',
+    },
+  ];
+
+  let acc: NavigationActivityEvent[] = [];
+  for (const spec of seedSpecs) {
+    const evt = createSectionChangeEvent({
+      fromSection: spec.fromSection,
+      toSection: spec.toSection,
+      moduleId: spec.moduleId,
+      timestampIso: spec.timestampIso,
+      modules,
+    });
+    acc = appendSectionChangeEvent(acc, evt);
+  }
+  return acc;
+}
+
 
 export function serializeActivityLogsToStorage(
   logs: NavigationActivityEvent[]
@@ -431,3 +680,4 @@ export function parseActivityLogsFromStorage(
     return [];
   }
 }
+

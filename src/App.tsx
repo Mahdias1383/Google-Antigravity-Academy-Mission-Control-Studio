@@ -27,6 +27,7 @@ import {
   buildMissionMilestoneNotification,
   MissionMilestonePayload,
 } from './utils/generators';
+import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { ModuleContentView } from './components/ModuleContentView';
 import {
   ScopedPdfExportModal,
@@ -60,7 +61,8 @@ type ActiveWorkspaceSection =
   | 'ai-architect'
   | 'knowledge-base';
 
-export default function App() {
+function MainWorkspace() {
+  const { language, toggleLanguage, isRTL, t } = useLanguage();
   const [darkMode, setDarkMode] = useState<boolean>(true);
   const [activeSection, setActiveSection] = useState<ActiveWorkspaceSection>('curriculum');
   const [activeModuleId, setActiveModuleId] = useState<string>(ALL_CURRICULUM_MODULES[0].id);
@@ -255,7 +257,7 @@ export default function App() {
 
   return (
     <div
-      dir="rtl"
+      dir={isRTL ? 'rtl' : 'ltr'}
       className="min-h-screen flex flex-col bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 transition-colors"
     >
       {/* Top Bar Contract: 3 Clean Zones separated by gap-8 */}
@@ -269,7 +271,7 @@ export default function App() {
           }}
           className="text-base sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-white whitespace-nowrap shrink-0"
         >
-          Google Antigravity Academy
+          {t('brandTitle')}
         </a>
 
         {/* Zone 2: 5 concise single-line text navigation links */}
@@ -286,7 +288,7 @@ export default function App() {
                 : ''
             }`}
           >
-            آکادمی (۸ فصل)
+            {t('navAcademy')}
           </button>
           <button
             type="button"
@@ -297,7 +299,7 @@ export default function App() {
                 : ''
             }`}
           >
-            شبیه‌ساز Mission Control
+            {t('navSimulator')}
           </button>
           <button
             type="button"
@@ -308,7 +310,7 @@ export default function App() {
                 : ''
             }`}
           >
-            استودیوی Rule و Workflow
+            {t('navGuardrails')}
           </button>
           <button
             type="button"
@@ -319,7 +321,7 @@ export default function App() {
                 : ''
             }`}
           >
-            استودیوی FastMCP
+            {t('navMcp')}
           </button>
           <button
             type="button"
@@ -330,11 +332,11 @@ export default function App() {
                 : ''
             }`}
           >
-            چیت‌شیت‌ها و PDF
+            {t('navCheatsheets')}
           </button>
         </nav>
 
-        {/* Zone 3: Pomodoro Study Timer & Deep Work Logger + Search Launcher (Ctrl+K) */}
+        {/* Zone 3: Pomodoro Study Timer & Deep Work Logger + Language Switcher + Search Launcher (Ctrl+K) */}
         <div className="flex items-center gap-3 shrink-0">
           <PomodoroHeaderWidget
             currentModule={currentModule}
@@ -353,13 +355,29 @@ export default function App() {
             }}
           />
 
+          {/* Bilingual Language Switcher Button */}
+          <button
+            type="button"
+            onClick={toggleLanguage}
+            data-testid="language-toggle-btn"
+            aria-label={language === 'fa' ? 'Switch interface to English' : 'تغییر رابط کاربری به فارسی'}
+            className="px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 cursor-pointer hover:border-blue-500/50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+          >
+            <Globe className="w-3.5 h-3.5 text-blue-500" />
+            <span className="font-mono">{t('langSwitchBadge')}</span>
+            <span className="text-[10px] text-slate-400 font-mono font-normal hidden sm:inline">
+              ({t('langSwitchLabel')})
+            </span>
+          </button>
+
           <button
             type="button"
             onClick={() => setSearchModalOpen(true)}
-            className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer"
+            className="px-3.5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer"
           >
             <Search className="w-3.5 h-3.5" />
-            <span>جستجوی سریع (Ctrl+K)</span>
+            <span className="hidden sm:inline">{t('quickSearch')}</span>
+            <span className="sm:hidden">Ctrl+K</span>
           </button>
         </div>
       </header>
@@ -378,7 +396,7 @@ export default function App() {
             ) : (
               <PanelRightOpen className="w-4 h-4 text-blue-500" />
             )}
-            <span className="hidden sm:inline">فهرست فصل‌ها</span>
+            <span className="hidden sm:inline">{t('sidebarToggle')}</span>
           </button>
 
           <button
@@ -391,7 +409,7 @@ export default function App() {
             }`}
           >
             <Award className="w-3.5 h-3.5 text-emerald-500" />
-            <span>دستاوردها و گواهینامه (Achievements &amp; Certification)</span>
+            <span>{t('navAchievements')}</span>
           </button>
 
           <button
@@ -404,7 +422,7 @@ export default function App() {
             }`}
           >
             <Award className="w-3.5 h-3.5 text-amber-500" />
-            <span>آزمایشگاه ۸ چالش معماری</span>
+            <span>{t('navScenarios')}</span>
           </button>
 
           <button
@@ -417,7 +435,7 @@ export default function App() {
             }`}
           >
             <Globe className="w-3.5 h-3.5 text-emerald-500" />
-            <span>جستجوی زنده مستندات (Search Grounding)</span>
+            <span>{t('navAiSearch')}</span>
           </button>
 
           <button
@@ -431,7 +449,7 @@ export default function App() {
             }`}
           >
             <Database className="w-3.5 h-3.5 text-blue-500" />
-            <span>کاوشگر پایگاه دانش (Knowledge Base Explorer)</span>
+            <span>{t('navKnowledgeBase')}</span>
           </button>
         </div>
 
@@ -444,7 +462,7 @@ export default function App() {
               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap"
             >
               <History className="w-3.5 h-3.5" />
-              <span>ادامه آخرین نشست (Resume)</span>
+              <span>{t('resumeSession')}</span>
             </button>
           )}
 
@@ -455,7 +473,7 @@ export default function App() {
             onClick={() => setActiveSection('achievements')}
             className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 hover:text-blue-500 transition-colors cursor-pointer"
           >
-            <span>پیشرفت مطالعه:</span>
+            <span>{t('studyProgress')}</span>
             <span dir="ltr" className="ltr-inline font-mono font-bold text-blue-500 tabular-nums">
               {completedModules.length}/8 ({completionPercent}%)
             </span>
@@ -470,12 +488,12 @@ export default function App() {
             {darkMode ? (
               <>
                 <Sun className="w-3.5 h-3.5 text-amber-400" />
-                <span>حالت روشن (Light)</span>
+                <span>{t('themeLight')}</span>
               </>
             ) : (
               <>
                 <Moon className="w-3.5 h-3.5 text-blue-600" />
-                <span>حالت تیره (Dark)</span>
+                <span>{t('themeDark')}</span>
               </>
             )}
           </button>
@@ -484,18 +502,20 @@ export default function App() {
 
       {/* Main Fluid Widescreen Workspace Grid */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Right-Hand Navigation Sidebar (RTL) */}
+        {/* Navigation Sidebar */}
         {sidebarOpen && (
           <aside
             aria-label="Curriculum Modules & Studios Navigation"
-            className="w-72 sm:w-80 shrink-0 border-l border-slate-200 dark:border-slate-800/80 bg-white/90 dark:bg-[#0d1322]/90 p-4 overflow-y-auto space-y-6 hidden md:block"
+            className={`w-72 sm:w-80 shrink-0 ${
+              isRTL ? 'border-l' : 'border-r'
+            } border-slate-200 dark:border-slate-800/80 bg-white/90 dark:bg-[#0d1322]/90 p-4 overflow-y-auto space-y-6 hidden md:block`}
           >
             {/* 8 Learning Modules + Academy Certification Card */}
             <div className="space-y-2">
               <div className="px-2 text-xs font-extrabold text-slate-500 dark:text-slate-400 flex items-center justify-between">
-                <span>سرفصل‌های جامع آموزشی (۸ ماژول)</span>
+                <span>{t('sidebarTitle')}</span>
                 <span dir="ltr" className="ltr-inline font-mono text-[11px]">
-                  8 Modules
+                  {t('sidebarSubtitle')}
                 </span>
               </div>
 
@@ -503,7 +523,9 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setActiveSection('achievements')}
-                className={`w-full text-right p-3 rounded-xl border transition-all flex items-start gap-2.5 cursor-pointer ${
+                className={`w-full ${
+                  isRTL ? 'text-right' : 'text-left'
+                } p-3 rounded-xl border transition-all flex items-start gap-2.5 cursor-pointer ${
                   activeSection === 'achievements'
                     ? 'border-emerald-500 bg-emerald-500/15 text-slate-900 dark:text-white'
                     : 'border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10 text-slate-800 dark:text-slate-200'
@@ -512,11 +534,13 @@ export default function App() {
                 <Award className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                 <div className="min-w-0 flex-1">
                   <div className="text-xs font-bold leading-5">
-                    دستاوردها و گواهینامه آکادمی
+                    {language === 'en' ? 'Achievements & Certification' : 'دستاوردها و گواهینامه آکادمی'}
                   </div>
                   <div
                     dir="ltr"
-                    className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 text-right leading-4 mt-0.5 break-words"
+                    className={`text-[10px] font-mono text-emerald-600 dark:text-emerald-400 ${
+                      isRTL ? 'text-right' : 'text-left'
+                    } leading-4 mt-0.5 break-words`}
                   >
                     Achievements &amp; Certification ({completedModules.length}/8)
                   </div>
@@ -528,6 +552,9 @@ export default function App() {
                   const isCurrent =
                     activeSection === 'curriculum' && activeModuleId === mod.id;
                   const isDone = completedModules.includes(mod.id);
+                  const primaryTitle = language === 'en' ? `Module ${mod.number}: ${mod.titleEn}` : `فصل ${mod.number}: ${mod.titleFa}`;
+                  const secondaryTitle = language === 'en' ? mod.titleFa : mod.titleEn;
+
                   return (
                     <button
                       key={mod.id}
@@ -536,7 +563,9 @@ export default function App() {
                         setActiveSection('curriculum');
                         setActiveModuleId(mod.id);
                       }}
-                      className={`w-full text-right p-2.5 rounded-xl border transition-all flex items-start gap-2.5 cursor-pointer ${
+                      className={`w-full ${
+                        isRTL ? 'text-right' : 'text-left'
+                      } p-2.5 rounded-xl border transition-all flex items-start gap-2.5 cursor-pointer ${
                         isCurrent
                           ? 'border-blue-500 bg-blue-500/10 text-slate-900 dark:text-white'
                           : 'border-transparent hover:bg-slate-100 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300'
@@ -549,13 +578,15 @@ export default function App() {
                       )}
                       <div className="min-w-0 flex-1">
                         <div className="text-xs font-bold leading-5">
-                          فصل {mod.number}: {mod.titleFa}
+                          {primaryTitle}
                         </div>
                         <div
-                          dir="ltr"
-                          className="text-[10px] font-mono text-slate-500 dark:text-slate-400 text-right leading-4 mt-0.5 break-words"
+                          dir={language === 'en' ? 'rtl' : 'ltr'}
+                          className={`text-[10px] font-mono text-slate-500 dark:text-slate-400 ${
+                            isRTL ? 'text-right' : 'text-left'
+                          } leading-4 mt-0.5 break-words opacity-80`}
                         >
-                          {mod.titleEn}
+                          {secondaryTitle}
                         </div>
                       </div>
                     </button>
@@ -567,45 +598,45 @@ export default function App() {
             {/* Interactive Studios List */}
             <div className="space-y-2 pt-4 border-t border-slate-200 dark:border-slate-800">
               <div className="px-2 text-xs font-extrabold text-slate-500 dark:text-slate-400">
-                استودیوهای مهندسی و شبیه‌سازها
+                {t('studiosSectionTitle')}
               </div>
               <div className="space-y-1">
                 {(
                   [
                     {
                       id: 'simulator',
-                      labelFa: '۱. شبیه‌ساز زنده Mission Control',
-                      labelEn: 'Artifact & PR Review Simulator',
+                      label: t('studio1Label'),
+                      sub: t('studio1Sub'),
                       icon: Terminal,
                     },
                     {
                       id: 'guardrails',
-                      labelFa: '۲. استودیوی Rule و Workflow',
-                      labelEn: '.agent/rules & // turbo Builder',
+                      label: t('studio2Label'),
+                      sub: t('studio2Sub'),
                       icon: Shield,
                     },
                     {
                       id: 'mcp',
-                      labelFa: '۳. استودیوی بصری سرور FastMCP',
-                      labelEn: 'mcp_config.json & Python Code',
+                      label: t('studio3Label'),
+                      sub: t('studio3Sub'),
                       icon: Cpu,
                     },
                     {
                       id: 'cheatsheets',
-                      labelFa: '۴. مرکز چیت‌شیت‌ها و خروجی PDF',
-                      labelEn: 'Modular Reference Cards',
+                      label: t('studio4Label'),
+                      sub: t('studio4Sub'),
                       icon: FileSpreadsheet,
                     },
                     {
                       id: 'scenarios',
-                      labelFa: '۵. آزمایشگاه چالش‌های معماری',
-                      labelEn: '8 Principal Case Studies',
+                      label: t('studio5Label'),
+                      sub: t('studio5Sub'),
                       icon: Award,
                     },
                     {
                       id: 'knowledge-base',
-                      labelFa: '۶. کاوشگر پایگاه دانش و Context Rot',
-                      labelEn: '.agent/knowledge-base Bento Explorer',
+                      label: t('studio6Label'),
+                      sub: t('studio6Sub'),
                       icon: Database,
                     },
                   ] as const
@@ -617,7 +648,9 @@ export default function App() {
                       key={st.id}
                       type="button"
                       onClick={() => setActiveSection(st.id)}
-                      className={`w-full text-right p-2.5 rounded-xl border transition-all flex items-start gap-2.5 cursor-pointer ${
+                      className={`w-full ${
+                        isRTL ? 'text-right' : 'text-left'
+                      } p-2.5 rounded-xl border transition-all flex items-start gap-2.5 cursor-pointer ${
                         active
                           ? 'border-blue-500 bg-blue-500/10 text-slate-900 dark:text-white'
                           : 'border-transparent hover:bg-slate-100 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300'
@@ -625,12 +658,14 @@ export default function App() {
                     >
                       <IconComp className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
                       <div className="min-w-0 flex-1">
-                        <div className="text-xs font-bold">{st.labelFa}</div>
+                        <div className="text-xs font-bold">{st.label}</div>
                         <div
                           dir="ltr"
-                          className="text-[10px] font-mono text-slate-500 dark:text-slate-400 text-right leading-4 mt-0.5 break-words"
+                          className={`text-[10px] font-mono text-slate-500 dark:text-slate-400 ${
+                            isRTL ? 'text-right' : 'text-left'
+                          } leading-4 mt-0.5 break-words`}
                         >
-                          {st.labelEn}
+                          {st.sub}
                         </div>
                       </div>
                     </button>
@@ -713,24 +748,35 @@ export default function App() {
         {activeSection === 'curriculum' && (
           <aside
             aria-label="On This Page Subsections"
-            className="w-64 shrink-0 border-r border-slate-200 dark:border-slate-800/80 p-4 hidden xl:block space-y-4"
+            className={`w-64 shrink-0 ${
+              isRTL ? 'border-r' : 'border-l'
+            } border-slate-200 dark:border-slate-800/80 p-4 hidden xl:block space-y-4`}
           >
             <div className="text-xs font-bold text-slate-500 dark:text-slate-400">
-              در این فصل می‌خوانید (On This Page)
+              {t('onThisPageTitle')}
             </div>
             <div className="space-y-2">
-              {currentModule.subSections.map((sub) => (
-                <a
-                  key={sub.id}
-                  href={`#${sub.id}`}
-                  className="block p-2.5 rounded-lg text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-blue-500 transition-colors"
-                >
-                  <div className="font-semibold leading-5">{sub.titleFa}</div>
-                  <div dir="ltr" className="text-[10px] font-mono opacity-75 text-right leading-4 mt-1 break-words">
-                    {sub.titleEn}
-                  </div>
-                </a>
-              ))}
+              {currentModule.subSections.map((sub) => {
+                const subPrimary = language === 'en' ? sub.titleEn : sub.titleFa;
+                const subSecondary = language === 'en' ? sub.titleFa : sub.titleEn;
+                return (
+                  <a
+                    key={sub.id}
+                    href={`#${sub.id}`}
+                    className="block p-2.5 rounded-lg text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-blue-500 transition-colors"
+                  >
+                    <div className="font-semibold leading-5">{subPrimary}</div>
+                    <div
+                      dir={language === 'en' ? 'rtl' : 'ltr'}
+                      className={`text-[10px] font-mono opacity-75 ${
+                        isRTL ? 'text-right' : 'text-left'
+                      } leading-4 mt-1 break-words`}
+                    >
+                      {subSecondary}
+                    </div>
+                  </a>
+                );
+              })}
             </div>
           </aside>
         )}
@@ -794,7 +840,7 @@ export default function App() {
                     id="resume-session-modal-title"
                     className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white"
                   >
-                    ادامه آخرین نشست مهندسی (Resume Recent Session)
+                    {t('resumeModalTitle')}
                   </h2>
                   <div
                     dir="ltr"
@@ -817,7 +863,9 @@ export default function App() {
             {/* Modal Body */}
             <div className="p-6 space-y-5">
               <p className="text-xs sm:text-sm leading-6 text-slate-600 dark:text-slate-300">
-                آخرین فعالیت و نقطه پیشرفت شما در حافظه مرورگر (<code dir="ltr" className="ltr-inline">localStorage</code>) شناسایی شد. آیا مایلید مستقیماً به همان بخش بازگردید؟
+                {language === 'en'
+                  ? 'Your previous activity and progress point was detected in browser localStorage. Would you like to resume right where you left off?'
+                  : 'آخرین فعالیت و نقطه پیشرفت شما در حافظه مرورگر (localStorage) شناسایی شد. آیا مایلید مستقیماً به همان بخش بازگردید؟'}
               </p>
 
               {/* Detected Target Card */}
@@ -833,7 +881,9 @@ export default function App() {
                     {detectedSession.badgeLabelEn}
                   </span>
                   <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
-                    {detectedSession.kind === 'studio' ? 'استودیوی تعاملی' : 'سرفصل آموزشی'}
+                    {detectedSession.kind === 'studio'
+                      ? (language === 'en' ? 'Interactive Studio' : 'استودیوی تعاملی')
+                      : (language === 'en' ? 'Learning Module' : 'سرفصل آموزشی')}
                   </span>
                 </div>
 
@@ -841,15 +891,15 @@ export default function App() {
                   className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white"
                   data-testid="resume-session-title-fa"
                 >
-                  {detectedSession.targetTitleFa}
+                  {language === 'en' ? detectedSession.targetTitleEn : detectedSession.targetTitleFa}
                 </div>
 
                 <div
-                  dir="ltr"
-                  className="ltr-inline text-xs font-mono text-slate-500 dark:text-slate-400 block"
+                  dir={language === 'en' ? 'rtl' : 'ltr'}
+                  className="text-xs font-mono text-slate-500 dark:text-slate-400 block opacity-80"
                   data-testid="resume-session-title-en"
                 >
-                  {detectedSession.targetTitleEn}
+                  {language === 'en' ? detectedSession.targetTitleFa : detectedSession.targetTitleEn}
                 </div>
               </div>
 
@@ -857,7 +907,7 @@ export default function App() {
               <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/70 space-y-2">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-bold text-slate-700 dark:text-slate-300">
-                    پیشرفت ثبت‌شده در سرفصل‌های آکادمی:
+                    {language === 'en' ? 'Saved Academy Curriculum Progress:' : 'پیشرفت ثبت‌شده در سرفصل‌های آکادمی:'}
                   </span>
                   <span
                     dir="ltr"
@@ -882,7 +932,7 @@ export default function App() {
                   data-testid="dismiss-resume-session-btn"
                   className="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
-                  ماندن در نمای فعلی (Stay Here)
+                  {t('resumeModalStay')}
                 </button>
                 <button
                   type="button"
@@ -890,8 +940,8 @@ export default function App() {
                   data-testid="confirm-resume-session-btn"
                   className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
                 >
-                  <span>پرش مستقیم به آخرین نقطه پیشرفت (Jump Back)</span>
-                  <ArrowUpLeft className="w-4 h-4" />
+                  <span>{t('resumeModalJump')}</span>
+                  <ArrowUpLeft className={`w-4 h-4 ${isRTL ? '' : 'rotate-90'}`} />
                 </button>
               </div>
             </div>
@@ -902,6 +952,14 @@ export default function App() {
       {/* PWA Offline Mode Connectivity Indicator */}
       <OfflineIndicator />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <LanguageProvider>
+      <MainWorkspace />
+    </LanguageProvider>
   );
 }
 

@@ -36,6 +36,7 @@ import {
   DEEP_WORK_LOGS_STORAGE_KEY,
 } from '../utils/pomodoroTimer';
 import { StudySessionDay } from '../utils/achievements';
+import { useLanguage } from '../context/LanguageContext';
 
 export interface PomodoroHeaderWidgetProps {
   currentModule: CurriculumModule;
@@ -58,6 +59,7 @@ export const PomodoroHeaderWidget: React.FC<PomodoroHeaderWidgetProps> = ({
   onStudyMinutesLogged,
   className = '',
 }) => {
+  const { language, isRTL, t } = useLanguage();
   const [mode, setMode] = useState<PomodoroSessionMode>('focus');
   const [remainingSeconds, setRemainingSeconds] = useState<number>(
     POMODORO_MODES['focus'].durationSeconds
@@ -190,9 +192,11 @@ export const PomodoroHeaderWidget: React.FC<PomodoroHeaderWidgetProps> = ({
       onStudyMinutesLogged(safeMinutes, currentModule.id);
     }
 
-    setFeedbackToast(
-      `ثبت موفق! ${safeMinutes} دقیقه کار عمیق برای فصل ${currentModule.number} ذخیره شد (+${result.xpEarned} XP)`
-    );
+    const toastMsg = language === 'en'
+      ? `Logged! ${safeMinutes}m deep work saved for Module ${currentModule.number} (+${result.xpEarned} XP)`
+      : `ثبت موفق! ${safeMinutes} دقیقه کار عمیق برای فصل ${currentModule.number} ذخیره شد (+${result.xpEarned} XP)`;
+
+    setFeedbackToast(toastMsg);
     setTimeout(() => setFeedbackToast(null), 4500);
 
     // Reset elapsed
@@ -234,6 +238,19 @@ export const PomodoroHeaderWidget: React.FC<PomodoroHeaderWidgetProps> = ({
     Math.max(0, Math.round(((totalDuration - remainingSeconds) / totalDuration) * 100))
   );
 
+  const getModeLabel = (mKey: PomodoroSessionMode) => {
+    switch (mKey) {
+      case 'focus':
+        return t('pomodoroStandard');
+      case 'deep-work':
+        return t('pomodoroDeepWork');
+      case 'short-break':
+        return t('pomodoroShortBreak');
+      case 'long-break':
+        return t('pomodoroLongBreak');
+    }
+  };
+
   return (
     <div
       ref={popoverRef}
@@ -249,7 +266,7 @@ export const PomodoroHeaderWidget: React.FC<PomodoroHeaderWidgetProps> = ({
             ? 'border-emerald-500/50 bg-emerald-500/15 shadow-[0_0_12px_rgba(16,185,129,0.25)] text-emerald-600 dark:text-emerald-300'
             : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827]/90 hover:border-blue-400 text-slate-700 dark:text-slate-200'
         }`}
-        title="تایمر مطالعه پومودورو و کار عمیق (Deep Work Timer)"
+        title={language === 'en' ? 'Pomodoro Study Timer & Deep Work Logger' : 'تایمر مطالعه پومودورو و کار عمیق (Deep Work Timer)'}
       >
         {/* Animated Timer Icon */}
         <div className="relative flex items-center justify-center">
@@ -274,7 +291,7 @@ export const PomodoroHeaderWidget: React.FC<PomodoroHeaderWidgetProps> = ({
           type="button"
           onClick={handleTogglePlayPause}
           data-testid="pomodoro-quick-play-btn"
-          aria-label={isRunning ? 'توقف موقت تایمر' : 'شروع تایمر پومودورو'}
+          aria-label={isRunning ? (language === 'en' ? 'Pause Timer' : 'توقف موقت تایمر') : (language === 'en' ? 'Start Pomodoro Timer' : 'شروع تایمر پومودورو')}
           className={`p-1 rounded-lg transition-colors cursor-pointer ${
             isRunning
               ? 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-600 dark:text-emerald-300'
@@ -285,8 +302,10 @@ export const PomodoroHeaderWidget: React.FC<PomodoroHeaderWidgetProps> = ({
         </button>
 
         {/* Active Module Tag (Desktop visible) */}
-        <span className="hidden xl:inline text-[11px] font-semibold text-slate-500 dark:text-slate-400 border-r border-slate-200 dark:border-slate-800 pr-2 mr-1">
-          فصل {currentModule.number}
+        <span className={`hidden xl:inline text-[11px] font-semibold text-slate-500 dark:text-slate-400 ${
+          isRTL ? 'border-r pr-2 mr-1' : 'border-l pl-2 ml-1'
+        } border-slate-200 dark:border-slate-800`}>
+          {language === 'en' ? `Mod ${currentModule.number}` : `فصل ${currentModule.number}`}
         </span>
 
         {/* Deep work total hours badge */}
@@ -309,7 +328,9 @@ export const PomodoroHeaderWidget: React.FC<PomodoroHeaderWidgetProps> = ({
       {isPopoverOpen && (
         <div
           data-testid="pomodoro-popover-panel"
-          className="absolute left-0 top-full mt-2 w-80 sm:w-96 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-[#0c121e]/95 backdrop-blur-xl shadow-2xl p-4 sm:p-5 z-50 space-y-4 animate-in fade-in zoom-in-95 duration-150"
+          className={`absolute ${
+            isRTL ? 'left-0' : 'right-0'
+          } top-full mt-2 w-80 sm:w-96 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-[#0c121e]/95 backdrop-blur-xl shadow-2xl p-4 sm:p-5 z-50 space-y-4 animate-in fade-in zoom-in-95 duration-150`}
         >
           {/* Popover Header */}
           <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
@@ -319,13 +340,15 @@ export const PomodoroHeaderWidget: React.FC<PomodoroHeaderWidgetProps> = ({
               </div>
               <div>
                 <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white">
-                  مرکز کار عمیق و تایمر پومودورو
+                  {t('pomodoroTitle')}
                 </h3>
                 <div
                   dir="ltr"
-                  className="ltr-inline text-[10px] font-mono text-slate-500 text-left block"
+                  className={`ltr-inline text-[10px] font-mono text-slate-500 ${
+                    isRTL ? 'text-left' : 'text-left'
+                  } block`}
                 >
-                  Deep Work &amp; Focus Tracker
+                  {t('pomodoroSubtitle')}
                 </div>
               </div>
             </div>
@@ -334,7 +357,7 @@ export const PomodoroHeaderWidget: React.FC<PomodoroHeaderWidgetProps> = ({
               type="button"
               onClick={() => setIsPopoverOpen(false)}
               className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer"
-              aria-label="بستن پنجره پومودورو"
+              aria-label={language === 'en' ? 'Close Pomodoro Panel' : 'بستن پنجره پومودورو'}
             >
               <X className="w-4 h-4" />
             </button>
@@ -345,7 +368,7 @@ export const PomodoroHeaderWidget: React.FC<PomodoroHeaderWidgetProps> = ({
             <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400">
               <span className="flex items-center gap-1.5">
                 <BookOpen className="w-3.5 h-3.5 text-blue-500" />
-                <span>فصل فعال برای ثبت ساعت مطالعه:</span>
+                <span>{t('activeModuleTarget')}</span>
               </span>
               <span
                 dir="ltr"
@@ -356,13 +379,17 @@ export const PomodoroHeaderWidget: React.FC<PomodoroHeaderWidgetProps> = ({
               </span>
             </div>
             <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
-              فصل {currentModule.number}: {currentModule.titleFa}
+              {language === 'en'
+                ? `Module ${currentModule.number}: ${currentModule.titleEn}`
+                : `فصل ${currentModule.number}: ${currentModule.titleFa}`}
             </div>
             <div
-              dir="ltr"
-              className="ltr-inline text-[10px] font-mono text-slate-500 truncate block text-left"
+              dir={language === 'en' ? 'rtl' : 'ltr'}
+              className={`text-[10px] font-mono text-slate-500 truncate block ${
+                isRTL ? 'text-left' : 'text-left'
+              }`}
             >
-              {currentModule.titleEn}
+              {language === 'en' ? currentModule.titleFa : currentModule.titleEn}
             </div>
           </div>
 
@@ -383,7 +410,7 @@ export const PomodoroHeaderWidget: React.FC<PomodoroHeaderWidgetProps> = ({
                       : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  <span>{cfg.labelFa}</span>
+                  <span className="truncate w-full text-center">{getModeLabel(mKey)}</span>
                   <span
                     dir="ltr"
                     className="ltr-inline font-mono text-[9px] opacity-80"
@@ -434,7 +461,7 @@ export const PomodoroHeaderWidget: React.FC<PomodoroHeaderWidgetProps> = ({
 
               {/* Mode Label */}
               <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-1 z-10">
-                {POMODORO_MODES[mode].labelFa}
+                {getModeLabel(mode)}
               </div>
 
               {/* Reward preview */}
@@ -467,7 +494,7 @@ export const PomodoroHeaderWidget: React.FC<PomodoroHeaderWidgetProps> = ({
                 className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-1 cursor-pointer"
               >
                 <RotateCcw className="w-3 h-3" />
-                <span>بازنشانی</span>
+                <span>{t('resetTimer')}</span>
               </button>
 
               <button
@@ -497,12 +524,12 @@ export const PomodoroHeaderWidget: React.FC<PomodoroHeaderWidgetProps> = ({
               {isRunning ? (
                 <>
                   <Pause className="w-4 h-4 fill-current" />
-                  <span>توقف موقت (Pause)</span>
+                  <span>{t('pauseFocus')}</span>
                 </>
               ) : (
                 <>
                   <Play className="w-4 h-4 fill-current" />
-                  <span>شروع تمرکز (Start)</span>
+                  <span>{t('startFocus')}</span>
                 </>
               )}
             </button>
@@ -514,20 +541,20 @@ export const PomodoroHeaderWidget: React.FC<PomodoroHeaderWidgetProps> = ({
               className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-extrabold flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer"
             >
               <Zap className="w-4 h-4 fill-current" />
-              <span>ثبت کار عمیق فصل {currentModule.number}</span>
+              <span>{t('logDeepWorkBtn', { num: currentModule.number })}</span>
             </button>
           </div>
 
           {/* Optional Short Session Note */}
           <div>
             <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1">
-              یادداشت تمرکز برای این فصل (اختیاری):
+              {t('sessionNotesLabel')}
             </label>
             <input
               type="text"
               value={sessionNotes}
               onChange={(e) => setSessionNotes(e.target.value)}
-              placeholder="مثال: بازبینی ساختار implementation_plan.md و گیت‌های بازبینی..."
+              placeholder={t('sessionNotesPlaceholder')}
               className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-blue-500"
             />
           </div>
@@ -548,7 +575,7 @@ export const PomodoroHeaderWidget: React.FC<PomodoroHeaderWidgetProps> = ({
             <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-200">
               <span className="flex items-center gap-1.5">
                 <BarChart3 className="w-3.5 h-3.5 text-indigo-500" />
-                <span>آمار کار عمیق فصل {currentModule.number}:</span>
+                <span>{t('moduleStatsTitle', { num: currentModule.number })}</span>
               </span>
               <span
                 dir="ltr"
@@ -561,7 +588,7 @@ export const PomodoroHeaderWidget: React.FC<PomodoroHeaderWidgetProps> = ({
 
             <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-500 dark:text-slate-400">
               <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                <div>تعداد جلسات فصل:</div>
+                <div>{t('moduleSessionsLabel')}</div>
                 <div
                   dir="ltr"
                   className="ltr-inline font-mono font-bold text-slate-800 dark:text-slate-200 text-xs"
@@ -571,7 +598,7 @@ export const PomodoroHeaderWidget: React.FC<PomodoroHeaderWidgetProps> = ({
               </div>
 
               <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                <div>کل کار عمیق آکادمی:</div>
+                <div>{t('totalDeepWorkLabel')}</div>
                 <div
                   dir="ltr"
                   data-testid="pomodoro-all-modules-hours"

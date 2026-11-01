@@ -45,6 +45,15 @@ import {
   POMODORO_MODES,
   DeepWorkLogEntry,
 } from './pomodoroTimer';
+import {
+  APP_TRANSLATIONS,
+  getTranslation,
+  getLayoutDirection,
+} from './translations';
+import {
+  getEnglishModuleContent,
+  ENGLISH_CURRICULUM_CONTENT,
+} from './curriculumEnglishContent';
 
 
 test('buildRuleMarkdown generates valid Glob frontmatter and selected domain sections', () => {
@@ -1132,4 +1141,42 @@ test('Pomodoro Timer: recordDeepWorkSession, module summaries, and total stats t
   const parsed = parseDeepWorkLogsFromStorage(serialized);
   assert.equal(parsed.length, 3);
   assert.equal(parsed[0].moduleId, 'module-2');
+});
+
+test('i18n Translations: getTranslation returns correct strings for both Persian and English with interpolation', () => {
+  // 1. Navigation and Brand
+  assert.equal(getTranslation('fa', 'brandTitle'), 'Google Antigravity Academy');
+  assert.equal(getTranslation('en', 'brandTitle'), 'Google Antigravity Academy');
+  assert.equal(getTranslation('fa', 'navAcademy'), 'آکادمی (۸ فصل)');
+  assert.equal(getTranslation('en', 'navAcademy'), 'Curriculum (8 Modules)');
+
+  // 2. Interpolation test
+  const faModule = getTranslation('fa', 'moduleBadge', { num: '02' });
+  assert.equal(faModule, 'فصل ۰02 از ۰۸');
+
+  const enModule = getTranslation('en', 'moduleBadge', { num: '02' });
+  assert.equal(enModule, 'Module 002 of 08');
+
+  const toastFa = getTranslation('fa', 'deepWorkLoggedToast', { mins: 25, num: 1, xp: 63 });
+  assert.ok(toastFa.includes('25 دقیقه کار عمیق'));
+  assert.ok(toastFa.includes('+63 XP'));
+
+  const toastEn = getTranslation('en', 'deepWorkLoggedToast', { mins: 25, num: 1, xp: 63 });
+  assert.ok(toastEn.includes('25 mins of Deep Work'));
+  assert.ok(toastEn.includes('+63 XP'));
+
+  // 3. Direction resolution
+  assert.equal(getLayoutDirection('fa'), 'rtl');
+  assert.equal(getLayoutDirection('en'), 'ltr');
+});
+
+test('Curriculum English Content: getEnglishModuleContent returns complete English summaries and takeaways for all 8 modules', () => {
+  for (let modNum = 1; modNum <= 8; modNum++) {
+    const modId = `module-${modNum}`;
+    const enContent = getEnglishModuleContent(modId);
+    assert.ok(enContent, `English content must exist for ${modId}`);
+    assert.ok(enContent.summaryEn.length > 20, `Summary must be non-empty for ${modId}`);
+    assert.ok(enContent.keyTakeaways.length >= 3, `Key takeaways must exist for ${modId}`);
+    assert.ok(enContent.keyTakeaways[0].titleEn.length > 0);
+  }
 });

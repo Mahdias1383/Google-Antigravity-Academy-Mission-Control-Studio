@@ -19,6 +19,8 @@ import {
   ExportSectionPdfButton,
   PrintableDocumentPayload,
 } from './CodeAndPdfTools';
+import { useLanguage } from '../context/LanguageContext';
+import { getEnglishModuleContent } from '../utils/curriculumEnglishContent';
 
 const InteractiveModuleDiagram: React.FC<{
   widgetType: CurriculumModule['interactiveWidgetType'];
@@ -578,9 +580,16 @@ export const ModuleContentView: React.FC<{
     })),
   };
 
+  const { language, isRTL, t } = useLanguage();
+  const enContent = getEnglishModuleContent(module.id);
+
   const currentIdx = allModules.findIndex((m) => m.id === module.id);
   const prevMod = currentIdx > 0 ? allModules[currentIdx - 1] : null;
   const nextMod = currentIdx < allModules.length - 1 ? allModules[currentIdx + 1] : null;
+
+  const displayTitle = language === 'en' ? `${module.number}. ${module.titleEn}` : `${module.number}. ${module.titleFa}`;
+  const displaySubtitle = language === 'en' ? module.titleFa : module.titleEn;
+  const displaySummary = language === 'en' && enContent?.summaryEn ? enContent.summaryEn : module.summaryFa;
 
   return (
     <div className="space-y-8 pb-12">
@@ -589,7 +598,7 @@ export const ModuleContentView: React.FC<{
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <span className="font-bold text-blue-600 dark:text-blue-400">
-              فصل ۰{module.number} از ۰۸
+              {language === 'en' ? `Module 0${module.number} of 08` : `فصل ۰${module.number} از ۰۸`}
             </span>
             <span aria-hidden="true">·</span>
             <span dir="ltr" className="ltr-inline">{module.readingTime}</span>
@@ -599,7 +608,7 @@ export const ModuleContentView: React.FC<{
 
           <div className="flex flex-wrap items-center gap-2.5">
             <ExportSectionPdfButton
-              label="دریافت PDF این فصل (Export Module PDF)"
+              label={t('exportPdfBtn')}
               payload={fullModulePdfPayload}
               onExport={onExportPdf}
             />
@@ -616,12 +625,12 @@ export const ModuleContentView: React.FC<{
               {isCompleted ? (
                 <>
                   <CheckSquare className="w-4 h-4 text-emerald-500" />
-                  <span>تکمیل شده (Completed)</span>
+                  <span>{t('completedBadge')}</span>
                 </>
               ) : (
                 <>
                   <Square className="w-4 h-4" />
-                  <span>علامت‌گذاری به عنوان مطالعه‌شده</span>
+                  <span>{t('markCompleted')}</span>
                 </>
               )}
             </button>
@@ -630,34 +639,59 @@ export const ModuleContentView: React.FC<{
 
         <div className="space-y-3">
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-            {module.number}. {module.titleFa}
+            {displayTitle}
           </h1>
-          <div dir="ltr" className="ltr-inline text-sm sm:text-base font-mono text-blue-600 dark:text-blue-400">
-            {module.titleEn}
+          <div
+            dir={language === 'en' ? 'rtl' : 'ltr'}
+            className="text-sm sm:text-base font-mono text-blue-600 dark:text-blue-400"
+          >
+            {displaySubtitle}
           </div>
           <p className="text-sm sm:text-base leading-7 text-slate-600 dark:text-slate-300 max-w-4xl">
-            {module.summaryFa}
+            {displaySummary}
           </p>
         </div>
 
         {/* Key Takeaways Bento Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 pt-2">
-          {module.keyTakeaways.map((kt) => (
-            <div
-              key={kt.titleFa}
-              className="p-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/60 space-y-1.5"
-            >
-              <div dir="ltr" className="ltr-inline text-[11px] font-mono font-semibold text-blue-600 dark:text-blue-400">
-                {kt.metricOrBadge}
-              </div>
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                {kt.titleFa}
-              </h3>
-              <p className="text-xs leading-5 text-slate-600 dark:text-slate-400">
-                {kt.descFa}
-              </p>
-            </div>
-          ))}
+        <div className="space-y-2 pt-1">
+          <div className="text-xs font-bold text-slate-500 dark:text-slate-400">
+            {t('keyTakeawaysTitle')}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+            {language === 'en' && enContent?.keyTakeaways
+              ? enContent.keyTakeaways.map((kt) => (
+                  <div
+                    key={kt.titleEn}
+                    className="p-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/60 space-y-1.5"
+                  >
+                    <div dir="ltr" className="ltr-inline text-[11px] font-mono font-semibold text-blue-600 dark:text-blue-400">
+                      {kt.metricOrBadge}
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                      {kt.titleEn}
+                    </h3>
+                    <p className="text-xs leading-5 text-slate-600 dark:text-slate-400">
+                      {kt.descEn}
+                    </p>
+                  </div>
+                ))
+              : module.keyTakeaways.map((kt) => (
+                  <div
+                    key={kt.titleFa}
+                    className="p-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/60 space-y-1.5"
+                  >
+                    <div dir="ltr" className="ltr-inline text-[11px] font-mono font-semibold text-blue-600 dark:text-blue-400">
+                      {kt.metricOrBadge}
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                      {kt.titleFa}
+                    </h3>
+                    <p className="text-xs leading-5 text-slate-600 dark:text-slate-400">
+                      {kt.descFa}
+                    </p>
+                  </div>
+                ))}
+          </div>
         </div>
       </div>
 
@@ -667,6 +701,13 @@ export const ModuleContentView: React.FC<{
       {/* Deep Sub-Sections */}
       <div className="space-y-8">
         {module.subSections.map((sub) => {
+          const enSub = enContent?.subSections[sub.id];
+          const subTitlePrimary = language === 'en' ? sub.titleEn : sub.titleFa;
+          const subTitleSecondary = language === 'en' ? sub.titleFa : sub.titleEn;
+          const subParagraphs = (language === 'en' && enSub?.contentEn && enSub.contentEn.length > 0)
+            ? enSub.contentEn
+            : sub.contentFa;
+
           const subPdfPayload: PrintableDocumentPayload = {
             titleFa: sub.titleFa,
             titleEn: sub.titleEn,
@@ -675,7 +716,7 @@ export const ModuleContentView: React.FC<{
               {
                 headingFa: sub.titleFa,
                 headingEn: sub.titleEn,
-                paragraphsFa: sub.contentFa,
+                paragraphsFa: subParagraphs,
                 bullets: sub.bulletPoints,
                 codeBlocks: sub.codeExamples?.map((ce) => ({
                   filename: ce.filename,
@@ -695,14 +736,17 @@ export const ModuleContentView: React.FC<{
               <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
                 <div>
                   <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
-                    {sub.titleFa}
+                    {subTitlePrimary}
                   </h2>
-                  <div dir="ltr" className="ltr-inline text-xs font-mono text-slate-500 dark:text-slate-400 mt-1">
-                    {sub.titleEn}
+                  <div
+                    dir={language === 'en' ? 'rtl' : 'ltr'}
+                    className="text-xs font-mono text-slate-500 dark:text-slate-400 mt-1 opacity-80"
+                  >
+                    {subTitleSecondary}
                   </div>
                 </div>
                 <ExportSectionPdfButton
-                  label="دریافت PDF این بخش"
+                  label={language === 'en' ? 'Export Section PDF' : 'دریافت PDF این بخش'}
                   payload={subPdfPayload}
                   onExport={onExportPdf}
                   compact
@@ -711,10 +755,12 @@ export const ModuleContentView: React.FC<{
 
               {/* Narrative Paragraphs */}
               <div className="space-y-4">
-                {sub.contentFa.map((p, idx) => (
+                {subParagraphs.map((p, idx) => (
                   <p
                     key={idx}
-                    className="text-sm sm:text-[15px] leading-8 text-slate-700 dark:text-slate-300 text-justify"
+                    className={`text-sm sm:text-[15px] leading-8 text-slate-700 dark:text-slate-300 ${
+                      isRTL ? 'text-justify' : 'text-left'
+                    }`}
                   >
                     {p}
                   </p>
@@ -736,7 +782,9 @@ export const ModuleContentView: React.FC<{
                         {bp.termEn}
                       </code>
                       <p className="text-xs sm:text-sm leading-6 text-slate-700 dark:text-slate-300">
-                        {bp.descFa}
+                        {language === 'en'
+                          ? (enSub?.bulletPoints?.find((b) => b.termEn === bp.termEn)?.descEn || bp.descFa)
+                          : bp.descFa}
                       </p>
                     </div>
                   ))}
@@ -746,7 +794,7 @@ export const ModuleContentView: React.FC<{
               {/* Architectural Comparison Matrix */}
               {sub.comparisonTable && (
                 <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 my-4">
-                  <table className="w-full text-right border-collapse text-xs sm:text-sm">
+                  <table className={`w-full ${isRTL ? 'text-right' : 'text-left'} border-collapse text-xs sm:text-sm`}>
                     <thead>
                       <tr className="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-200 border-b border-slate-200 dark:border-slate-800">
                         {sub.comparisonTable.headers.map((h) => (
@@ -781,23 +829,39 @@ export const ModuleContentView: React.FC<{
                 </div>
               )}
 
-              {/* Callouts (No thick left border — subtle all-around hairline border) */}
-              {sub.callouts?.map((c) => (
+              {/* Callouts (subtle all-around hairline border) */}
+              {language === 'en' && enSub?.callout ? (
                 <div
-                  key={c.title}
                   className={`p-4 rounded-xl border space-y-1.5 ${
-                    c.type === 'warning'
+                    enSub.callout.type === 'warning'
                       ? 'border-amber-500/40 bg-amber-500/5 text-amber-900 dark:text-amber-200'
                       : 'border-blue-500/40 bg-blue-500/5 text-slate-800 dark:text-slate-200'
                   }`}
                 >
                   <div className="flex items-center gap-2 text-xs font-bold">
                     <ShieldCheck className="w-4 h-4 text-blue-500 shrink-0" />
-                    <span>{c.title}</span>
+                    <span>{enSub.callout.titleEn}</span>
                   </div>
-                  <p className="text-xs sm:text-sm leading-6 opacity-90">{c.content}</p>
+                  <p className="text-xs sm:text-sm leading-6 opacity-90">{enSub.callout.contentEn}</p>
                 </div>
-              ))}
+              ) : (
+                sub.callouts?.map((c) => (
+                  <div
+                    key={c.title}
+                    className={`p-4 rounded-xl border space-y-1.5 ${
+                      c.type === 'warning'
+                        ? 'border-amber-500/40 bg-amber-500/5 text-amber-900 dark:text-amber-200'
+                        : 'border-blue-500/40 bg-blue-500/5 text-slate-800 dark:text-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 text-xs font-bold">
+                      <ShieldCheck className="w-4 h-4 text-blue-500 shrink-0" />
+                      <span>{c.title}</span>
+                    </div>
+                    <p className="text-xs sm:text-sm leading-6 opacity-90">{c.content}</p>
+                  </div>
+                ))
+              )}
 
               {/* Production Code Sandboxes */}
               {sub.codeExamples && sub.codeExamples.length > 0 && (
@@ -816,7 +880,9 @@ export const ModuleContentView: React.FC<{
             onClick={() => onSelectModule(prevMod.id)}
             className="px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-blue-500/50 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer"
           >
-            فصل قبلی: {prevMod.number}. {prevMod.titleFa}
+            {language === 'en'
+              ? `Previous Module: ${prevMod.number}. ${prevMod.titleEn}`
+              : `فصل قبلی: ${prevMod.number}. ${prevMod.titleFa}`}
           </button>
         ) : (
           <div />
@@ -827,8 +893,12 @@ export const ModuleContentView: React.FC<{
             onClick={() => onSelectModule(nextMod.id)}
             className="px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white flex items-center gap-2 cursor-pointer"
           >
-            <span>فصل بعدی: {nextMod.number}. {nextMod.titleFa}</span>
-            <ArrowRight className="w-4 h-4 rotate-180" />
+            <span>
+              {language === 'en'
+                ? `Next Module: ${nextMod.number}. ${nextMod.titleEn}`
+                : `فصل بعدی: ${nextMod.number}. ${nextMod.titleFa}`}
+            </span>
+            <ArrowRight className={`w-4 h-4 ${isRTL ? 'rotate-180' : ''}`} />
           </button>
         )}
       </div>

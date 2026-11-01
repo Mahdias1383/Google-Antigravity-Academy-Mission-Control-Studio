@@ -54,6 +54,15 @@ import {
   getEnglishModuleContent,
   ENGLISH_CURRICULUM_CONTENT,
 } from './curriculumEnglishContent';
+import {
+  createSectionChangeEvent,
+  appendSectionChangeEvent,
+  calculateActivityLogStats,
+  filterActivityLogEvents,
+  serializeActivityLogsToStorage,
+  parseActivityLogsFromStorage,
+  NavigationActivityEvent,
+} from './activityLogger';
 
 
 test('buildRuleMarkdown generates valid Glob frontmatter and selected domain sections', () => {
@@ -1187,3 +1196,91 @@ test('Curriculum English Content: getEnglishModuleContent returns complete Engli
     assert.ok(enContent.keyTakeaways[0].titleEn.length > 0);
   }
 });
+
+test('Activity Logger: createSectionChangeEvent, appendSectionChangeEvent, stats, filtering, and localStorage persistence track section_change events accurately', () => {
+  const sampleModules = [
+    {
+      id: 'module-1',
+      number: 1,
+      titleFa: 'معماری هسته Agent-First',
+      titleEn: 'Agent-First Core Architecture',
+    },
+    {
+      id: 'module-3',
+      number: 3,
+      titleFa: 'حالت‌های اجرای خودمختار و سیاست‌های ترمینال',
+      titleEn: 'Autonomy Modes & Terminal Policies',
+    },
+  ];
+
+  // 1. Initial curriculum event
+  const evt1 = createSectionChangeEvent({
+    fromSection: null,
+    toSection: 'curriculum',
+    moduleId: 'module-1',
+    timestampIso: '2026-11-01T08:00:00.000Z',
+    modules: sampleModules,
+  });
+  assert.equal(evt1.eventType, 'section_change');
+  assert.equal(evt1.toSection, 'curriculum');
+  assert.equal(evt1.moduleId, 'module-1');
+  assert.equal(evt1.badgeCode, 'MOD-01');
+  assert.equal(evt1.category, 'curriculum');
+  assert.ok(evt1.targetTitleEn.includes('Module 1: Agent-First Core Architecture'));
+
+  let logs: NavigationActivityEvent[] = appendSectionChangeEvent([], evt1);
+  assert.equal(logs.length, 1);
+
+  // Deduplicate identical consecutive section_change
+  logs = appendSectionChangeEvent(logs, evt1);
+  assert.equal(logs.length, 1);
+
+  // 2. Navigate to Mission Control Simulator studio
+  const evt2 = createSectionChangeEvent({
+    fromSection: 'curriculum',
+    toSection: 'simulator',
+    timestampIso: '2026-11-01T08:05:00.000Z',
+    modules: sampleModules,
+  });
+  assert.equal(evt2.eventType, 'section_change');
+  assert.equal(evt2.category, 'studio');
+  assert.equal(evt2.badgeCode, 'STUDIO-SIMULATOR');
+  logs = appendSectionChangeEvent(logs, evt2);
+  assert.equal(logs.length, 2);
+  assert.equal(logs[0].toSection, 'simulator');
+
+  // 3. Navigate to curriculum module 3
+  const evt3 = createSectionChangeEvent({
+    fromSection: 'simulator',
+    toSection: 'curriculum',
+    moduleId: 'module-3',
+    timestampIso: '2026-11-01T08:10:00.000Z',
+    modules: sampleModules,
+  });
+  logs = appendSectionChangeEvent(logs, evt3);
+  assert.equal(logs.length, 3);
+
+  // 4. Summary stats
+  const stats = calculateActivityLogStats(logs);
+  assert.equal(stats.totalEvents, 3);
+  assert.equal(stats.uniqueSectionsCount, 2);
+  assert.equal(stats.topSection, 'curriculum');
+  assert.equal(stats.lastEventIso, '2026-11-01T08:10:00.000Z');
+
+  // 5. Filter by category and search query
+  const studioOnly = filterActivityLogEvents(logs, 'studio', '');
+  assert.equal(studioOnly.length, 1);
+  assert.equal(studioOnly[0].toSection, 'simulator');
+
+  const searchMod3 = filterActivityLogEvents(logs, 'all', 'MOD-03');
+  assert.equal(searchMod3.length, 1);
+  assert.equal(searchMod3[0].moduleId, 'module-3');
+
+  // 6. Serialization & restoration
+  const rawJson = serializeActivityLogsToStorage(logs);
+  const restored = parseActivityLogsFromStorage(rawJson);
+  assert.equal(restored.length, 3);
+  assert.equal(restored[0].id, evt3.id);
+  assert.deepEqual(parseActivityLogsFromStorage('invalid-json'), []);
+});
+

@@ -18,8 +18,18 @@ import {
   ArrowUpLeft,
   X,
   Database,
+  Activity,
 } from 'lucide-react';
 import { ALL_CURRICULUM_MODULES } from './data/curriculumIndex';
+import {
+  NavigationActivityEvent,
+  NAVIGATION_ACTIVITY_STORAGE_KEY,
+  createSectionChangeEvent,
+  appendSectionChangeEvent,
+  parseActivityLogsFromStorage,
+  serializeActivityLogsToStorage,
+} from './utils/activityLogger';
+import { NavigationActivityLoggerModal } from './components/NavigationActivityLoggerModal';
 import {
   serializeRecentSessionSnapshot,
   resolveRecentSessionFromStorage,
@@ -79,6 +89,18 @@ function MainWorkspace() {
   const [resumeModalOpen, setResumeModalOpen] = useState<boolean>(false);
   const [sessionTrackingReady, setSessionTrackingReady] = useState<boolean>(false);
   const [activeMilestone, setActiveMilestone] = useState<MissionMilestonePayload | null>(null);
+
+  // Browser-Based Navigation Activity Logger State ('section_change' events)
+  const [activityLogs, setActivityLogs] = useState<NavigationActivityEvent[]>(() => {
+    try {
+      const raw = window.localStorage.getItem(NAVIGATION_ACTIVITY_STORAGE_KEY);
+      return parseActivityLogsFromStorage(raw);
+    } catch {
+      return [];
+    }
+  });
+  const [activityModalOpen, setActivityModalOpen] = useState<boolean>(false);
+  const previousSectionRef = React.useRef<ActiveWorkspaceSection | null>(null);
 
   // Detect last accessed module or studio from localStorage on startup
   useEffect(() => {
@@ -171,6 +193,48 @@ function MainWorkspace() {
       // Ignore storage access errors
     }
   }, [activeSection, activeModuleId, completedModules, sessionTrackingReady, resumeModalOpen]);
+
+  // Lightweight Event Tracker: log 'section_change' events to browser-based activity logger
+  useEffect(() => {
+    if (!sessionTrackingReady) return;
+    const moduleSummaries = ALL_CURRICULUM_MODULES.map((m) => ({
+      id: m.id,
+      number: m.number,
+      titleFa: m.titleFa,
+      titleEn: m.titleEn,
+    }));
+
+    const newEvent = createSectionChangeEvent({
+      fromSection: previousSectionRef.current,
+      toSection: activeSection,
+      moduleId: activeSection === 'curriculum' ? activeModuleId : undefined,
+      modules: moduleSummaries,
+    });
+
+    previousSectionRef.current = activeSection;
+
+    setActivityLogs((prev) => {
+      const nextLogs = appendSectionChangeEvent(prev, newEvent);
+      try {
+        window.localStorage.setItem(
+          NAVIGATION_ACTIVITY_STORAGE_KEY,
+          serializeActivityLogsToStorage(nextLogs)
+        );
+      } catch {
+        // Ignore storage write errors
+      }
+      return nextLogs;
+    });
+  }, [activeSection, activeModuleId, sessionTrackingReady]);
+
+  const handleClearActivityHistory = () => {
+    setActivityLogs([]);
+    try {
+      window.localStorage.removeItem(NAVIGATION_ACTIVITY_STORAGE_KEY);
+    } catch {
+      // Ignore storage remove errors
+    }
+  };
 
   const handleJumpToRecentSession = () => {
     if (!detectedSession) {
@@ -465,6 +529,30 @@ function MainWorkspace() {
               <span>{t('resumeSession')}</span>
             </button>
           )}
+
+          <button
+            type="button"
+            onClick={() => setActivityModalOpen(true)}
+            data-testid="open-activity-logger-btn"
+            aria-label={
+              language === 'en'
+                ? `Open Navigation History (${activityLogs.length} events)`
+                : `مشاهده تاریخچه ناوبری (${activityLogs.length} رویداد)`
+            }
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap"
+          >
+            <Activity className="w-3.5 h-3.5" />
+            <span>
+              {language === 'en' ? 'Navigation History' : 'تاریخچه ناوبری'}
+            </span>
+            <span
+              dir="ltr"
+              data-testid="activity-logger-badge-count"
+              className="ltr-inline px-1.5 py-0.2 rounded bg-indigo-500/20 text-[10px] font-mono font-bold tabular-nums"
+            >
+              {activityLogs.length}
+            </span>
+          </button>
 
           <PWAInstallButton />
 
@@ -798,6 +886,21 @@ function MainWorkspace() {
       <ScopedPdfExportModal
         payload={pdfPayload}
         onClose={() => setPdfPayload(null)}
+      />
+
+      {/* Browser-Based Navigation Activity Logger Modal ('section_change' history) */}
+      <NavigationActivityLoggerModal
+        isOpen={activityModalOpen}
+        onClose={() => setActivityModalOpen(false)}
+        logs={activityLogs}
+        onClearHistory={handleClearActivityHistory}
+        onNavigateToEntry={(section, moduleId) => {
+          setActiveSection(section);
+          if (moduleId) {
+            setActiveModuleId(moduleId);
+          }
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
       />
 
       {/* Mission Milestone Overlay Notification (Confetti + Antigravity Quote) */}

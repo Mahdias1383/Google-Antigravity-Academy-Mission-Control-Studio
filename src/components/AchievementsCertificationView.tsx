@@ -66,6 +66,7 @@ import {
   evaluateDailyStreakMilestones,
   serializeDailyStreakStateToStorage,
   parseDailyStreakStateFromStorage,
+  calculateMasteryRankStanding,
 } from '../utils/achievements';
 import {
   ExportSectionPdfButton,
@@ -321,6 +322,12 @@ export const AchievementsCertificationView: React.FC<{
     streakStats.totalMinutesStudied,
     studioUsageItems
   );
+  const masteryRankStanding = calculateMasteryRankStanding({
+    totalCombinedXp: xpProgression.totalCombinedXp,
+    completedModulesCount: metrics.completedCount,
+    unlockedStreakMilestonesCount: streakMilestoneEval.unlockedMilestoneCount,
+    unlockedTrophiesCount: trophyCase.unlockedCount,
+  });
   const heatmapSummary = buildStudyStreakHeatmapData(
     studyDays,
     studioUsageItems,
@@ -937,11 +944,14 @@ export const AchievementsCertificationView: React.FC<{
       )}
 
       {/* Header Banner */}
-      <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/75 p-6 sm:p-8 space-y-5">
+      <div
+        className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/75 p-6 sm:p-8 space-y-5"
+        data-testid="achievements-header-banner"
+      >
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <span className="font-bold text-blue-600 dark:text-blue-400">
-              آکادمی مهندسی · دستاوردها، سطح‌بندی XP و گواهینامه رسمی
+              آکادمی مهندسی · دستاوردها، رتبه مهارت (Mastery Rank) و گواهینامه رسمی
             </span>
             <span aria-hidden="true">·</span>
             <span dir="ltr" className="ltr-inline font-mono">
@@ -963,6 +973,7 @@ export const AchievementsCertificationView: React.FC<{
               <button
                 type="button"
                 onClick={onCompleteAllModules}
+                data-testid="achievements-unlock-all-modules-btn"
                 className="px-3.5 py-2 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors cursor-pointer whitespace-nowrap"
               >
                 تکمیل تمام ۸ فصل (Unlock Full Certification)
@@ -971,21 +982,123 @@ export const AchievementsCertificationView: React.FC<{
           </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        {/* Architect Identity & Mastery Rank Header Bar (User Name + Assigned Mastery Rank Next to Name) */}
+        <div
+          className="rounded-xl border border-blue-500/30 bg-slate-50/90 dark:bg-slate-950/80 p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+          data-testid="achievements-header-identity-bar"
+        >
+          <div className="flex flex-wrap items-center gap-3">
+            <div
+              className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border"
+              style={{
+                backgroundColor: `${masteryRankStanding.currentRank.accentHex}18`,
+                borderColor: `${masteryRankStanding.currentRank.accentHex}55`,
+                color: masteryRankStanding.currentRank.accentHex,
+              }}
+            >
+              <Crown className="w-5 h-5" />
+            </div>
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                  معمار سیستم:
+                </span>
+                <span
+                  data-testid="achievements-header-architect-name"
+                  className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white"
+                >
+                  {architectName}
+                </span>
+                {/* Assigned Mastery Rank Badge directly next to User's Name */}
+                <span
+                  dir="ltr"
+                  data-testid="achievements-header-mastery-rank-badge"
+                  className="ltr-inline px-3 py-1 rounded-lg text-xs font-mono font-extrabold tracking-wide border shadow-sm"
+                  style={{
+                    backgroundColor: `${masteryRankStanding.currentRank.accentHex}20`,
+                    borderColor: masteryRankStanding.currentRank.accentHex,
+                    color: masteryRankStanding.currentRank.accentHex,
+                  }}
+                >
+                  [{masteryRankStanding.currentRank.badgeCode}] {masteryRankStanding.currentRank.rankNameEn}
+                </span>
+                <span
+                  data-testid="achievements-header-mastery-rank-fa"
+                  className="px-2.5 py-0.5 rounded-md bg-slate-200/80 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs font-bold"
+                >
+                  {masteryRankStanding.currentRank.rankTitleFa}
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                <span dir="ltr" className="ltr-inline font-mono text-slate-600 dark:text-slate-300">
+                  {roleTitle} · {organization}
+                </span>
+                <span aria-hidden="true">·</span>
+                <span>
+                  نقاط عطف تکمیل‌شده:{' '}
+                  <strong dir="ltr" className="ltr-inline font-mono text-emerald-500">
+                    {masteryRankStanding.totalMilestonesCompleted} Milestones
+                  </strong>{' '}
+                  ({metrics.completedCount} ماژول + {streakMilestoneEval.unlockedMilestoneCount} نشان پیوستگی +{' '}
+                  {trophyCase.unlockedCount} جام)
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            <label
+              htmlFor="header-architect-name-input"
+              className="text-[11px] font-semibold text-slate-500 dark:text-slate-400"
+            >
+              ویرایش سریع نام در هدر:
+            </label>
+            <input
+              id="header-architect-name-input"
+              type="text"
+              value={architectName}
+              onChange={(e) => setArchitectName(e.target.value)}
+              data-testid="achievements-header-name-input"
+              className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 w-52"
+              placeholder="نام معمار..."
+            />
+          </div>
+        </div>
+
+        <div className="space-y-5">
           <div className="space-y-2">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              دستاوردها، سیستم سطح‌بندی XP، برنامه‌ریز مطالعه و کارنامه معماری
+              دستاوردها، رتبه مهارت (<span dir="ltr" className="ltr-inline">Mastery Rank</span>)، سیستم <span dir="ltr" className="ltr-inline">XP</span> و کارنامه معماری
             </h1>
             <div dir="ltr" className="ltr-inline text-sm font-mono text-blue-600 dark:text-blue-400">
-              XP &amp; Level Progression, Daily Study Planner &amp; Shareable Architect Report Card
+              Mastery Rank System (Trainee · Specialist · Architect · Principal), XP Progression &amp; Report Card
             </div>
-            <p className="text-xs sm:text-sm leading-7 text-slate-600 dark:text-slate-300 max-w-3xl">
-              با تکمیل ماژول‌های ۸گانه، ثبت زمان مطالعه روزانه و اجرای شبیه‌سازها و استودیوهای عملی، امتیاز تجربه (<span dir="ltr" className="ltr-inline">XP</span>) کسب کنید، سطح مهندسی (<span dir="ltr" className="ltr-inline">Architect Level</span>) خود را ارتقا دهید و کارنامه رسمی خود را منتشر نمایید.
+            <p className="text-xs sm:text-sm leading-7 text-slate-600 dark:text-slate-300 max-w-4xl">
+              بر اساس مجموع امتیاز تجربه (<span dir="ltr" className="ltr-inline">Accumulated XP</span>) و نقاط عطف تکمیل‌شده (<span dir="ltr" className="ltr-inline">Milestones</span>)، رتبه رسمی شما از{' '}
+              <span dir="ltr" className="ltr-inline font-mono font-bold">Trainee</span> تا{' '}
+              <span dir="ltr" className="ltr-inline font-mono font-bold">Specialist</span>،{' '}
+              <span dir="ltr" className="ltr-inline font-mono font-bold">Architect</span> و{' '}
+              <span dir="ltr" className="ltr-inline font-mono font-bold">Principal</span> محاسبه و در کنار نام شما در هدر نمایش داده می‌شود.
             </p>
           </div>
 
           {/* Summary KPI Strip */}
-          <div className="grid grid-cols-3 gap-3 shrink-0">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full">
+            <div
+              className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/70 text-center"
+              data-testid="achievements-header-rank-kpi"
+            >
+              <div
+                dir="ltr"
+                className="ltr-inline text-lg font-mono font-extrabold tabular-nums"
+                style={{ color: masteryRankStanding.currentRank.accentHex }}
+              >
+                {masteryRankStanding.currentRank.rankNameEn}
+              </div>
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                رتبه مهارت ({masteryRankStanding.currentRank.rankTitleFa})
+              </div>
+            </div>
             <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/70 text-center">
               <div dir="ltr" className="ltr-inline text-xl font-mono font-extrabold text-blue-500 tabular-nums">
                 LVL {xpProgression.currentLevel}
@@ -1113,6 +1226,188 @@ export const AchievementsCertificationView: React.FC<{
               </>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Mastery Rank System Ladder (Trainee · Specialist · Architect · Principal) */}
+      <div
+        className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/75 p-6 sm:p-8 space-y-6"
+        data-testid="mastery-rank-system-section"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border"
+              style={{
+                backgroundColor: `${masteryRankStanding.currentRank.accentHex}18`,
+                borderColor: `${masteryRankStanding.currentRank.accentHex}55`,
+                color: masteryRankStanding.currentRank.accentHex,
+              }}
+            >
+              <Crown className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
+                  سیستم رتبه‌بندی مهارت مهندسی (Mastery Rank Progression System)
+                </h2>
+                <span
+                  dir="ltr"
+                  data-testid="mastery-rank-current-pill"
+                  className="ltr-inline px-2.5 py-0.5 rounded-md text-xs font-mono font-extrabold border"
+                  style={{
+                    backgroundColor: `${masteryRankStanding.currentRank.accentHex}20`,
+                    borderColor: masteryRankStanding.currentRank.accentHex,
+                    color: masteryRankStanding.currentRank.accentHex,
+                  }}
+                >
+                  {masteryRankStanding.currentRank.badgeCode} · {masteryRankStanding.currentRank.rankNameEn}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                رتبه شما به‌صورت بلادرنگ بر اساس مجموع امتیاز (<span dir="ltr" className="ltr-inline font-mono">{masteryRankStanding.totalCombinedXp} XP</span>) و نقاط عطف تکمیل‌شده (<span dir="ltr" className="ltr-inline font-mono">{masteryRankStanding.totalMilestonesCompleted} Milestones</span>) تعیین شده و در هدر کنار نام <strong className="text-slate-800 dark:text-slate-200">{architectName}</strong> نمایش داده می‌شود.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {masteryRankStanding.nextRank ? (
+              <div className="px-3.5 py-2 rounded-lg border border-blue-500/30 bg-blue-500/10 text-xs text-blue-600 dark:text-blue-300">
+                <span>رتبه بعدی: </span>
+                <strong dir="ltr" className="ltr-inline font-mono">
+                  {masteryRankStanding.nextRank.rankNameEn}
+                </strong>
+                <span>
+                  {' '}
+                  (نیاز به{' '}
+                  <span dir="ltr" className="ltr-inline font-mono font-bold">
+                    {masteryRankStanding.xpNeededForNextRank} XP
+                  </span>{' '}
+                  و{' '}
+                  <span dir="ltr" className="ltr-inline font-mono font-bold">
+                    {masteryRankStanding.milestonesNeededForNextRank}
+                  </span>{' '}
+                  نقطه عطف دیگر)
+                </span>
+              </div>
+            ) : (
+              <div className="px-3.5 py-2 rounded-lg border border-amber-500/40 bg-amber-500/10 text-xs font-bold text-amber-600 dark:text-amber-300">
+                بالاترین رتبه معماری بازگشایی شد (Maximum Principal Rank Achieved ★)
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Progress Bar Toward Next Mastery Rank */}
+        <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 space-y-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+            <span className="font-bold text-slate-700 dark:text-slate-200">
+              پیشرفت به سمت رتبه بعدی (
+              <span dir="ltr" className="ltr-inline font-mono">
+                {masteryRankStanding.currentRank.rankNameEn} →{' '}
+                {masteryRankStanding.nextRank ? masteryRankStanding.nextRank.rankNameEn : 'MAX RANK'}
+              </span>
+              )
+            </span>
+            <span
+              dir="ltr"
+              data-testid="mastery-rank-progress-percent"
+              className="ltr-inline font-mono font-bold text-blue-500 tabular-nums"
+            >
+              {masteryRankStanding.overallProgressToNextPercent}% (XP: {masteryRankStanding.xpProgressToNextPercent}% · Milestones: {masteryRankStanding.milestoneProgressToNextPercent}%)
+            </span>
+          </div>
+          <div className="w-full h-3 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+            <div
+              data-testid="mastery-rank-progress-bar"
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${masteryRankStanding.overallProgressToNextPercent}%`,
+                backgroundColor: masteryRankStanding.currentRank.accentHex,
+              }}
+            />
+          </div>
+        </div>
+
+        {/* 4-Tier Mastery Rank Cards (Trainee, Specialist, Architect, Principal) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {masteryRankStanding.ranks.map((tier) => (
+            <div
+              key={tier.rankId}
+              data-testid={`mastery-rank-card-${tier.rankId}`}
+              className={`rounded-xl p-4 border transition-all flex flex-col justify-between gap-3 ${
+                tier.isCurrent
+                  ? 'bg-blue-500/10 dark:bg-slate-900 border-2 shadow-md'
+                  : tier.unlocked
+                  ? 'bg-emerald-500/5 dark:bg-slate-950/80 border-emerald-500/30'
+                  : 'bg-slate-50 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800 opacity-75'
+              }`}
+              style={
+                tier.isCurrent
+                  ? { borderColor: tier.accentHex }
+                  : undefined
+              }
+            >
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span
+                    dir="ltr"
+                    className="ltr-inline px-2 py-0.5 rounded text-[11px] font-mono font-extrabold border"
+                    style={{
+                      backgroundColor: `${tier.accentHex}18`,
+                      borderColor: `${tier.accentHex}55`,
+                      color: tier.accentHex,
+                    }}
+                  >
+                    {tier.badgeCode} · {tier.rankNameEn}
+                  </span>
+                  {tier.isCurrent ? (
+                    <span className="px-2 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-bold">
+                      رتبه فعلی شما
+                    </span>
+                  ) : tier.unlocked ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-500">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>باز شده</span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-400">
+                      <Lock className="w-3.5 h-3.5" />
+                      <span>قفل</span>
+                    </span>
+                  )}
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">
+                    {tier.rankTitleFa}
+                  </h3>
+                  <div dir="ltr" className="ltr-inline text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                    {tier.rankTitleEn}
+                  </div>
+                </div>
+
+                <p className="text-xs leading-6 text-slate-600 dark:text-slate-300">
+                  {tier.descriptionFa}
+                </p>
+              </div>
+
+              <div className="pt-3 border-t border-slate-200 dark:border-slate-800/80 space-y-1.5 text-[11px]">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500 dark:text-slate-400">حداقل امتیاز لازم:</span>
+                  <span dir="ltr" className="ltr-inline font-mono font-bold text-slate-800 dark:text-slate-200">
+                    {tier.minXp.toLocaleString('en-US')} XP
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500 dark:text-slate-400">حداقل نقاط عطف:</span>
+                  <span dir="ltr" className="ltr-inline font-mono font-bold text-slate-800 dark:text-slate-200">
+                    {tier.minMilestones} Milestones
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 

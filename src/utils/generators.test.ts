@@ -167,6 +167,7 @@ import {
   buildUnifiedLearningMigrationBackup,
   exportUnifiedLearningMigrationJson,
   parseUnifiedLearningMigrationJson,
+  calculateMasteryRankStanding,
 } from './achievements';
 import { ALL_CURRICULUM_MODULES } from '../data/curriculumIndex';
 
@@ -871,5 +872,55 @@ test('searchKnowledgeBaseFullText filters knowledge items in real-time by title 
     true
   );
 });
+
+test('calculateMasteryRankStanding assigns Trainee, Specialist, Architect, and Principal ranks based on accumulated XP and milestones', () => {
+  // 1. Trainee (< 1,200 XP or < 2 milestones)
+  const trainee = calculateMasteryRankStanding({
+    totalCombinedXp: 850,
+    completedModulesCount: 1,
+    unlockedStreakMilestonesCount: 0,
+    unlockedTrophiesCount: 0,
+  });
+  assert.equal(trainee.currentRank.rankNameEn, 'Trainee');
+  assert.equal(trainee.nextRank?.rankNameEn, 'Specialist');
+  assert.equal(trainee.xpNeededForNextRank, 350);
+  assert.equal(trainee.milestonesNeededForNextRank, 1);
+
+  // 2. Specialist (>= 1,200 XP and >= 2 milestones)
+  const specialist = calculateMasteryRankStanding({
+    totalCombinedXp: 1550,
+    completedModulesCount: 2,
+    unlockedStreakMilestonesCount: 1,
+    unlockedTrophiesCount: 0,
+  });
+  assert.equal(specialist.currentRank.rankNameEn, 'Specialist');
+  assert.equal(specialist.nextRank?.rankNameEn, 'Architect');
+  assert.equal(specialist.totalMilestonesCompleted, 3);
+  assert.equal(specialist.milestonesNeededForNextRank, 2);
+
+  // 3. Architect (>= 2,400 XP and >= 5 milestones)
+  const architect = calculateMasteryRankStanding({
+    totalCombinedXp: 2800,
+    completedModulesCount: 4,
+    unlockedStreakMilestonesCount: 1,
+    unlockedTrophiesCount: 1,
+  });
+  assert.equal(architect.currentRank.rankNameEn, 'Architect');
+  assert.equal(architect.nextRank?.rankNameEn, 'Principal');
+  assert.equal(architect.totalMilestonesCompleted, 6);
+
+  // 4. Principal (>= 3,600 XP and >= 8 milestones)
+  const principal = calculateMasteryRankStanding({
+    totalCombinedXp: 4200,
+    completedModulesCount: 8,
+    unlockedStreakMilestonesCount: 2,
+    unlockedTrophiesCount: 3,
+  });
+  assert.equal(principal.currentRank.rankNameEn, 'Principal');
+  assert.equal(principal.nextRank, null);
+  assert.equal(principal.overallProgressToNextPercent, 100);
+  assert.equal(principal.ranks.every((r) => r.unlocked), true);
+});
+
 
 

@@ -1555,3 +1555,221 @@ export function parseUnifiedLearningMigrationJson(rawJson: string): {
   }
 }
 
+export type MasteryRankId = 'trainee' | 'specialist' | 'architect' | 'principal';
+
+export interface MasteryRankTierSpec {
+  rankId: MasteryRankId;
+  rankOrder: 1 | 2 | 3 | 4;
+  rankCode: 'RANK-01' | 'RANK-02' | 'RANK-03' | 'RANK-04';
+  badgeCode: 'RANK-01' | 'RANK-02' | 'RANK-03' | 'RANK-04';
+  rankNameEn: 'Trainee' | 'Specialist' | 'Architect' | 'Principal';
+  rankTitleFa: string;
+  rankSubtitleEn: string;
+  rankTitleEn: string;
+  minXpRequired: number;
+  minXp: number;
+  minMilestonesRequired: number;
+  minMilestones: number;
+  unlocked: boolean;
+  isCurrentRank: boolean;
+  isCurrent: boolean;
+  privilegesFa: string;
+  descriptionFa: string;
+  accentHex: string;
+}
+
+export interface MasteryRankStandingSummary {
+  currentRank: MasteryRankTierSpec;
+  nextRank: MasteryRankTierSpec | null;
+  tiers: MasteryRankTierSpec[];
+  ranks: MasteryRankTierSpec[];
+  accumulatedXp: number;
+  totalCombinedXp: number;
+  unlockedMilestonesCount: number;
+  totalMilestonesCompleted: number;
+  totalPossibleMilestones: number;
+  xpNeededForNextRank: number;
+  milestonesNeededForNextRank: number;
+  progressToNextRankPercent: number;
+  overallProgressToNextPercent: number;
+  xpProgressToNextPercent: number;
+  milestoneProgressToNextPercent: number;
+}
+
+const MASTERY_RANK_DEFINITIONS: Array<
+  Omit<
+    MasteryRankTierSpec,
+    | 'unlocked'
+    | 'isCurrentRank'
+    | 'isCurrent'
+    | 'badgeCode'
+    | 'rankTitleEn'
+    | 'minXp'
+    | 'minMilestones'
+    | 'descriptionFa'
+  >
+> = [
+  {
+    rankId: 'trainee',
+    rankOrder: 1,
+    rankCode: 'RANK-01',
+    rankNameEn: 'Trainee',
+    rankTitleFa: 'کارآموز مهندسی ایجنت (Trainee)',
+    rankSubtitleEn: 'Agentic IDE Trainee',
+    minXpRequired: 0,
+    minMilestonesRequired: 0,
+    privilegesFa:
+      'آشنایی با معماری دوگانه Editor View و Agent Manager، Supercomplete و چرخه پایه آرتیفکت‌ها.',
+    accentHex: '#3b82f6',
+  },
+  {
+    rankId: 'specialist',
+    rankOrder: 2,
+    rankCode: 'RANK-02',
+    rankNameEn: 'Specialist',
+    rankTitleFa: 'متخصص عملیات ایجنتی (Specialist)',
+    rankSubtitleEn: 'Autonomous Workflow Specialist',
+    minXpRequired: 1200,
+    minMilestonesRequired: 2,
+    privilegesFa:
+      'تسلط بر ممیزی PR-Style روی implementation_plan.md، سیاست‌های ترمینال و تدوین قوانین .agent/rules.',
+    accentHex: '#10b981',
+  },
+  {
+    rankId: 'architect',
+    rankOrder: 3,
+    rankCode: 'RANK-03',
+    rankNameEn: 'Architect',
+    rankTitleFa: 'معمار سیستم‌های خودمختار (Architect)',
+    rankSubtitleEn: 'Enterprise Systems Architect',
+    minXpRequired: 2400,
+    minMilestonesRequired: 5,
+    privilegesFa:
+      'طراحی پایپ‌لاین‌های // turbo، بازرسی تله‌متری Browser Subagent و پیاده‌سازی سرورهای امن FastMCP.',
+    accentHex: '#6366f1',
+  },
+  {
+    rankId: 'principal',
+    rankOrder: 4,
+    rankCode: 'RANK-04',
+    rankNameEn: 'Principal',
+    rankTitleFa: 'معمار ارشد Principal (Principal)',
+    rankSubtitleEn: 'Principal Antigravity Architect',
+    minXpRequired: 3600,
+    minMilestonesRequired: 8,
+    privilegesFa:
+      'فرماندهی ارکستریشن چندایجنتی در Git Worktrees ایزوله، مهار کامل Context Rot و گواهینامه رسمی Principal.',
+    accentHex: '#f59e0b',
+  },
+];
+
+export function calculateMasteryRankStanding(params: {
+  totalCombinedXp: number;
+  completedModulesCount: number;
+  unlockedStreakMilestonesCount: number;
+  unlockedTrophiesCount?: number;
+}): MasteryRankStandingSummary {
+  const safeXp = Math.max(0, Math.floor(params.totalCombinedXp));
+  const unlockedMilestonesCount = Math.max(
+    0,
+    Math.floor(params.completedModulesCount) +
+      Math.floor(params.unlockedStreakMilestonesCount) +
+      Math.floor(params.unlockedTrophiesCount || 0)
+  );
+  const totalPossibleMilestones = 15; // 8 module badges + 3 streak milestones + 4 rare trophies
+
+  let highestUnlockedIdx = 0;
+  for (let i = 0; i < MASTERY_RANK_DEFINITIONS.length; i++) {
+    const def = MASTERY_RANK_DEFINITIONS[i];
+    if (
+      safeXp >= def.minXpRequired &&
+      unlockedMilestonesCount >= def.minMilestonesRequired
+    ) {
+      highestUnlockedIdx = i;
+    }
+  }
+
+  const tiers: MasteryRankTierSpec[] = MASTERY_RANK_DEFINITIONS.map(
+    (def, idx) => ({
+      ...def,
+      badgeCode: def.rankCode,
+      rankTitleEn: def.rankSubtitleEn,
+      minXp: def.minXpRequired,
+      minMilestones: def.minMilestonesRequired,
+      descriptionFa: def.privilegesFa,
+      unlocked: idx <= highestUnlockedIdx,
+      isCurrentRank: idx === highestUnlockedIdx,
+      isCurrent: idx === highestUnlockedIdx,
+    })
+  );
+
+  const currentRank = tiers[highestUnlockedIdx];
+  const nextRank =
+    highestUnlockedIdx + 1 < tiers.length
+      ? tiers[highestUnlockedIdx + 1]
+      : null;
+
+  let xpNeededForNextRank = 0;
+  let milestonesNeededForNextRank = 0;
+  let progressToNextRankPercent = 100;
+  let xpProgressToNextPercent = 100;
+  let milestoneProgressToNextPercent = 100;
+
+  if (nextRank) {
+    xpNeededForNextRank = Math.max(0, nextRank.minXpRequired - safeXp);
+    milestonesNeededForNextRank = Math.max(
+      0,
+      nextRank.minMilestonesRequired - unlockedMilestonesCount
+    );
+
+    const xpSpan = Math.max(
+      1,
+      nextRank.minXpRequired - currentRank.minXpRequired
+    );
+    const xpRatio = Math.min(
+      1,
+      Math.max(0, (safeXp - currentRank.minXpRequired) / xpSpan)
+    );
+    xpProgressToNextPercent = Math.round(xpRatio * 100);
+
+    const milestoneSpan = Math.max(
+      1,
+      nextRank.minMilestonesRequired - currentRank.minMilestonesRequired
+    );
+    const milestoneRatio = Math.min(
+      1,
+      Math.max(
+        0,
+        (unlockedMilestonesCount - currentRank.minMilestonesRequired) /
+          milestoneSpan
+      )
+    );
+    milestoneProgressToNextPercent = Math.round(milestoneRatio * 100);
+
+    progressToNextRankPercent = Math.min(
+      99,
+      Math.round((xpRatio * 0.5 + milestoneRatio * 0.5) * 100)
+    );
+  }
+
+  return {
+    currentRank,
+    nextRank,
+    tiers,
+    ranks: tiers,
+    accumulatedXp: safeXp,
+    totalCombinedXp: safeXp,
+    unlockedMilestonesCount,
+    totalMilestonesCompleted: unlockedMilestonesCount,
+    totalPossibleMilestones,
+    xpNeededForNextRank,
+    milestonesNeededForNextRank,
+    progressToNextRankPercent,
+    overallProgressToNextPercent: progressToNextRankPercent,
+    xpProgressToNextPercent,
+    milestoneProgressToNextPercent,
+  };
+}
+
+
+

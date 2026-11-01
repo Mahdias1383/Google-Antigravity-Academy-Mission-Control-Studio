@@ -280,7 +280,7 @@ const INITIAL_VISUAL_BLUEPRINT_SVG = `data:image/svg+xml;base64,${btoa(
     <rect width="1280" height="720" fill="url(#bg)" />
     <rect width="1280" height="720" fill="url(#grid)" />
     <rect x="40" y="40" width="1200" height="640" rx="18" fill="none" stroke="#3b82f6" stroke-width="2" stroke-opacity="0.45" />
-    <text x="80" y="95" fill="#93c5fd" font-family="monospace" font-size="18" font-weight="bold">NANO BANANA 2.1 // ANTIGRAVITY MULTI-AGENT WORKTREE TOPOLOGY (16:9 · 1K)</text>
+    <text x="80" y="95" fill="#93c5fd" font-family="monospace" font-size="18" font-weight="bold">NANO BANANA 2.1 - ANTIGRAVITY MULTI-AGENT WORKTREE TOPOLOGY (16:9 &#183; 1K)</text>
     <g transform="translate(640, 360)">
       <polygon points="0,-130 130,-65 130,65 0,130 -130,65 -130,-65" fill="#0f172a" stroke="#3b82f6" stroke-width="3" />
       <circle cx="0" cy="0" r="40" fill="#3b82f6" fill-opacity="0.2" stroke="#60a5fa" stroke-width="2" />
@@ -292,7 +292,7 @@ const INITIAL_VISUAL_BLUEPRINT_SVG = `data:image/svg+xml;base64,${btoa(
       <rect x="260" y="-130" width="150" height="68" rx="10" fill="#090d16" stroke="#10b981" stroke-width="2" />
       <text x="335" y="-92" text-anchor="middle" fill="#6ee7b7" font-family="monospace" font-size="13" font-weight="bold">Worktree B (UI)</text>
     </g>
-    <text x="80" y="640" fill="#cbd5e1" font-family="monospace" font-size="14">MODEL: gemini-nano-banana-2.1 · Ready for Prompt Generation or Inline Image Editing</text>
+    <text x="80" y="640" fill="#cbd5e1" font-family="monospace" font-size="14">MODEL: gemini-nano-banana-2.1 &#183; Ready for Prompt Generation or Inline Image Editing</text>
   </svg>`
 )}`;
 
@@ -584,15 +584,16 @@ export const GroundedAiArchitectCopilot: React.FC<{
             <Cloud className="w-5 h-5" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs sm:text-sm font-extrabold">
                 {language === 'en'
                   ? 'Firebase Auth & Cloud Firestore Telemetry'
                   : 'احراز هویت Firebase و پایگاه داده ابری Firestore'}
               </span>
+              <span aria-hidden="true" className="text-slate-500">·</span>
               <span
                 dir="ltr"
-                className="ltr-inline px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 font-mono text-[10px] font-bold"
+                className="ltr-inline text-emerald-300 font-mono text-[11px] font-bold"
               >
                 /users/&#123;uid&#125; · Verified
               </span>
@@ -928,11 +929,14 @@ export const GroundedAiArchitectCopilot: React.FC<{
                             </>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 font-mono text-[10px] text-slate-400" dir="ltr">
+                        <div className="flex items-center gap-1.5 font-mono text-[10px] text-slate-400 tabular-nums" dir="ltr">
                           {msg.modelUsed && (
-                            <span className="px-2 py-0.5 rounded bg-blue-500/15 text-blue-500 font-bold">
-                              {msg.modelUsed}
-                            </span>
+                            <>
+                              <span className="text-blue-500 font-bold">
+                                {msg.modelUsed}
+                              </span>
+                              <span aria-hidden="true">·</span>
+                            </>
                           )}
                           <span>{msg.timestamp}</span>
                         </div>
@@ -1168,20 +1172,18 @@ export const GroundedAiArchitectCopilot: React.FC<{
               {activeVisual && (
                 <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-950 p-4 space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 text-[11px] font-mono" dir="ltr">
                       <span
-                        dir="ltr"
-                        className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
-                          activeVisual.isEdited
-                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                            : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                        className={`font-bold ${
+                          activeVisual.isEdited ? 'text-emerald-400' : 'text-blue-400'
                         }`}
                       >
                         {activeVisual.isEdited
                           ? 'EDITED · gemini-nano-banana-2.1'
                           : 'GENERATED · gemini-nano-banana-2.1'}
                       </span>
-                      <span dir="ltr" className="text-[11px] font-mono text-slate-400">
+                      <span aria-hidden="true" className="text-slate-600">·</span>
+                      <span className="text-slate-400">
                         {activeVisual.aspectRatio} · {activeVisual.imageSize}
                       </span>
                     </div>

@@ -110,21 +110,21 @@ export const APP_TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
     searchPlaceholder: 'جستجوی سریع در تمام فصل‌ها، آرتیفکت‌ها و دستورات...',
 
     sidebarToggle: 'فهرست فصل‌ها',
-    navAchievements: 'دستاوردها و گواهینامه (Achievements & Certification)',
-    navScenarios: 'آزمایشگاه ۸ چالش معماری',
-    navAiSearch: 'جستجوی زنده مستندات (Search Grounding)',
-    navKnowledgeBase: 'کاوشگر پایگاه دانش (Knowledge Base Explorer)',
-    resumeSession: 'ادامه آخرین نشست (Resume)',
+    navAchievements: 'دستاوردها و گواهینامه',
+    navScenarios: 'آزمایشگاه سناریو',
+    navAiSearch: 'جستجوی زنده مستندات',
+    navKnowledgeBase: 'پایگاه دانش',
+    resumeSession: 'ادامه نشست',
     studyProgress: 'پیشرفت مطالعه:',
-    themeLight: 'حالت روشن (Light)',
-    themeDark: 'حالت تیره (Dark)',
-    langSwitchLabel: 'تغییر زبان',
-    langSwitchBadge: 'English',
+    themeLight: 'حالت روشن',
+    themeDark: 'حالت تیره',
+    langSwitchLabel: 'تغییر زبان به انگلیسی',
+    langSwitchBadge: 'EN',
 
-    sidebarTitle: 'فهرست فصل‌های آموزشی',
-    sidebarSubtitle: '۸ ماژول جامع تسلط بر محیط Agent-First',
+    sidebarTitle: 'سرفصل‌های آموزشی',
+    sidebarSubtitle: '۸ فصل جامع مهندسی Agent-First',
     moduleLabel: 'فصل',
-    studiosSectionTitle: 'استودیوهای مهندسی و شبیه‌سازها',
+    studiosSectionTitle: 'استودیوها و آزمایشگاه‌ها',
     studio1Label: '۱. شبیه‌ساز زنده Mission Control',
     studio1Sub: 'Artifact & PR Review Simulator',
     studio2Label: '۲. استودیوی Rule و Workflow',
@@ -139,11 +139,11 @@ export const APP_TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
     studio6Sub: '.agent/knowledge-base Bento Explorer',
 
     moduleBadge: 'فصل ۰{num} از ۰۸',
-    exportPdfBtn: 'دریافت PDF این فصل (Export Module PDF)',
+    exportPdfBtn: 'دریافت PDF فصل',
     markCompleted: 'علامت‌گذاری به عنوان مطالعه‌شده',
-    completedBadge: 'تکمیل شده (Completed)',
-    keyTakeawaysTitle: 'نکات کلیدی و اصول معماری این فصل (Key Architectural Takeaways)',
-    onThisPageTitle: 'در این فصل می‌خوانید (On This Page)',
+    completedBadge: 'تکمیل‌شده',
+    keyTakeawaysTitle: 'نکات کلیدی و اصول معماری این فصل',
+    onThisPageTitle: 'سرفصل‌های این بخش',
     prevModuleBtn: 'فصل قبلی',
     nextModuleBtn: 'فصل بعدی',
     allModulesCompletedToast: 'تبریک! تمام ۸ ماژول آکادمی با موفقیت تکمیل شد.',
@@ -155,8 +155,8 @@ export const APP_TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
     pomodoroShortBreak: 'استراحت کوتاه (5m)',
     pomodoroLongBreak: 'استراحت بلند (15m)',
     activeModuleTarget: 'فصل فعال برای ثبت ساعت مطالعه:',
-    startFocus: 'شروع تمرکز (Start)',
-    pauseFocus: 'توقف موقت (Pause)',
+    startFocus: 'شروع تمرکز',
+    pauseFocus: 'توقف موقت',
     resetTimer: 'بازنشانی',
     logDeepWorkBtn: 'ثبت کار عمیق فصل {num}',
     sessionNotesLabel: 'یادداشت تمرکز برای این فصل (اختیاری):',
@@ -167,20 +167,20 @@ export const APP_TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
     deepWorkLoggedToast: 'ثبت موفق! {mins} دقیقه کار عمیق برای فصل {num} ذخیره شد (+{xp} XP)',
 
     resumeModalTitle: 'تشخیص نشست قبلی در مرورگر',
-    resumeModalStay: 'ماندن در نمای فعلی (Stay Here)',
-    resumeModalJump: 'پرش مستقیم به آخرین نقطه پیشرفت (Jump Back)',
+    resumeModalStay: 'ماندن در نمای فعلی',
+    resumeModalJump: 'پرش به آخرین نقطه پیشرفت',
     milestoneTitle: 'تبریک معمار! دستاورد فاز جدید ثبت شد',
     milestoneAdvance: 'پیشروی به فصل بعدی',
     milestoneTrophy: 'مشاهده تالار افتخارات و کاپ‌ها',
 
-    pwaInstallBtn: 'نصب اپلیکیشن (Install PWA)',
+    pwaInstallBtn: 'نصب وب‌اپلیکیشن',
     pwaModalTitle: 'نصب نسخه وب‌اپلیکیشن پیش‌رونده (PWA)',
     pwaModalGotIt: 'متوجه شدم',
     offlineBanner: 'حالت آفلاین فعال است — محتوای آکادمی از حافظه کش PWA بارگذاری می‌شود',
 
     searchModalPlaceholder: 'جستجوی فصل، مفهوم (مثلاً Supercomplete، task.md، FastMCP، Worktree)...',
     searchModulesHeader: 'فصل‌های آموزشی (۸ ماژول)',
-    searchStudiosHeader: 'استودیوهای مهندسی و ابزارهای تعاملی (Interactive Studios)',
+    searchStudiosHeader: 'استودیوهای مهندسی و ابزارهای تعاملی',
 
     tableColCriterion: 'معیار مقایسه',
     tableColTraditional: 'رویکرد سنتی / دستیار سنکرون',
@@ -314,20 +314,16 @@ export function getLayoutDirection(lang: AppLanguage): 'rtl' | 'ltr' {
   return lang === 'fa' ? 'rtl' : 'ltr';
 }
 
-/**
- * Reads initial language preference from localStorage safely.
- */
 export function getInitialLanguagePreference(): AppLanguage {
   if (typeof window === 'undefined') return 'fa';
   try {
+    const params = new URLSearchParams(window.location.search);
+    const urlLang = params.get('lang');
+    if (urlLang === 'en' || urlLang === 'fa') return urlLang;
+
     const raw = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
     if (raw === 'en' || raw === 'fa') return raw;
 
-    // Detect browser language if not previously set
-    const browserLang = (navigator.language || '').toLowerCase();
-    if (browserLang.startsWith('en')) {
-      return 'en';
-    }
     return 'fa';
   } catch {
     return 'fa';

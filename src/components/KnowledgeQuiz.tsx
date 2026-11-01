@@ -294,7 +294,8 @@ export const KnowledgeQuiz: React.FC<KnowledgeQuizProps> = ({
                   </>
                 )}
               </h2>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400">
+              <span aria-hidden="true" className="text-slate-400">·</span>
+              <span dir="ltr" className="ltr-inline text-xs font-mono font-bold text-amber-600 dark:text-amber-400 tabular-nums">
                 +{currentQuestion?.xpReward || 40} XP Per Question
               </span>
             </div>
@@ -308,14 +309,14 @@ export const KnowledgeQuiz: React.FC<KnowledgeQuizProps> = ({
 
         {/* Right side: Global Quiz XP & Controls */}
         <div className="flex flex-wrap items-center gap-2.5">
-          {/* Accumulated Quiz XP Pill */}
+          {/* Accumulated Quiz XP Counter */}
           <div
             data-testid="kb-quiz-total-xp-pill"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-mono font-extrabold"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-mono font-extrabold tabular-nums"
           >
             <Zap className="w-3.5 h-3.5 fill-emerald-500" />
             <span>Total Quiz XP:</span>
-            <strong data-testid="kb-quiz-total-xp-value" className="text-sm">
+            <strong data-testid="kb-quiz-total-xp-value" className="text-sm tabular-nums">
               {persistedTotalQuizXp} XP
             </strong>
           </div>
@@ -386,7 +387,7 @@ export const KnowledgeQuiz: React.FC<KnowledgeQuizProps> = ({
       {xpRewardToast && (
         <div
           data-testid="kb-quiz-xp-toast"
-          className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-600 dark:text-emerald-300 text-xs font-bold flex items-center justify-between gap-2 animate-bounce shadow-md"
+          className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-600 dark:text-emerald-300 text-xs font-bold flex items-center justify-between gap-2 transition-opacity duration-200 shadow-sm"
         >
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-emerald-400" />
@@ -407,13 +408,13 @@ export const KnowledgeQuiz: React.FC<KnowledgeQuizProps> = ({
         <div className="space-y-5" data-testid="kb-quiz-active-question-card">
             {/* Question Stepper & Progress Tracker */}
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs font-mono text-slate-500 dark:text-slate-400">
+              <div className="flex items-center justify-between text-xs font-mono text-slate-500 dark:text-slate-400 tabular-nums">
                 <span data-testid="kb-quiz-question-counter">
                   {language === 'en'
                     ? `Question ${currentQuestionIndex + 1} of ${questions.length}`
                     : `پرسش ${currentQuestionIndex + 1} از ${questions.length} · Question ${currentQuestionIndex + 1} of ${questions.length}`}
                 </span>
-                <span className="font-bold text-blue-500">
+                <span className="font-bold text-blue-500 tabular-nums">
                   {Math.round(((currentQuestionIndex + 1) / questions.length) * 100)}%
                 </span>
               </div>
@@ -431,15 +432,16 @@ export const KnowledgeQuiz: React.FC<KnowledgeQuizProps> = ({
 
             {/* Current Question Card */}
             <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/70 space-y-4">
-              {/* Topic & Metadata Badges */}
-              <div className="flex flex-wrap items-center justify-between gap-2">
+              {/* Topic & Metadata Line */}
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
                 <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400">
+                  <span className="font-bold text-indigo-600 dark:text-indigo-400">
                     {currentQuestion.difficulty.toUpperCase()}
                   </span>
+                  <span aria-hidden="true" className="text-slate-400">·</span>
                   <span
                     dir="ltr"
-                    className="ltr-inline text-xs font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1"
+                    className="ltr-inline text-slate-500 dark:text-slate-400 flex items-center gap-1"
                   >
                     <FileCode2 className="w-3.5 h-3.5 text-blue-500" />
                     {currentQuestion.keyPath}
@@ -448,7 +450,7 @@ export const KnowledgeQuiz: React.FC<KnowledgeQuizProps> = ({
 
                 <div
                   dir="ltr"
-                  className="ltr-inline text-xs font-mono font-bold text-amber-500"
+                  className="ltr-inline font-bold text-amber-500 tabular-nums"
                 >
                   Reward: +{currentQuestion.xpReward} XP
                 </div>

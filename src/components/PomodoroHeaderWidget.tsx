@@ -257,71 +257,54 @@ export const PomodoroHeaderWidget: React.FC<PomodoroHeaderWidgetProps> = ({
       className={`relative inline-flex items-center ${className}`}
       data-testid="pomodoro-header-widget"
     >
-      {/* Compact Header Pill Button */}
+      {/* Compact Header Utility Trigger */}
       <div
         onClick={() => setIsPopoverOpen((prev) => !prev)}
         data-testid="pomodoro-pill-button"
-        className={`group flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all cursor-pointer select-none ${
+        className={`group flex items-center gap-1.5 px-2.5 py-1 rounded-md border transition-colors cursor-pointer select-none ${
           isRunning
-            ? 'border-emerald-500/50 bg-emerald-500/15 shadow-[0_0_12px_rgba(16,185,129,0.25)] text-emerald-600 dark:text-emerald-300'
-            : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827]/90 hover:border-blue-400 text-slate-700 dark:text-slate-200'
+            ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300'
+            : 'border-transparent hover:border-slate-200 dark:hover:border-white/10 hover:bg-slate-200/50 dark:hover:bg-white/[0.05] text-slate-600 dark:text-slate-300'
         }`}
         title={language === 'en' ? 'Pomodoro Study Timer & Deep Work Logger' : 'تایمر مطالعه پومودورو و کار عمیق (Deep Work Timer)'}
       >
-        {/* Animated Timer Icon */}
         <div className="relative flex items-center justify-center">
           {isRunning ? (
-            <Flame className="w-4 h-4 text-emerald-500 animate-pulse shrink-0" />
+            <Flame className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
           ) : (
-            <Timer className="w-4 h-4 text-blue-500 group-hover:text-blue-400 shrink-0" />
+            <Timer className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-400 shrink-0" />
           )}
         </div>
 
-        {/* Monospace Countdown Clock */}
         <span
           dir="ltr"
           data-testid="pomodoro-header-clock"
-          className="ltr-inline font-mono font-bold text-xs sm:text-sm tracking-tight tabular-nums"
+          className="ltr-inline font-mono font-semibold text-xs tracking-tight tabular-nums"
         >
           {formatTimerDisplay(remainingSeconds)}
         </span>
 
-        {/* Quick Inline Play/Pause Button */}
         <button
           type="button"
           onClick={handleTogglePlayPause}
           data-testid="pomodoro-quick-play-btn"
           aria-label={isRunning ? (language === 'en' ? 'Pause Timer' : 'توقف موقت تایمر') : (language === 'en' ? 'Start Pomodoro Timer' : 'شروع تایمر پومودورو')}
-          className={`p-1 rounded-lg transition-colors cursor-pointer ${
+          className={`p-0.5 rounded transition-colors cursor-pointer ${
             isRunning
-              ? 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-600 dark:text-emerald-300'
-              : 'bg-slate-100 dark:bg-slate-800 hover:bg-blue-600 hover:text-white text-slate-600 dark:text-slate-300'
+              ? 'text-emerald-600 dark:text-emerald-300 hover:bg-emerald-500/20'
+              : 'text-slate-400 hover:text-blue-500'
           }`}
         >
           {isRunning ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 fill-current" />}
         </button>
 
-        {/* Active Module Tag (Desktop visible) */}
-        <span className={`hidden xl:inline text-[11px] font-semibold text-slate-500 dark:text-slate-400 ${
-          isRTL ? 'border-r pr-2 mr-1' : 'border-l pl-2 ml-1'
-        } border-slate-200 dark:border-slate-800`}>
-          {language === 'en' ? `Mod ${currentModule.number}` : `فصل ${currentModule.number}`}
-        </span>
-
-        {/* Deep work total hours badge */}
         <span
           dir="ltr"
           data-testid="pomodoro-header-module-hours"
-          className="ltr-inline hidden md:inline px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400"
+          className="sr-only"
         >
           {currentModuleSummary.totalHoursFormatted}
         </span>
-
-        <ChevronDown
-          className={`w-3.5 h-3.5 text-slate-400 transition-transform ${
-            isPopoverOpen ? 'rotate-180' : ''
-          }`}
-        />
       </div>
 
       {/* Expanded Focus Center Popover Modal */}

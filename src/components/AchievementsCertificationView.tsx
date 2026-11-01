@@ -962,8 +962,8 @@ export const AchievementsCertificationView: React.FC<{
           className="rounded-xl border-2 border-emerald-500/60 bg-gradient-to-br from-slate-900 via-[#0b172a] to-slate-950 text-white p-6 sm:p-7 space-y-5 shadow-2xl"
         >
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold">
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="inline-flex items-center gap-1.5 text-emerald-300 font-bold">
                 <Globe className="w-3.5 h-3.5" />
                 <span>
                   {language === 'en'
@@ -971,10 +971,11 @@ export const AchievementsCertificationView: React.FC<{
                     : 'کارت عمومی تاییدشده پیشرفت معمار (Verified Public Mastery Card)'}
                 </span>
               </span>
+              <span aria-hidden="true" className="text-slate-600">·</span>
               <span
                 dir="ltr"
                 data-testid="preview-card-slug-badge"
-                className="ltr-inline px-2.5 py-0.5 rounded bg-blue-500/15 border border-blue-500/30 text-blue-300 font-mono text-xs"
+                className="ltr-inline text-blue-300 font-mono"
               >
                 {sharedCardPreview.cardSlugId}
               </span>
@@ -1296,9 +1297,10 @@ export const AchievementsCertificationView: React.FC<{
                     ? 'Cloud Database & Authentication (Firebase Firestore & Google Auth)'
                     : 'پایگاه داده ابری و احراز هویت (Firebase Firestore & Google Auth)'}
                 </span>
+                <span aria-hidden="true" className="text-slate-400">·</span>
                 <span
                   dir="ltr"
-                  className="ltr-inline px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-mono text-[10px] font-bold"
+                  className="ltr-inline text-emerald-600 dark:text-emerald-400 font-mono text-[11px] font-bold"
                 >
                   elevated-gravity-h01dl · Active
                 </span>
@@ -1577,8 +1579,9 @@ export const AchievementsCertificationView: React.FC<{
                     {tier.badgeCode} · {tier.rankNameEn}
                   </span>
                   {tier.isCurrent ? (
-                    <span className="px-2 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-bold">
-                      {language === 'en' ? 'Current Rank' : 'رتبه فعلی شما'}
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 dark:text-blue-400">
+                      <span aria-hidden="true">●</span>
+                      <span>{language === 'en' ? 'Current Rank' : 'رتبه فعلی شما'}</span>
                     </span>
                   ) : tier.unlocked ? (
                     <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-500">

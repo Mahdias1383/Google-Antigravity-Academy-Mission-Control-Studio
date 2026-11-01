@@ -82,11 +82,11 @@ export const PWAInstallButton: React.FC = () => {
             setShowGuideModal(true);
           }
         }}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap"
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-white/[0.05] text-xs font-medium transition-colors cursor-pointer whitespace-nowrap"
         title={language === 'en' ? 'Install Google Antigravity Academy as Desktop/Mobile App (PWA)' : 'نصب وب‌اپلیکیشن پیش‌رونده آکادمی'}
       >
-        <Download className="w-3.5 h-3.5" />
-        <span>{t('pwaInstallBtn')}</span>
+        <Download className="w-3.5 h-3.5 text-slate-400" />
+        <span className="hidden 2xl:inline">{t('pwaInstallBtn')}</span>
       </button>
 
       {showGuideModal && (

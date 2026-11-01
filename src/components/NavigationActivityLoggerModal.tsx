@@ -163,7 +163,7 @@ export const NavigationActivityLoggerModal: React.FC<NavigationActivityLoggerMod
                   </span>
                   <span
                     dir="ltr"
-                    className="ltr-inline text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 tabular-nums shrink-0"
+                    className="ltr-inline text-[11px] font-mono font-semibold text-indigo-600 dark:text-indigo-300 tabular-nums shrink-0"
                   >
                     {stats.activeSessionsCount} {stats.activeSessionsCount === 1 ? 'session' : 'sessions'}
                   </span>
@@ -187,7 +187,7 @@ export const NavigationActivityLoggerModal: React.FC<NavigationActivityLoggerMod
                   <span
                     dir="ltr"
                     data-testid="activity-logger-most-visited-count"
-                    className="ltr-inline text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-300 tabular-nums shrink-0"
+                    className="ltr-inline text-[11px] font-mono font-semibold text-amber-600 dark:text-amber-300 tabular-nums shrink-0"
                   >
                     {stats.topSectionCount} {stats.topSectionCount === 1 ? 'visit' : 'visits'}
                   </span>
@@ -253,7 +253,7 @@ export const NavigationActivityLoggerModal: React.FC<NavigationActivityLoggerMod
                 </div>
                 <span
                   dir="ltr"
-                  className="ltr-code px-2 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20 text-[10px] font-mono font-semibold text-indigo-600 dark:text-indigo-400 shrink-0"
+                  className="ltr-code text-[11px] font-mono font-semibold text-indigo-600 dark:text-indigo-400 tabular-nums shrink-0"
                 >
                   {chartSummary.totalDates}d · {chartSummary.totalEvents} events
                 </span>
@@ -357,6 +357,7 @@ export const NavigationActivityLoggerModal: React.FC<NavigationActivityLoggerMod
                         stackId="sections"
                         fill={sec.color}
                         maxBarSize={42}
+                        isAnimationActive={false}
                         radius={
                           idx === chartSummary.activeSections.length - 1
                             ? [4, 4, 0, 0]
@@ -458,7 +459,7 @@ export const NavigationActivityLoggerModal: React.FC<NavigationActivityLoggerMod
               <span
                 dir="ltr"
                 data-testid="activity-logger-filtered-count"
-                className="ltr-inline px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px] font-mono font-semibold text-slate-600 dark:text-slate-300 shrink-0 tabular-nums"
+                className="ltr-inline text-xs font-mono font-semibold text-slate-600 dark:text-slate-300 shrink-0 tabular-nums"
               >
                 {filteredLogs.length}/{logs.length}
               </span>
@@ -518,7 +519,7 @@ export const NavigationActivityLoggerModal: React.FC<NavigationActivityLoggerMod
                 <span
                   dir="ltr"
                   data-testid="activity-logger-active-date-range-badge"
-                  className="ltr-inline px-2 py-0.5 rounded bg-indigo-500/15 border border-indigo-500/30 text-[10px] font-mono font-semibold text-indigo-600 dark:text-indigo-400"
+                  className="ltr-inline text-[11px] font-mono font-semibold text-indigo-600 dark:text-indigo-400 tabular-nums"
                 >
                   {startDate || '…'} → {endDate || '…'}
                 </span>
@@ -589,35 +590,41 @@ export const NavigationActivityLoggerModal: React.FC<NavigationActivityLoggerMod
                 className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/90 bg-slate-50/70 dark:bg-slate-900/50 hover:border-indigo-500/40 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
               >
                 <div className="space-y-1.5 min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-mono tabular-nums">
                     <span
                       dir="ltr"
-                      className="ltr-inline px-2 py-0.5 rounded bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 font-mono text-[10px] font-bold"
+                      className="ltr-inline text-indigo-600 dark:text-indigo-400 font-bold"
                     >
                       {item.eventType}
                     </span>
+                    <span aria-hidden="true" className="text-slate-400">·</span>
                     <span
                       dir="ltr"
-                      className="ltr-inline px-2 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono text-[10px] font-semibold"
+                      className="ltr-inline text-slate-700 dark:text-slate-300 font-semibold"
                     >
                       {item.badgeCode}
                     </span>
                     {logs[0]?.id === item.id && (
-                      <span className="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold whitespace-nowrap">
-                        {language === 'en' ? 'Current Active' : 'نمای فعلی'}
-                      </span>
+                      <>
+                        <span aria-hidden="true" className="text-slate-400">·</span>
+                        <span className="text-emerald-600 dark:text-emerald-400 font-sans font-bold whitespace-nowrap">
+                          {language === 'en' ? 'Current Active' : 'نمای فعلی'}
+                        </span>
+                      </>
                     )}
+                    <span aria-hidden="true" className="text-slate-400">·</span>
                     <span
                       dir="ltr"
                       data-testid="activity-log-entry-date"
-                      className="ltr-code px-2 py-0.5 rounded bg-slate-200/60 dark:bg-slate-800/80 text-[10px] font-mono text-slate-600 dark:text-slate-300 inline-flex items-center gap-1.5 whitespace-nowrap"
+                      className="ltr-code text-slate-600 dark:text-slate-300 inline-flex items-center gap-1 whitespace-nowrap"
                     >
                       <Calendar className="w-3 h-3 text-indigo-500 shrink-0" />
                       <span>{dateMeta.isoDate}</span>
                     </span>
+                    <span aria-hidden="true" className="text-slate-400">·</span>
                     <span
                       dir="ltr"
-                      className="ltr-code text-[11px] font-mono text-slate-400 inline-flex items-center gap-1 whitespace-nowrap"
+                      className="ltr-code text-slate-400 inline-flex items-center gap-1 whitespace-nowrap"
                     >
                       <Clock className="w-3 h-3 shrink-0" />
                       <span>{dateMeta.localizedTime}</span>

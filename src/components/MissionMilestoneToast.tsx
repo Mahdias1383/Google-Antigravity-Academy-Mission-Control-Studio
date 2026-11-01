@@ -105,18 +105,19 @@ export const MissionMilestoneOverlay: React.FC<{
               )}
             </div>
             <div>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono font-bold tabular-nums">
                 <span
                   dir="ltr"
                   data-testid="mission-milestone-badge"
-                  className="ltr-inline px-2.5 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-500/40 text-emerald-600 dark:text-emerald-300 font-mono text-[11px] font-bold"
+                  className="ltr-inline text-emerald-600 dark:text-emerald-400"
                 >
                   MISSION MILESTONE · MODULE 0{milestone.moduleNumber}
                 </span>
+                <span aria-hidden="true" className="text-slate-400">·</span>
                 <span
                   dir="ltr"
                   data-testid="mission-milestone-xp"
-                  className="ltr-inline px-2 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/40 text-amber-600 dark:text-amber-300 font-mono text-[11px] font-bold"
+                  className="ltr-inline text-amber-600 dark:text-amber-400"
                 >
                   +{milestone.xpAwarded} XP
                 </span>
@@ -186,7 +187,7 @@ export const MissionMilestoneOverlay: React.FC<{
               <span
                 dir="ltr"
                 data-testid="mission-milestone-principle"
-                className="ltr-inline px-2.5 py-0.5 rounded bg-indigo-500/20 border border-indigo-500/30 text-indigo-600 dark:text-indigo-300 font-mono text-[10px] font-bold"
+                className="ltr-inline text-indigo-600 dark:text-indigo-300 font-mono text-[11px] font-bold"
               >
                 {milestone.quote.engineeringPrincipleEn}
               </span>
@@ -203,7 +204,7 @@ export const MissionMilestoneOverlay: React.FC<{
             <div
               dir="ltr"
               data-testid="mission-milestone-quote-en"
-              className="ltr-inline text-xs font-mono italic text-slate-600 dark:text-slate-300 leading-5 block border-l-2 border-blue-500 pl-3"
+              className="ltr-inline text-xs font-mono italic text-slate-600 dark:text-slate-300 leading-5 block p-3 rounded-lg border border-slate-200/80 dark:border-slate-800 bg-white/50 dark:bg-slate-950/50"
             >
               &ldquo;{milestone.quote.quoteEn}&rdquo;
             </div>

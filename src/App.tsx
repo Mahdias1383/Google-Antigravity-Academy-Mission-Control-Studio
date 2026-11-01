@@ -189,7 +189,7 @@ function MainWorkspace() {
       );
       if (resolved) {
         setDetectedSession(resolved);
-        if (searchParams.get('autostart') !== '1') {
+        if (searchParams.get('resume') === '1' && searchParams.get('autostart') !== '1') {
           setResumeModalOpen(true);
         }
       }
@@ -368,10 +368,10 @@ function MainWorkspace() {
   return (
     <div
       dir={isRTL ? 'rtl' : 'ltr'}
-      className="min-h-screen flex flex-col bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 transition-colors"
+      className="min-h-screen flex flex-col bg-[#f8fafc] dark:bg-[#090d16] text-slate-900 dark:text-slate-100 transition-colors"
     >
       {/* Top Bar Contract: 3 Clean Zones separated by gap-8 */}
-      <header className="sticky top-0 z-30 flex items-center justify-between gap-8 px-6 py-3.5 border-b border-slate-200 dark:border-slate-800/80 bg-white/85 dark:bg-[#090d16]/85 backdrop-blur-md">
+      <header className="sticky top-0 z-30 h-14 flex items-center justify-between gap-8 px-4 sm:px-6 border-b border-slate-200/80 dark:border-white/[0.07] bg-white/90 dark:bg-[#090d16]/90 backdrop-blur-md">
         {/* Zone 1: Single text element wordmark */}
         <a
           href="#top"
@@ -379,7 +379,7 @@ function MainWorkspace() {
             e.preventDefault();
             setActiveSection('curriculum');
           }}
-          className="text-base sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-white whitespace-nowrap shrink-0"
+          className="text-sm sm:text-base font-extrabold tracking-tight text-slate-900 dark:text-white whitespace-nowrap shrink-0"
         >
           {t('brandTitle')}
         </a>
@@ -387,15 +387,15 @@ function MainWorkspace() {
         {/* Zone 2: 5 concise single-line text navigation links */}
         <nav
           aria-label="Primary Workspace Navigation"
-          className="hidden lg:flex items-center gap-6 text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300"
+          className="hidden lg:flex items-center gap-1 text-xs sm:text-[13px] font-medium text-slate-600 dark:text-slate-400"
         >
           <button
             type="button"
             onClick={() => setActiveSection('curriculum')}
-            className={`hover:text-blue-600 dark:hover:text-blue-400 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-              activeSection === 'curriculum' || activeSection === 'achievements'
-                ? 'text-blue-600 dark:text-blue-400 underline underline-offset-8'
-                : ''
+            className={`px-3 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+              activeSection === 'curriculum'
+                ? 'bg-slate-900/[0.06] dark:bg-white/[0.08] text-slate-950 dark:text-white font-semibold'
+                : 'hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.03] dark:hover:bg-white/[0.04]'
             }`}
           >
             {t('navAcademy')}
@@ -403,10 +403,10 @@ function MainWorkspace() {
           <button
             type="button"
             onClick={() => setActiveSection('simulator')}
-            className={`hover:text-blue-600 dark:hover:text-blue-400 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+            className={`px-3 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
               activeSection === 'simulator'
-                ? 'text-blue-600 dark:text-blue-400 underline underline-offset-8'
-                : ''
+                ? 'bg-slate-900/[0.06] dark:bg-white/[0.08] text-slate-950 dark:text-white font-semibold'
+                : 'hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.03] dark:hover:bg-white/[0.04]'
             }`}
           >
             {t('navSimulator')}
@@ -414,10 +414,10 @@ function MainWorkspace() {
           <button
             type="button"
             onClick={() => setActiveSection('guardrails')}
-            className={`hover:text-blue-600 dark:hover:text-blue-400 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+            className={`px-3 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
               activeSection === 'guardrails'
-                ? 'text-blue-600 dark:text-blue-400 underline underline-offset-8'
-                : ''
+                ? 'bg-slate-900/[0.06] dark:bg-white/[0.08] text-slate-950 dark:text-white font-semibold'
+                : 'hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.03] dark:hover:bg-white/[0.04]'
             }`}
           >
             {t('navGuardrails')}
@@ -425,10 +425,10 @@ function MainWorkspace() {
           <button
             type="button"
             onClick={() => setActiveSection('mcp')}
-            className={`hover:text-blue-600 dark:hover:text-blue-400 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+            className={`px-3 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
               activeSection === 'mcp'
-                ? 'text-blue-600 dark:text-blue-400 underline underline-offset-8'
-                : ''
+                ? 'bg-slate-900/[0.06] dark:bg-white/[0.08] text-slate-950 dark:text-white font-semibold'
+                : 'hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.03] dark:hover:bg-white/[0.04]'
             }`}
           >
             {t('navMcp')}
@@ -436,115 +436,70 @@ function MainWorkspace() {
           <button
             type="button"
             onClick={() => setActiveSection('cheatsheets')}
-            className={`hover:text-blue-600 dark:hover:text-blue-400 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+            className={`px-3 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
               activeSection === 'cheatsheets'
-                ? 'text-blue-600 dark:text-blue-400 underline underline-offset-8'
-                : ''
+                ? 'bg-slate-900/[0.06] dark:bg-white/[0.08] text-slate-950 dark:text-white font-semibold'
+                : 'hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.03] dark:hover:bg-white/[0.04]'
             }`}
           >
             {t('navCheatsheets')}
           </button>
         </nav>
 
-        {/* Zone 3: Pomodoro Study Timer & Deep Work Logger + Language Switcher + Search Launcher (Ctrl+K) */}
-        <div className="flex items-center gap-3 shrink-0">
-          <PomodoroHeaderWidget
-            currentModule={currentModule}
-            onStudyMinutesLogged={(minutes, modId) => {
-              // Automatically link to session snapshot
-              try {
-                const nowIso = new Date().toISOString();
-                window.localStorage.setItem('ag_last_deep_work_logged_v1', JSON.stringify({
-                  moduleId: modId,
-                  minutes,
-                  loggedAtIso: nowIso,
-                }));
-              } catch {
-                // Ignore storage error
-              }
-            }}
-          />
-
-          {/* Bilingual Language Switcher Button */}
-          <button
-            type="button"
-            onClick={toggleLanguage}
-            data-testid="language-toggle-btn"
-            aria-label={language === 'fa' ? 'Switch interface to English' : 'تغییر رابط کاربری به فارسی'}
-            className="px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 cursor-pointer hover:border-blue-500/50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-          >
-            <Globe className="w-3.5 h-3.5 text-blue-500" />
-            <span className="font-mono">{t('langSwitchBadge')}</span>
-            <span className="text-[10px] text-slate-400 font-mono font-normal hidden sm:inline">
-              ({t('langSwitchLabel')})
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setSearchModalOpen(true)}
-            className="px-3.5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer"
-          >
-            <Search className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{t('quickSearch')}</span>
-            <span className="sm:hidden">Ctrl+K</span>
-          </button>
-        </div>
+        {/* Zone 3: Strictly 1 Primary Action CTA — Quick Search (Ctrl+K) */}
+        <button
+          type="button"
+          onClick={() => setSearchModalOpen(true)}
+          className="px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer shadow-xs"
+        >
+          <Search className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">{t('quickSearch')}</span>
+          <span className="sm:hidden">Ctrl+K</span>
+        </button>
       </header>
 
-      {/* Secondary Workspace Toolbar (Below Header: Academy Achievements, Studio Quick Switcher, Progress & Theme Toggle) */}
-      <div className="border-b border-slate-200 dark:border-slate-800/80 bg-slate-100/70 dark:bg-slate-900/50 px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
+      {/* Quiet Single-Line Workspace Sub-Header (Linear-style utility & lab strip) */}
+      <div className="border-b border-slate-200/70 dark:border-white/[0.06] bg-slate-100/60 dark:bg-[#0b101b] px-4 sm:px-6 py-1.5 min-h-[40px] flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5">
+        <div className="flex flex-wrap items-center gap-1 min-w-0">
           <button
             type="button"
             onClick={() => setSidebarOpen((prev) => !prev)}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/[0.05] transition-colors cursor-pointer whitespace-nowrap"
             aria-label="Toggle Curriculum Sidebar"
           >
             {sidebarOpen ? (
-              <PanelRightClose className="w-4 h-4 text-blue-500" />
+              <PanelRightClose className="w-3.5 h-3.5 text-slate-400" />
             ) : (
-              <PanelRightOpen className="w-4 h-4 text-blue-500" />
+              <PanelRightOpen className="w-3.5 h-3.5 text-slate-400" />
             )}
             <span className="hidden sm:inline">{t('sidebarToggle')}</span>
           </button>
 
-          <button
-            type="button"
-            onClick={() => setActiveSection('achievements')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap ${
-              activeSection === 'achievements'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
-            }`}
-          >
-            <Award className="w-3.5 h-3.5 text-emerald-500" />
-            <span>{t('navAchievements')}</span>
-          </button>
+          <span className="h-3.5 w-px bg-slate-200 dark:bg-white/10 mx-1 shrink-0" aria-hidden="true" />
 
           <button
             type="button"
             onClick={() => setActiveSection('scenarios')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap ${
+            data-testid="nav-tab-scenarios"
+            className={`px-2.5 py-1 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap ${
               activeSection === 'scenarios'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                ? 'bg-blue-600/10 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 font-semibold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-white/[0.04]'
             }`}
           >
-            <Award className="w-3.5 h-3.5 text-amber-500" />
             <span>{t('navScenarios')}</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveSection('ai-architect')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap ${
+            data-testid="nav-tab-ai-architect"
+            className={`px-2.5 py-1 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap ${
               activeSection === 'ai-architect'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                ? 'bg-blue-600/10 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 font-semibold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-white/[0.04]'
             }`}
           >
-            <Globe className="w-3.5 h-3.5 text-emerald-500" />
             <span>{t('navAiSearch')}</span>
           </button>
 
@@ -552,41 +507,74 @@ function MainWorkspace() {
             type="button"
             onClick={() => setActiveSection('knowledge-base')}
             data-testid="nav-tab-knowledge-base"
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap ${
+            className={`px-2.5 py-1 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap ${
               activeSection === 'knowledge-base'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                ? 'bg-blue-600/10 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 font-semibold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-white/[0.04]'
             }`}
           >
-            <Database className="w-3.5 h-3.5 text-blue-500" />
             <span>{t('navKnowledgeBase')}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSection('achievements')}
+            data-testid="nav-tab-achievements"
+            className={`px-2.5 py-1 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap ${
+              activeSection === 'achievements'
+                ? 'bg-blue-600/10 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 font-semibold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-white/[0.04]'
+            }`}
+          >
+            <span>{t('navAchievements')}</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveSection('game-3d')}
             data-testid="nav-tab-game-3d"
-            className="px-3 py-1.5 rounded-lg text-xs font-extrabold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap bg-amber-500/15 border border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/25"
+            className="px-2.5 py-1 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
           >
-            <Gamepad2 className="w-3.5 h-3.5 text-amber-500" />
+            <Gamepad2 className="w-3.5 h-3.5 text-amber-500 shrink-0" />
             <span>
-              {language === 'en' ? '3D Cyber Arena (Three.js)' : 'میدان نبرد سه‌بعدی (Three.js)'}
+              {language === 'en' ? '3D Arena' : 'میدان سه‌بعدی'}
             </span>
           </button>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        {/* Quiet Right/End Utility Cluster */}
+        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
           {detectedSession && (
             <button
               type="button"
               onClick={() => setResumeModalOpen(true)}
               data-testid="open-resume-modal-btn"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-200/50 dark:hover:bg-white/[0.05] text-xs font-medium transition-colors cursor-pointer whitespace-nowrap"
+              title={t('resumeSession')}
             >
-              <History className="w-3.5 h-3.5" />
-              <span>{t('resumeSession')}</span>
+              <History className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+              <span className="hidden xl:inline">{t('resumeSession')}</span>
             </button>
           )}
+
+          <PomodoroHeaderWidget
+            currentModule={currentModule}
+            onStudyMinutesLogged={(minutes, modId) => {
+              try {
+                const nowIso = new Date().toISOString();
+                window.localStorage.setItem(
+                  'ag_last_deep_work_logged_v1',
+                  JSON.stringify({
+                    moduleId: modId,
+                    minutes,
+                    loggedAtIso: nowIso,
+                  })
+                );
+              } catch {
+                // Ignore storage error
+              }
+            }}
+          />
 
           <button
             type="button"
@@ -597,16 +585,16 @@ function MainWorkspace() {
                 ? `Open Navigation History (${activityLogs.length} events)`
                 : `مشاهده تاریخچه ناوبری (${activityLogs.length} رویداد)`
             }
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap"
+            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-white/[0.05] text-xs font-medium transition-colors cursor-pointer whitespace-nowrap"
           >
-            <Activity className="w-3.5 h-3.5" />
-            <span>
-              {language === 'en' ? 'Navigation History' : 'تاریخچه ناوبری'}
+            <Activity className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+            <span className="hidden 2xl:inline">
+              {language === 'en' ? 'History' : 'تاریخچه'}
             </span>
             <span
               dir="ltr"
               data-testid="activity-logger-badge-count"
-              className="ltr-inline px-1.5 py-0.2 rounded bg-indigo-500/20 text-[10px] font-mono font-bold tabular-nums"
+              className="ltr-inline text-[11px] font-mono font-semibold text-slate-500 dark:text-slate-400 tabular-nums"
             >
               {activityLogs.length}
             </span>
@@ -614,92 +602,81 @@ function MainWorkspace() {
 
           <PWAInstallButton />
 
+          <span className="h-3.5 w-px bg-slate-200 dark:bg-white/10 mx-0.5 shrink-0" aria-hidden="true" />
+
           <button
             type="button"
             onClick={() => setActiveSection('achievements')}
-            className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 hover:text-blue-500 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer whitespace-nowrap"
+            title={t('studyProgress')}
           >
-            <span>{t('studyProgress')}</span>
-            <span dir="ltr" className="ltr-inline font-mono font-bold text-blue-500 tabular-nums">
-              {completedModules.length}/8 ({completionPercent}%)
+            <span dir="ltr" className="ltr-inline font-mono font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
+              {completedModules.length}/8
             </span>
           </button>
 
           <button
             type="button"
+            onClick={toggleLanguage}
+            data-testid="language-toggle-btn"
+            title={t('langSwitchLabel')}
+            aria-label={language === 'fa' ? 'Switch interface to English' : 'تغییر رابط کاربری به فارسی'}
+            className="px-2 py-1 rounded-md text-xs font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1 cursor-pointer hover:bg-slate-200/60 dark:hover:bg-white/[0.06] transition-colors whitespace-nowrap"
+          >
+            <Globe className="w-3.5 h-3.5 text-slate-400" />
+            <span className="font-mono text-[11px]">{t('langSwitchBadge')}</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setDarkMode((prev) => !prev)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer whitespace-nowrap"
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-white/[0.06] transition-colors cursor-pointer whitespace-nowrap"
             aria-label="Toggle Dark or Light Mode"
+            title={darkMode ? t('themeLight') : t('themeDark')}
           >
             {darkMode ? (
-              <>
-                <Sun className="w-3.5 h-3.5 text-amber-400" />
-                <span>{t('themeLight')}</span>
-              </>
+              <Sun className="w-3.5 h-3.5 text-amber-400" />
             ) : (
-              <>
-                <Moon className="w-3.5 h-3.5 text-blue-600" />
-                <span>{t('themeDark')}</span>
-              </>
+              <Moon className="w-3.5 h-3.5 text-slate-600" />
             )}
+            <span className="sr-only">{darkMode ? t('themeLight') : t('themeDark')}</span>
           </button>
         </div>
       </div>
 
       {/* Main Fluid Widescreen Workspace Grid */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Navigation Sidebar */}
+        {/* Clean Linear/Raycast-Grade Navigation Sidebar */}
         {sidebarOpen && (
           <aside
             aria-label="Curriculum Modules & Studios Navigation"
-            className={`w-72 sm:w-80 shrink-0 ${
+            className={`w-64 lg:w-72 shrink-0 ${
               isRTL ? 'border-l' : 'border-r'
-            } border-slate-200 dark:border-slate-800/80 bg-white/90 dark:bg-[#0d1322]/90 p-4 overflow-y-auto space-y-6 hidden md:block`}
+            } border-slate-200/80 dark:border-white/[0.07] bg-white dark:bg-[#0b101b] p-4 overflow-y-auto space-y-6 hidden md:block`}
           >
-            {/* 8 Learning Modules + Academy Certification Card */}
-            <div className="space-y-2">
-              <div className="px-2 text-xs font-extrabold text-slate-500 dark:text-slate-400 flex items-center justify-between">
-                <span>{t('sidebarTitle')}</span>
-                <span dir="ltr" className="ltr-inline font-mono text-[11px]">
-                  {t('sidebarSubtitle')}
-                </span>
+            {/* Curriculum Progress & 8 Modules */}
+            <div className="space-y-3">
+              <div className="px-2 space-y-2">
+                <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  <span>{t('sidebarTitle')}</span>
+                  <span dir="ltr" className="ltr-inline font-mono text-emerald-500 tabular-nums">
+                    {completionPercent}%
+                  </span>
+                </div>
+                <div className="w-full h-1 rounded-full bg-slate-100 dark:bg-white/[0.06] overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-500 transition-all duration-300"
+                    style={{ width: `${completionPercent}%` }}
+                  />
+                </div>
               </div>
 
-              {/* Dedicated Academy Achievements & Certification Item inside Academy Sidebar */}
-              <button
-                type="button"
-                onClick={() => setActiveSection('achievements')}
-                className={`w-full ${
-                  isRTL ? 'text-right' : 'text-left'
-                } p-3 rounded-xl border transition-all flex items-start gap-2.5 cursor-pointer ${
-                  activeSection === 'achievements'
-                    ? 'border-emerald-500 bg-emerald-500/15 text-slate-900 dark:text-white'
-                    : 'border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10 text-slate-800 dark:text-slate-200'
-                }`}
-              >
-                <Award className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                <div className="min-w-0 flex-1">
-                  <div className="text-xs font-bold leading-5">
-                    {language === 'en' ? 'Achievements & Certification' : 'دستاوردها و گواهینامه آکادمی'}
-                  </div>
-                  <div
-                    dir="ltr"
-                    className={`text-[10px] font-mono text-emerald-600 dark:text-emerald-400 ${
-                      isRTL ? 'text-right' : 'text-left'
-                    } leading-4 mt-0.5 break-words`}
-                  >
-                    Achievements &amp; Certification ({completedModules.length}/8)
-                  </div>
-                </div>
-              </button>
-
-              <div className="space-y-1 pt-1">
+              <div className="space-y-0.5">
                 {ALL_CURRICULUM_MODULES.map((mod) => {
                   const isCurrent =
                     activeSection === 'curriculum' && activeModuleId === mod.id;
                   const isDone = completedModules.includes(mod.id);
-                  const primaryTitle = language === 'en' ? `Module ${mod.number}: ${mod.titleEn}` : `فصل ${mod.number}: ${mod.titleFa}`;
-                  const secondaryTitle = language === 'en' ? `${mod.readingTime} · ${mod.difficulty}` : mod.titleEn;
+                  const primaryTitle = language === 'en' ? mod.titleEn : mod.titleFa;
 
                   return (
                     <button
@@ -711,79 +688,83 @@ function MainWorkspace() {
                       }}
                       className={`w-full ${
                         isRTL ? 'text-right' : 'text-left'
-                      } p-2.5 rounded-xl border transition-all flex items-start gap-2.5 cursor-pointer ${
+                      } px-2.5 py-2 rounded-lg transition-colors flex items-center gap-2.5 cursor-pointer group ${
                         isCurrent
-                          ? 'border-blue-500 bg-blue-500/10 text-slate-900 dark:text-white'
-                          : 'border-transparent hover:bg-slate-100 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300'
+                          ? 'bg-blue-600/10 dark:bg-blue-500/[0.14] text-blue-600 dark:text-blue-400 font-semibold'
+                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.04] hover:text-slate-900 dark:hover:text-slate-200'
                       }`}
                     >
+                      <span
+                        dir="ltr"
+                        className={`ltr-inline text-[11px] font-mono tabular-nums shrink-0 ${
+                          isCurrent
+                            ? 'text-blue-600 dark:text-blue-400 font-bold'
+                            : 'text-slate-400 dark:text-slate-500'
+                        }`}
+                      >
+                        0{mod.number}
+                      </span>
+                      <span className="text-xs leading-5 truncate flex-1">
+                        {primaryTitle}
+                      </span>
                       {isDone ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                       ) : (
-                        <Circle className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                        <Circle className="w-3.5 h-3.5 text-slate-300 dark:text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                       )}
-                      <div className="min-w-0 flex-1">
-                        <div className="text-xs font-bold leading-5">
-                          {primaryTitle}
-                        </div>
-                        <div
-                          dir="ltr"
-                          className={`text-[10px] font-mono text-slate-500 dark:text-slate-400 ${
-                            isRTL ? 'text-right' : 'text-left'
-                          } leading-4 mt-0.5 break-words opacity-80`}
-                        >
-                          {secondaryTitle}
-                        </div>
-                      </div>
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* Interactive Studios List */}
-            <div className="space-y-2 pt-4 border-t border-slate-200 dark:border-slate-800">
-              <div className="px-2 text-xs font-extrabold text-slate-500 dark:text-slate-400">
+            {/* Interactive Studios & Workbenches */}
+            <div className="space-y-2 pt-4 border-t border-slate-200/70 dark:border-white/[0.06]">
+              <div className="px-2 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                 {t('studiosSectionTitle')}
               </div>
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 {(
                   [
                     {
                       id: 'simulator',
                       label: t('studio1Label'),
-                      sub: t('studio1Sub'),
                       icon: Terminal,
                     },
                     {
                       id: 'guardrails',
                       label: t('studio2Label'),
-                      sub: t('studio2Sub'),
                       icon: Shield,
                     },
                     {
                       id: 'mcp',
                       label: t('studio3Label'),
-                      sub: t('studio3Sub'),
                       icon: Cpu,
                     },
                     {
                       id: 'cheatsheets',
                       label: t('studio4Label'),
-                      sub: t('studio4Sub'),
                       icon: FileSpreadsheet,
                     },
                     {
                       id: 'scenarios',
                       label: t('studio5Label'),
-                      sub: t('studio5Sub'),
                       icon: Award,
                     },
                     {
                       id: 'knowledge-base',
                       label: t('studio6Label'),
-                      sub: t('studio6Sub'),
                       icon: Database,
+                    },
+                    {
+                      id: 'ai-architect',
+                      label: t('navAiSearch'),
+                      icon: Globe,
+                    },
+                    {
+                      id: 'achievements',
+                      label: language === 'en' ? 'Achievements & Certificate' : 'دستاوردها و گواهینامه',
+                      icon: Award,
                     },
                   ] as const
                 ).map((st) => {
@@ -796,24 +777,20 @@ function MainWorkspace() {
                       onClick={() => setActiveSection(st.id)}
                       className={`w-full ${
                         isRTL ? 'text-right' : 'text-left'
-                      } p-2.5 rounded-xl border transition-all flex items-start gap-2.5 cursor-pointer ${
+                      } px-2.5 py-2 rounded-lg transition-colors flex items-center gap-2.5 cursor-pointer ${
                         active
-                          ? 'border-blue-500 bg-blue-500/10 text-slate-900 dark:text-white'
-                          : 'border-transparent hover:bg-slate-100 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300'
+                          ? 'bg-blue-600/10 dark:bg-blue-500/[0.14] text-blue-600 dark:text-blue-400 font-semibold'
+                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.04] hover:text-slate-900 dark:hover:text-slate-200'
                       }`}
                     >
-                      <IconComp className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-                      <div className="min-w-0 flex-1">
-                        <div className="text-xs font-bold">{st.label}</div>
-                        <div
-                          dir="ltr"
-                          className={`text-[10px] font-mono text-slate-500 dark:text-slate-400 ${
-                            isRTL ? 'text-right' : 'text-left'
-                          } leading-4 mt-0.5 break-words`}
-                        >
-                          {st.sub}
-                        </div>
-                      </div>
+                      <IconComp
+                        className={`w-3.5 h-3.5 shrink-0 ${
+                          active ? 'text-blue-500' : 'text-slate-400 dark:text-slate-500'
+                        }`}
+                      />
+                      <span className="text-xs leading-5 truncate flex-1">
+                        {st.label}
+                      </span>
                     </button>
                   );
                 })}
@@ -822,8 +799,8 @@ function MainWorkspace() {
           </aside>
         )}
 
-        {/* Main Content Viewport */}
-        <main className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 max-w-6xl mx-auto w-full">
+        {/* Main Content Viewport — Spacious Editorial & Engineering Workbench */}
+        <main className="flex-1 overflow-y-auto px-4 sm:px-8 lg:px-12 py-8 max-w-5xl mx-auto w-full">
           {activeSection === 'curriculum' && (
             <ModuleContentView
               module={currentModule}
@@ -893,44 +870,6 @@ function MainWorkspace() {
             />
           )}
         </main>
-
-        {/* Sticky On-This-Page Mini-Map (When viewing Curriculum on XL screens) */}
-        {activeSection === 'curriculum' && (
-          <aside
-            aria-label="On This Page Subsections"
-            className={`w-64 shrink-0 ${
-              isRTL ? 'border-r' : 'border-l'
-            } border-slate-200 dark:border-slate-800/80 p-4 hidden xl:block space-y-4`}
-          >
-            <div className="text-xs font-bold text-slate-500 dark:text-slate-400">
-              {t('onThisPageTitle')}
-            </div>
-            <div className="space-y-2">
-              {currentModule.subSections.map((sub) => {
-                const subPrimary = language === 'en' ? sub.titleEn : sub.titleFa;
-                return (
-                  <a
-                    key={sub.id}
-                    href={`#${sub.id}`}
-                    className="block p-2.5 rounded-lg text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-blue-500 transition-colors"
-                  >
-                    <div className="font-semibold leading-5">{subPrimary}</div>
-                    {language !== 'en' && (
-                      <div
-                        dir="ltr"
-                        className={`text-[10px] font-mono opacity-75 ${
-                          isRTL ? 'text-right' : 'text-left'
-                        } leading-4 mt-1 break-words`}
-                      >
-                        {sub.titleEn}
-                      </div>
-                    )}
-                  </a>
-                );
-              })}
-            </div>
-          </aside>
-        )}
       </div>
 
       {/* Global Search Modal (Ctrl/Cmd + K) */}
@@ -1039,14 +978,14 @@ function MainWorkspace() {
                 className="p-4 rounded-xl border border-blue-500/30 bg-blue-500/5 space-y-2.5"
                 data-testid="resume-session-target-card"
               >
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center justify-between gap-2 text-[11px]">
                   <span
                     dir="ltr"
-                    className="ltr-inline px-2.5 py-0.5 rounded-md bg-blue-600/15 border border-blue-500/30 text-blue-600 dark:text-blue-400 font-mono text-[11px] font-bold"
+                    className="ltr-inline text-blue-600 dark:text-blue-400 font-mono font-bold"
                   >
                     {detectedSession.badgeLabelEn}
                   </span>
-                  <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
                     {detectedSession.kind === 'studio'
                       ? (language === 'en' ? 'Interactive Studio' : 'استودیوی تعاملی')
                       : (language === 'en' ? 'Learning Module' : 'سرفصل آموزشی')}

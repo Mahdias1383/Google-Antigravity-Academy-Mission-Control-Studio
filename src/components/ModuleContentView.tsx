@@ -552,21 +552,21 @@ export const ModuleContentView: React.FC<{
   const displaySummary = language === 'en' && enContent?.summaryEn ? enContent.summaryEn : module.summaryFa;
 
   return (
-    <div className="space-y-8 pb-12">
-      {/* Module Header Card */}
-      <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/75 p-6 sm:p-8 space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
+    <div className="space-y-10 pb-16">
+      {/* Module Hero Header Surface */}
+      <div className="rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-white dark:bg-[#0c121e] p-6 sm:p-9 space-y-7 shadow-xs">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/70 dark:border-white/[0.06] pb-4">
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <span className="font-bold text-blue-600 dark:text-blue-400">
               {language === 'en' ? `Module 0${module.number} of 08` : `فصل ۰${module.number} از ۰۸`}
             </span>
-            <span aria-hidden="true">·</span>
+            <span aria-hidden="true" className="opacity-40">·</span>
             <span dir="ltr" className="ltr-inline">{module.readingTime}</span>
-            <span aria-hidden="true">·</span>
+            <span aria-hidden="true" className="opacity-40">·</span>
             <span dir="ltr" className="ltr-inline">{module.difficulty}</span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2">
             <ExportSectionPdfButton
               label={t('exportPdfBtn')}
               payload={fullModulePdfPayload}
@@ -578,8 +578,8 @@ export const ModuleContentView: React.FC<{
               data-testid="toggle-module-complete-btn"
               className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold border transition-colors cursor-pointer whitespace-nowrap ${
                 isCompleted
-                  ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-600 dark:text-emerald-300'
-                  : 'border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:border-blue-500/40'
+                  ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300'
+                  : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.04] text-slate-700 dark:text-slate-200 hover:border-blue-500/40'
               }`}
             >
               {isCompleted ? (
@@ -589,7 +589,7 @@ export const ModuleContentView: React.FC<{
                 </>
               ) : (
                 <>
-                  <Square className="w-4 h-4" />
+                  <Square className="w-4 h-4 text-slate-400" />
                   <span>{t('markCompleted')}</span>
                 </>
               )}
@@ -597,34 +597,36 @@ export const ModuleContentView: React.FC<{
           </div>
         </div>
 
-        <div className="space-y-3">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+        <div className="space-y-3.5">
+          <h1 className="text-2xl sm:text-3xl lg:text-[32px] font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight">
             {displayTitle}
           </h1>
           {language !== 'en' && (
-            <div
-              dir="ltr"
-              className="text-sm sm:text-base font-mono text-blue-600 dark:text-blue-400"
-            >
-              {displaySubtitle}
+            <div className={isRTL ? 'text-right' : 'text-left'}>
+              <span
+                dir="ltr"
+                className="ltr-inline text-xs sm:text-sm font-mono text-blue-600/90 dark:text-blue-400/90"
+              >
+                {displaySubtitle}
+              </span>
             </div>
           )}
-          <p className="text-sm sm:text-base leading-7 text-slate-600 dark:text-slate-300 max-w-4xl">
+          <p className="text-sm sm:text-base leading-8 text-slate-600 dark:text-slate-300 max-w-4xl">
             {displaySummary}
           </p>
         </div>
 
-        {/* Key Takeaways Bento Grid */}
-        <div className="space-y-2 pt-1">
-          <div className="text-xs font-bold text-slate-500 dark:text-slate-400">
+        {/* Key Takeaways 2-Column Architectural Grid */}
+        <div className="space-y-3 pt-2 border-t border-slate-200/70 dark:border-white/[0.06]">
+          <div className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
             {t('keyTakeawaysTitle')}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {language === 'en' && enContent?.keyTakeaways
               ? enContent.keyTakeaways.map((kt) => (
                   <div
                     key={kt.titleEn}
-                    className="p-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/60 space-y-1.5"
+                    className="p-4 sm:p-5 rounded-xl border border-slate-200/80 dark:border-white/[0.06] bg-slate-50/70 dark:bg-white/[0.02] space-y-1.5"
                   >
                     <div dir="ltr" className="ltr-inline text-[11px] font-mono font-semibold text-blue-600 dark:text-blue-400">
                       {kt.metricOrBadge}
@@ -632,7 +634,7 @@ export const ModuleContentView: React.FC<{
                     <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                       {kt.titleEn}
                     </h3>
-                    <p className="text-xs leading-5 text-slate-600 dark:text-slate-400">
+                    <p className="text-xs sm:text-[13px] leading-6 text-slate-600 dark:text-slate-400">
                       {kt.descEn}
                     </p>
                   </div>
@@ -640,7 +642,7 @@ export const ModuleContentView: React.FC<{
               : module.keyTakeaways.map((kt) => (
                   <div
                     key={kt.titleFa}
-                    className="p-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/60 space-y-1.5"
+                    className="p-4 sm:p-5 rounded-xl border border-slate-200/80 dark:border-white/[0.06] bg-slate-50/70 dark:bg-white/[0.02] space-y-1.5"
                   >
                     <div dir="ltr" className="ltr-inline text-[11px] font-mono font-semibold text-blue-600 dark:text-blue-400">
                       {kt.metricOrBadge}
@@ -648,12 +650,34 @@ export const ModuleContentView: React.FC<{
                     <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                       {kt.titleFa}
                     </h3>
-                    <p className="text-xs leading-5 text-slate-600 dark:text-slate-400">
+                    <p className="text-xs sm:text-[13px] leading-6 text-slate-600 dark:text-slate-400">
                       {kt.descFa}
                     </p>
                   </div>
                 ))}
           </div>
+        </div>
+
+        {/* Inline Chapter Subsections Jump Bar (Replaces cramped 256px right sidebar) */}
+        <div className="pt-2 border-t border-slate-200/70 dark:border-white/[0.06] flex flex-wrap items-center gap-2">
+          <span className="text-xs font-bold text-slate-400 dark:text-slate-500 me-1">
+            {t('onThisPageTitle')}:
+          </span>
+          {module.subSections.map((sub, idx) => {
+            const subPrimary = language === 'en' ? sub.titleEn : sub.titleFa;
+            return (
+              <a
+                key={sub.id}
+                href={`#${sub.id}`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200/80 dark:border-white/[0.06] bg-slate-50/80 dark:bg-white/[0.03] hover:border-blue-500/40 hover:text-blue-600 dark:hover:text-blue-400 text-xs font-medium text-slate-700 dark:text-slate-300 transition-colors"
+              >
+                <span dir="ltr" className="ltr-inline text-[10px] font-mono text-blue-500 font-bold">
+                  0{idx + 1}
+                </span>
+                <span>{subPrimary}</span>
+              </a>
+            );
+          })}
         </div>
       </div>
 
@@ -693,19 +717,21 @@ export const ModuleContentView: React.FC<{
             <section
               key={sub.id}
               id={sub.id}
-              className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/75 p-6 sm:p-8 space-y-5"
+              className="rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-white dark:bg-[#0c121e] p-6 sm:p-9 space-y-6 shadow-xs"
             >
-              <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
+              <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200/70 dark:border-white/[0.06] pb-4">
                 <div>
-                  <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
+                  <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white leading-snug">
                     {subTitlePrimary}
                   </h2>
                   {language !== 'en' && (
-                    <div
-                      dir="ltr"
-                      className="text-xs font-mono text-slate-500 dark:text-slate-400 mt-1 opacity-80"
-                    >
-                      {subTitleSecondary}
+                    <div className={`mt-1 ${isRTL ? 'text-right' : 'text-left'}`}>
+                      <span
+                        dir="ltr"
+                        className="ltr-inline text-xs font-mono text-slate-500 dark:text-slate-400"
+                      >
+                        {subTitleSecondary}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -723,7 +749,7 @@ export const ModuleContentView: React.FC<{
                   <p
                     key={idx}
                     className={`text-sm sm:text-[15px] leading-8 text-slate-700 dark:text-slate-300 ${
-                      isRTL ? 'text-justify' : 'text-left'
+                      isRTL ? 'text-right' : 'text-left'
                     }`}
                   >
                     {p}
@@ -733,11 +759,11 @@ export const ModuleContentView: React.FC<{
 
               {/* Technical Bullet Points with Strict LTR Isolation */}
               {sub.bulletPoints && sub.bulletPoints.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                   {sub.bulletPoints.map((bp, bpIdx) => (
                     <div
                       key={bp.termEn}
-                      className="p-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/50 space-y-1.5"
+                      className="p-4 sm:p-5 rounded-xl border border-slate-200/80 dark:border-white/[0.06] bg-slate-50/70 dark:bg-white/[0.02] space-y-2"
                     >
                       <code
                         dir="ltr"
@@ -759,41 +785,41 @@ export const ModuleContentView: React.FC<{
 
               {/* Architectural Comparison Matrix */}
               {sub.comparisonTable && (
-                <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 my-4">
+                <div className="overflow-x-auto rounded-xl border border-slate-200/80 dark:border-white/[0.07] my-4">
                   <table className={`w-full ${isRTL ? 'text-right' : 'text-left'} border-collapse text-xs sm:text-sm`}>
                     <thead>
-                      <tr className="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-200 border-b border-slate-200 dark:border-slate-800">
+                      <tr className="bg-slate-50 dark:bg-white/[0.03] text-slate-800 dark:text-slate-200 border-b border-slate-200/80 dark:border-white/[0.07]">
                         {(language === 'en' && enSub?.comparisonTable?.headers
                           ? enSub.comparisonTable.headers
                           : language === 'en'
                           ? [t('tableColCriterion'), t('tableColTraditional'), t('tableColAntigravity'), t('tableColVerdict')]
                           : sub.comparisonTable.headers
                         ).map((h) => (
-                          <th key={h} className="py-3 px-4 font-bold">
+                          <th key={h} className="py-3.5 px-4 font-bold">
                             {h}
                           </th>
                         ))}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800/80">
+                    <tbody className="divide-y divide-slate-200/70 dark:divide-white/[0.06]">
                       {(language === 'en' && enSub?.comparisonTable?.rows
                         ? enSub.comparisonTable.rows
                         : sub.comparisonTable.rows
                       ).map((row) => (
                         <tr
                           key={row.criterion}
-                          className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+                          className="hover:bg-slate-50/80 dark:hover:bg-white/[0.02] transition-colors"
                         >
-                          <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">
+                          <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
                             <span dir="ltr" className="ltr-inline">{row.criterion}</span>
                           </td>
-                          <td className="py-3 px-4 text-slate-700 dark:text-slate-300">
+                          <td className="py-3.5 px-4 text-slate-700 dark:text-slate-300 leading-6">
                             {row.optionA}
                           </td>
-                          <td className="py-3 px-4 text-slate-700 dark:text-slate-300">
+                          <td className="py-3.5 px-4 text-slate-700 dark:text-slate-300 leading-6">
                             {row.optionB}
                           </td>
-                          <td className="py-3 px-4 font-medium text-blue-600 dark:text-blue-400">
+                          <td className="py-3.5 px-4 font-medium text-blue-600 dark:text-blue-400 leading-6">
                             {row.architectVerdict}
                           </td>
                         </tr>
@@ -806,10 +832,10 @@ export const ModuleContentView: React.FC<{
               {/* Callouts (subtle all-around hairline border) */}
               {language === 'en' && enSub?.callout ? (
                 <div
-                  className={`p-4 rounded-xl border space-y-1.5 ${
+                  className={`p-4 sm:p-5 rounded-xl border space-y-1.5 ${
                     enSub.callout.type === 'warning'
-                      ? 'border-amber-500/40 bg-amber-500/5 text-amber-900 dark:text-amber-200'
-                      : 'border-blue-500/40 bg-blue-500/5 text-slate-800 dark:text-slate-200'
+                      ? 'border-amber-500/30 bg-amber-500/5 text-amber-900 dark:text-amber-200'
+                      : 'border-blue-500/30 bg-blue-500/5 text-slate-800 dark:text-slate-200'
                   }`}
                 >
                   <div className="flex items-center gap-2 text-xs font-bold">
@@ -822,10 +848,10 @@ export const ModuleContentView: React.FC<{
                 sub.callouts?.map((c) => (
                   <div
                     key={c.title}
-                    className={`p-4 rounded-xl border space-y-1.5 ${
+                    className={`p-4 sm:p-5 rounded-xl border space-y-1.5 ${
                       c.type === 'warning'
-                        ? 'border-amber-500/40 bg-amber-500/5 text-amber-900 dark:text-amber-200'
-                        : 'border-blue-500/40 bg-blue-500/5 text-slate-800 dark:text-slate-200'
+                        ? 'border-amber-500/30 bg-amber-500/5 text-amber-900 dark:text-amber-200'
+                        : 'border-blue-500/30 bg-blue-500/5 text-slate-800 dark:text-slate-200'
                     }`}
                   >
                     <div className="flex items-center gap-2 text-xs font-bold">
@@ -847,12 +873,12 @@ export const ModuleContentView: React.FC<{
       </div>
 
       {/* Next / Prev Module Footer Navigation */}
-      <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+      <div className="flex flex-wrap items-center justify-between gap-4 pt-6 border-t border-slate-200/80 dark:border-white/[0.07]">
         {prevMod ? (
           <button
             type="button"
             onClick={() => onSelectModule(prevMod.id)}
-            className="px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-blue-500/50 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer"
+            className="px-4 py-2.5 rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0c121e] hover:border-blue-500/50 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer transition-colors"
           >
             {language === 'en'
               ? `Previous Module: ${prevMod.number}. ${prevMod.titleEn}`
@@ -865,7 +891,7 @@ export const ModuleContentView: React.FC<{
           <button
             type="button"
             onClick={() => onSelectModule(nextMod.id)}
-            className="px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white flex items-center gap-2 cursor-pointer"
+            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white flex items-center gap-2 cursor-pointer transition-colors shadow-xs"
           >
             <span>
               {language === 'en'

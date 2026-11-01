@@ -1130,8 +1130,8 @@ export const KnowledgeBaseExplorer: React.FC<{
       {/* Studio Header Card */}
       <header className="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827]/90 shadow-lg space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <span className="px-3 py-1 rounded-md bg-blue-600/15 border border-blue-500/40 text-blue-600 dark:text-blue-400 text-xs font-bold flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-blue-600 dark:text-blue-400 font-bold flex items-center gap-1.5">
               <Database className="w-3.5 h-3.5" />
               <span>
                 {language === 'en'
@@ -1139,9 +1139,10 @@ export const KnowledgeBaseExplorer: React.FC<{
                   : 'کاوشگر پایگاه دانش و حافظه ایجنت'}
               </span>
             </span>
+            <span aria-hidden="true" className="text-slate-400">·</span>
             <span
               dir="ltr"
-              className="ltr-inline text-xs font-mono text-slate-500 dark:text-slate-400"
+              className="ltr-inline font-mono text-slate-500 dark:text-slate-400"
             >
               .agent/knowledge-base/* · Context Rot Manager
             </span>
@@ -1418,7 +1419,7 @@ export const KnowledgeBaseExplorer: React.FC<{
             <span
               dir="ltr"
               data-testid="kb-stale-count"
-              className="ltr-inline px-2 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 font-mono text-xs font-bold"
+              className="ltr-inline text-amber-600 dark:text-amber-400 font-mono text-xs font-bold tabular-nums"
             >
               {telemetry.staleEntriesCount} Stale
             </span>
@@ -2106,10 +2107,11 @@ export const KnowledgeBaseExplorer: React.FC<{
                     ? 'Knowledge Tag Bubble Chart & Concept Co-Occurrence Graph (D3.js Tag Bubble Chart)'
                     : 'نمودار حبابی تگ‌های دانشی و گراف هم‌رخدادی مفاهیم معماری (D3.js Tag Bubble Chart)'}
                 </h2>
+                <span aria-hidden="true" className="text-slate-400">·</span>
                 <span
                   dir="ltr"
                   data-testid="kb-bubble-total-tags-badge"
-                  className="ltr-inline px-2.5 py-0.5 rounded-md bg-blue-500/15 border border-blue-500/30 text-blue-600 dark:text-blue-400 font-mono text-xs font-extrabold"
+                  className="ltr-inline text-blue-600 dark:text-blue-400 font-mono text-xs font-extrabold tabular-nums"
                 >
                   {tagBubbleGraph.totalUniqueTags} TAGS · {tagBubbleGraph.totalRelationships} LINKS
                 </span>

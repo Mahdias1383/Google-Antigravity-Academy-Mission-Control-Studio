@@ -3,13 +3,21 @@
 
 @layer base {
   :root {
-    --font-sans: 'Vazirmatn', system-ui, -apple-system, sans-serif;
+    --font-sans: 'Vazirmatn', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
   }
 
   html {
     font-family: var(--font-sans);
     scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background-color: rgba(59, 130, 246, 0.25);
+    color: inherit;
   }
 
   code, pre, kbd, samp, .ltr-code {

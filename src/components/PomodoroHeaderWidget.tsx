@@ -261,10 +261,10 @@ export const PomodoroHeaderWidget: React.FC<PomodoroHeaderWidgetProps> = ({
       <div
         onClick={() => setIsPopoverOpen((prev) => !prev)}
         data-testid="pomodoro-pill-button"
-        className={`group flex items-center gap-1.5 px-2.5 py-1 rounded-md border transition-colors cursor-pointer select-none ${
+        className={`group h-8 flex items-center gap-1.5 px-2.5 rounded-lg border transition-colors cursor-pointer select-none ${
           isRunning
             ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300'
-            : 'border-transparent hover:border-slate-200 dark:hover:border-white/10 hover:bg-slate-200/50 dark:hover:bg-white/[0.05] text-slate-600 dark:text-slate-300'
+            : 'border-slate-200/80 dark:border-white/[0.08] bg-slate-100/70 dark:bg-[#0c121e] hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-200/60 dark:hover:bg-white/[0.05] text-slate-600 dark:text-slate-300'
         }`}
         title={language === 'en' ? 'Pomodoro Study Timer & Deep Work Logger' : 'تایمر مطالعه پومودورو و کار عمیق (Deep Work Timer)'}
       >

@@ -29,17 +29,19 @@
   }
 }
 
-.ltr-inline {
-  font-family: var(--font-mono);
-  direction: ltr;
-  display: inline-block;
-  unicode-bidi: isolate;
-  text-align: left;
-  font-variant-numeric: tabular-nums;
-}
+@layer components {
+  .ltr-inline {
+    font-family: var(--font-mono);
+    direction: ltr;
+    display: inline-block;
+    unicode-bidi: isolate;
+    text-align: left;
+    font-variant-numeric: tabular-nums;
+  }
 
-.tabular-nums {
-  font-variant-numeric: tabular-nums;
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
 }
 
 /* Custom subtle scrollbars */

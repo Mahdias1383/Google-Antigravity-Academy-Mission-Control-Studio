@@ -469,6 +469,8 @@ export function parseKnowledgeBaseUserStateJson(rawJson: string): {
 }
 
 export type WorkspaceSectionId =
+  | 'landing'
+  | 'profile'
   | 'curriculum'
   | 'achievements'
   | 'simulator'
@@ -506,6 +508,16 @@ const STUDIO_METADATA_MAP: Record<
   Exclude<WorkspaceSectionId, 'curriculum'>,
   { titleFa: string; titleEn: string; badgeEn: string }
 > = {
+  landing: {
+    titleFa: 'صفحه اصلی و درگاه آکادمی Google Antigravity',
+    titleEn: 'Google Antigravity Academy Showcase & Portal',
+    badgeEn: 'PORTAL · ACADEMY HOME',
+  },
+  profile: {
+    titleFa: 'پروفایل و کارنامه جامع تحصیلی معمار ارشد',
+    titleEn: 'Architect Profile, Badges & Certified Transcript',
+    badgeEn: 'ARCHITECT · PROFILE & TRANSCRIPT',
+  },
   simulator: {
     titleFa: 'استودیو ۱: شبیه‌ساز زنده Mission Control و ممیزی آرتیفکت‌ها',
     titleEn: 'Studio 1: Mission Control & Inline PR Review Simulator',
@@ -2191,6 +2203,80 @@ export function buildBreadcrumbDescriptorWithTooltips(params: {
 }): BreadcrumbDescriptorWithTooltips {
   const { activeSection, language, currentModule, formattedModNumber } = params;
   const isEn = language === 'en';
+
+  if (activeSection === 'landing') {
+    const group = isEn ? 'Antigravity Academy' : 'آکادمی Antigravity';
+    const subgroup = isEn ? 'Portal' : 'درگاه اصلی';
+    const item = isEn ? 'Academy Showcase & Roadmap' : 'صفحه اصلی و نقشه راه';
+    const fullPath = `${group} / ${subgroup} / ${item}`;
+    return {
+      group,
+      subgroup,
+      item,
+      fullPath,
+      groupTooltip: {
+        title: group,
+        fullPath: group,
+        description: isEn
+          ? 'Google Antigravity Enterprise Architecture Academy and Mission Control platform.'
+          : 'پلتفرم جامع آکادمی معماری سازمانی و اتاق فرمان Antigravity.',
+        badge: 'Academy',
+      },
+      subgroupTooltip: {
+        title: subgroup,
+        fullPath: `${group} / ${subgroup}`,
+        description: isEn
+          ? 'Interactive showcase, curriculum overview, and live telemetry.'
+          : 'نمای کلی پلتفرم، سرفصل‌ها و آمار زنده دوره.',
+        badge: 'Overview',
+      },
+      itemTooltip: {
+        title: item,
+        fullPath,
+        description: isEn
+          ? 'Explore the 8-module curriculum, interactive studios, student cohort leaderboard, and architectural foundations.'
+          : 'کاوش سرفصل‌های ۸گانه، استودیوهای زنده، تابلوی نخبگان و مبانی معماری ایجنت‌محور.',
+        badge: 'Landing',
+      },
+    };
+  }
+
+  if (activeSection === 'profile') {
+    const group = isEn ? 'Architect Workspace' : 'میز کار معمار';
+    const subgroup = isEn ? 'Identity & Records' : 'شناسنامه و سوابق';
+    const item = isEn ? 'Architect Profile & Transcript' : 'پروفایل و کارنامه تحصیلی';
+    const fullPath = `${group} / ${subgroup} / ${item}`;
+    return {
+      group,
+      subgroup,
+      item,
+      fullPath,
+      groupTooltip: {
+        title: group,
+        fullPath: group,
+        description: isEn
+          ? 'Personalized architect portal with activity tracking, certifications, and transcripts.'
+          : 'پورتال اختصاصی معمار شامل پایش فعالیت‌ها، مدارک و کارنامه علمی.',
+        badge: 'Profile',
+      },
+      subgroupTooltip: {
+        title: subgroup,
+        fullPath: `${group} / ${subgroup}`,
+        description: isEn
+          ? 'Verifiable credentials, 52-week activity heatmap, and knowledge check scores.'
+          : 'مدارک قابل اعتبارسنجی، هیت‌مپ ۵۲ هفته‌ای و نمرات آزمون‌ها.',
+        badge: 'Records',
+      },
+      itemTooltip: {
+        title: item,
+        fullPath,
+        description: isEn
+          ? 'Manage your architect handle, view exam transcripts, track streaks, and export certified records.'
+          : 'مدیریت شناسه معمار، مشاهده ریزنمرات آزمون‌ها، استمرار مطالعه و دریافت کارنامه رسمی.',
+        badge: 'Transcript',
+      },
+    };
+  }
 
   if (activeSection === 'curriculum') {
     const phaseNumber = currentModule.number <= 3 ? 1 : currentModule.number <= 6 ? 2 : 3;
@@ -3913,6 +3999,20 @@ export function recordModuleKnowledgeCheckScore(params: {
     ...existingScores,
     [moduleId]: nextRecord,
   };
+}
+
+export function getStoredKnowledgeCheckScores(): Record<
+  string,
+  KnowledgeCheckModuleScoreRecord
+> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = window.localStorage.getItem(KNOWLEDGE_CHECK_SCORES_STORAGE_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
 }
 
 const PEER_KNOWLEDGE_CHECK_CANDIDATES: ReadonlyArray<{

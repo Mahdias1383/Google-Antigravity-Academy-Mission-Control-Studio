@@ -35,6 +35,8 @@ import {
   RefreshCw,
   Zap,
   Target,
+  User,
+  GraduationCap,
 } from 'lucide-react';
 import { ALL_CURRICULUM_MODULES } from './data/curriculumIndex';
 import {
@@ -87,8 +89,12 @@ import { PWAInstallButton, OfflineIndicator } from './components/PWAInstallAndOf
 import { PomodoroHeaderWidget } from './components/PomodoroHeaderWidget';
 import { Antigravity3DGame } from './components/Antigravity3DGame';
 import { InviteShareModal } from './components/InviteShareModal';
+import { LandingPage } from './components/LandingPage';
+import { ProfilePage } from './components/ProfilePage';
 
 type ActiveWorkspaceSection =
+  | 'landing'
+  | 'profile'
   | 'curriculum'
   | 'achievements'
   | 'simulator'
@@ -103,7 +109,23 @@ type ActiveWorkspaceSection =
 function MainWorkspace() {
   const { language, toggleLanguage, isRTL, t } = useLanguage();
   const [darkMode, setDarkMode] = useState<boolean>(true);
-  const [activeSection, setActiveSection] = useState<ActiveWorkspaceSection>('curriculum');
+  const [activeSection, setActiveSection] = useState<ActiveWorkspaceSection>(() => {
+    if (typeof window !== 'undefined') {
+      const p = new URLSearchParams(window.location.search).get('section');
+      if (p === 'curriculum') return 'curriculum';
+      if (p === 'profile') return 'profile';
+      if (p === 'simulator') return 'simulator';
+      if (p === 'guardrails') return 'guardrails';
+      if (p === 'mcp') return 'mcp';
+      if (p === 'achievements') return 'achievements';
+      if (p === 'knowledge-base') return 'knowledge-base';
+      if (p === 'ai-architect') return 'ai-architect';
+      if (p === 'cheatsheets') return 'cheatsheets';
+      if (p === 'game-3d') return 'game-3d';
+      if (p === 'landing') return 'landing';
+    }
+    return 'landing';
+  });
   const [activeModuleId, setActiveModuleId] = useState<string>(ALL_CURRICULUM_MODULES[0].id);
   const [completedModules, setCompletedModules] = useState<string[]>([
     'module-1',
@@ -549,9 +571,9 @@ function MainWorkspace() {
             href="#top"
             onClick={(e) => {
               e.preventDefault();
-              handleNavigate('curriculum');
+              handleNavigate('landing');
             }}
-            className="flex items-center gap-2.5 group focus:outline-none min-w-0"
+            className="flex items-center gap-2.5 group focus:outline-none min-w-0 cursor-pointer"
           >
             <div className="relative">
               <div className="absolute -inset-0.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 opacity-60 blur-xs group-hover:opacity-100 transition-opacity" />
@@ -608,6 +630,43 @@ function MainWorkspace() {
             Ctrl+K
           </kbd>
         </button>
+
+        {/* Quick Top-Level Portal Links: Landing Page & Profile */}
+        <div className="grid grid-cols-2 gap-1.5">
+          <button
+            type="button"
+            data-testid="sidebar-nav-landing-btn"
+            onClick={() => {
+              handleNavigate('landing');
+              if (isMobile) setSidebarOpen(false);
+            }}
+            className={`p-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeSection === 'landing'
+                ? 'bg-blue-600/15 border-blue-500/40 text-blue-600 dark:text-blue-400 shadow-2xs'
+                : 'border-slate-200/80 dark:border-white/[0.06] bg-slate-50 dark:bg-[#0c121e] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-blue-500/30'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+            <span className="truncate">{language === 'en' ? 'Home' : 'صفحه اصلی'}</span>
+          </button>
+
+          <button
+            type="button"
+            data-testid="sidebar-nav-profile-btn"
+            onClick={() => {
+              handleNavigate('profile');
+              if (isMobile) setSidebarOpen(false);
+            }}
+            className={`p-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeSection === 'profile'
+                ? 'bg-indigo-600/15 border-indigo-500/40 text-indigo-600 dark:text-indigo-400 shadow-2xs'
+                : 'border-slate-200/80 dark:border-white/[0.06] bg-slate-50 dark:bg-[#0c121e] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-indigo-500/30'
+            }`}
+          >
+            <GraduationCap className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+            <span className="truncate">{language === 'en' ? 'Profile' : 'کارنامه'}</span>
+          </button>
+        </div>
 
         {/* Overall Mastery Progress Bar & Visual Curved Module Path Map */}
         <div
@@ -1666,7 +1725,16 @@ function MainWorkspace() {
 
       {/* Sidebar Footer & User Standing */}
       <div className="pt-3 border-t border-slate-200/80 dark:border-white/[0.07] space-y-3 shrink-0">
-        <div className="p-3 rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200/60 dark:from-[#0d1424] dark:via-[#0b101c] dark:to-[#090d16] flex items-center justify-between gap-2 shadow-2xs">
+        <div
+          role="button"
+          tabIndex={0}
+          data-testid="sidebar-user-standing-card"
+          onClick={() => {
+            handleNavigate('profile');
+            if (isMobile) setSidebarOpen(false);
+          }}
+          className="p-3 rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200/60 dark:from-[#0d1424] dark:via-[#0b101c] dark:to-[#090d16] hover:border-indigo-500/40 transition-all flex items-center justify-between gap-2 shadow-2xs cursor-pointer group"
+        >
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="relative shrink-0">
               <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-500 text-white font-mono text-xs font-extrabold flex items-center justify-center shadow-xs">
@@ -1830,6 +1898,65 @@ function MainWorkspace() {
               )}
             </nav>
           </div>
+
+          {/* Middle: Standard Top Navigation Tabs */}
+          <nav aria-label="Primary Navigation" className="hidden lg:flex items-center gap-1">
+            <button
+              type="button"
+              data-testid="header-nav-landing-btn"
+              onClick={() => handleNavigate('landing')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeSection === 'landing'
+                  ? 'bg-blue-600/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.05]'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{language === 'en' ? 'Home' : 'صفحه اصلی'}</span>
+            </button>
+
+            <button
+              type="button"
+              data-testid="header-nav-curriculum-btn"
+              onClick={() => handleNavigate('curriculum')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeSection === 'curriculum'
+                  ? 'bg-blue-600/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.05]'
+              }`}
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>{language === 'en' ? 'Curriculum' : 'سرفصل‌ها'}</span>
+            </button>
+
+            <button
+              type="button"
+              data-testid="header-nav-achievements-btn"
+              onClick={() => handleNavigate('achievements')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeSection === 'achievements'
+                  ? 'bg-blue-600/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.05]'
+              }`}
+            >
+              <Award className="w-3.5 h-3.5" />
+              <span>{language === 'en' ? 'Achievements' : 'دستاوردها'}</span>
+            </button>
+
+            <button
+              type="button"
+              data-testid="header-nav-profile-btn"
+              onClick={() => handleNavigate('profile')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeSection === 'profile'
+                  ? 'bg-indigo-600/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.05]'
+              }`}
+            >
+              <User className="w-3.5 h-3.5 text-indigo-500" />
+              <span>{language === 'en' ? 'Profile' : 'پروفایل من'}</span>
+            </button>
+          </nav>
 
           {/* End: Quick Search, Pomodoro, XP Badge & Controls */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
@@ -2017,7 +2144,7 @@ function MainWorkspace() {
             </button>
           </div>
 
-          <div className={`px-4 sm:px-8 lg:px-12 py-8 ${isStudyMode ? 'max-w-4xl' : 'max-w-5xl'} mx-auto w-full flex-1 transition-all duration-300`}>
+          <div className={`px-4 sm:px-8 lg:px-12 py-8 ${isStudyMode ? 'max-w-4xl' : activeSection === 'landing' ? 'max-w-6xl' : 'max-w-5xl'} mx-auto w-full flex-1 transition-all duration-300`}>
             {/* Zen Distraction-Free Reading HUD */}
             {isStudyMode && activeSection === 'curriculum' && (
               <div
@@ -2108,6 +2235,27 @@ function MainWorkspace() {
                   </button>
                 </div>
               </div>
+            )}
+
+            {activeSection === 'landing' && (
+              <LandingPage
+                onStartCurriculum={(modId) => handleNavigate('curriculum', modId || 'module-1')}
+                onOpenStudio={(studioSec) => handleNavigate(studioSec)}
+                onOpenProfile={() => handleNavigate('profile')}
+                onOpenAchievements={() => handleNavigate('achievements')}
+                completedModules={completedModules}
+                totalModules={ALL_CURRICULUM_MODULES.length}
+                userXp={2900 + userBonusXp}
+              />
+            )}
+
+            {activeSection === 'profile' && (
+              <ProfilePage
+                onNavigateToModule={(modId) => handleNavigate('curriculum', modId)}
+                onNavigateToCurriculum={() => handleNavigate('curriculum')}
+                completedModules={completedModules}
+                userXp={2900 + userBonusXp}
+              />
             )}
 
             {activeSection === 'curriculum' && (

@@ -27,6 +27,8 @@ import {
   searchKnowledgeBaseFullText,
   computeQuickStudyModeTransition,
   computeReadingEstimateForModule,
+  buildBreadcrumbDescriptorWithTooltips,
+  getStoredKnowledgeCheckScores,
 } from './generators';
 import {
   CURATED_KNOWLEDGE_QUIZ_BANK,
@@ -2327,4 +2329,62 @@ test('Academy Knowledge Check Leaderboard: recordModuleKnowledgeCheckScore, buil
   assert.equal(shareEn.challengeCode, 'KC-RANK1-1875XP');
   assert.equal(shareEn.shareTitle.includes('Rank #1'), true);
 });
+
+test('Landing Page & Profile Page: breadcrumbs, section catalogs, and score storage work accurately', () => {
+  // 1. Breadcrumbs for Landing Page
+  const landingBcFa = buildBreadcrumbDescriptorWithTooltips({
+    activeSection: 'landing',
+    language: 'fa',
+    currentModule: {
+      number: 1,
+      titleFa: 'ماژول ۱',
+      titleEn: 'Module 1',
+      summaryFa: 'خلاصه',
+      readingTime: '10 min',
+      difficulty: 'Easy',
+    },
+    formattedModNumber: '۱',
+  });
+  assert.equal(landingBcFa.group, 'آکادمی Antigravity');
+  assert.equal(landingBcFa.subgroup, 'درگاه اصلی');
+  assert.equal(landingBcFa.itemTooltip.badge, 'Landing');
+
+  const landingBcEn = buildBreadcrumbDescriptorWithTooltips({
+    activeSection: 'landing',
+    language: 'en',
+    currentModule: {
+      number: 1,
+      titleFa: 'ماژول ۱',
+      titleEn: 'Module 1',
+      summaryFa: 'خلاصه',
+      readingTime: '10 min',
+      difficulty: 'Easy',
+    },
+    formattedModNumber: '1',
+  });
+  assert.equal(landingBcEn.group, 'Antigravity Academy');
+  assert.equal(landingBcEn.subgroup, 'Portal');
+
+  // 2. Breadcrumbs for Profile Page
+  const profileBcFa = buildBreadcrumbDescriptorWithTooltips({
+    activeSection: 'profile',
+    language: 'fa',
+    currentModule: {
+      number: 1,
+      titleFa: 'ماژول ۱',
+      titleEn: 'Module 1',
+      summaryFa: 'خلاصه',
+      readingTime: '10 min',
+      difficulty: 'Easy',
+    },
+    formattedModNumber: '۱',
+  });
+  assert.equal(profileBcFa.group, 'میز کار معمار');
+  assert.equal(profileBcFa.itemTooltip.badge, 'Transcript');
+
+  // 3. getStoredKnowledgeCheckScores returns valid object in node/ssr environment
+  const stored = getStoredKnowledgeCheckScores();
+  assert.deepEqual(typeof stored, 'object');
+});
+
 

@@ -1,4 +1,6 @@
 export type WorkspaceSectionId =
+  | 'landing'
+  | 'profile'
   | 'curriculum'
   | 'achievements'
   | 'simulator'
@@ -60,6 +62,18 @@ const SECTION_CATALOG: Record<
     category: 'curriculum' | 'studio';
   }
 > = {
+  landing: {
+    titleFa: 'صفحه اصلی و درگاه آکادمی',
+    titleEn: 'Academy Home & Showcase',
+    badgeCode: 'SEC-LANDING',
+    category: 'curriculum',
+  },
+  profile: {
+    titleFa: 'پروفایل و کارنامه معمار',
+    titleEn: 'Architect Profile & Transcript',
+    badgeCode: 'SEC-PROFILE',
+    category: 'curriculum',
+  },
   curriculum: {
     titleFa: 'آکادمی (۸ فصل آموزشی)',
     titleEn: 'Curriculum (8 Modules)',
@@ -471,6 +485,8 @@ export function filterActivityLogEvents(
 }
 
 export const ALL_WORKSPACE_SECTION_IDS: WorkspaceSectionId[] = [
+  'landing',
+  'profile',
   'curriculum',
   'achievements',
   'simulator',
@@ -484,6 +500,8 @@ export const ALL_WORKSPACE_SECTION_IDS: WorkspaceSectionId[] = [
 ];
 
 export const SECTION_CHART_COLORS: Record<WorkspaceSectionId, string> = {
+  landing: '#2563eb',
+  profile: '#8b5cf6',
   curriculum: '#6366f1',
   achievements: '#f59e0b',
   simulator: '#3b82f6',
@@ -500,6 +518,8 @@ export interface ActivityDateSectionDatum {
   date: string;
   shortDate: string;
   total: number;
+  landing: number;
+  profile: number;
   curriculum: number;
   achievements: number;
   simulator: number;
@@ -553,6 +573,8 @@ export function aggregateActivityEventsByDateAndSection(
         date: dateKey,
         shortDate,
         total: 0,
+        landing: 0,
+        profile: 0,
         curriculum: 0,
         achievements: 0,
         simulator: 0,

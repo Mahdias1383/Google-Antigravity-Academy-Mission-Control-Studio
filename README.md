@@ -5,38 +5,37 @@
 <br />
 
 # Google Antigravity Academy & Mission Control Studio
-
-### The Comprehensive Interactive Workbench, Agent-First Simulator & Architecture Masterclass
+### آکادمی جامع معماری نرم‌افزار ایجنت‌محور و اتاق فرمان تعاملی
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8+-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React 19](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=090d16)](https://react.dev/)
 [![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 [![D3.js](https://img.shields.io/badge/D3.js-v7-F9A03C?style=for-the-badge&logo=d3.js&logoColor=white)](https://d3js.org/)
-[![Firebase Firestore](https://img.shields.io/badge/Firebase-Firestore_%26_Auth-FFCA28?style=for-the-badge&logo=firebase&logoColor=090d16)](https://firebase.google.com/)
-[![PWA Offline Ready](https://img.shields.io/badge/PWA-Installable_%26_Offline-10B981?style=for-the-badge&logo=pwa&logoColor=white)](https://web.dev/progressive-web-apps/)
-[![CI / Automated Tests](https://img.shields.io/badge/Tests-26%20Passed-10B981?style=for-the-badge&logo=githubactions&logoColor=white)](./.github/workflows/main.yml)
+[![Three.js WebGL](https://img.shields.io/badge/Three.js-WebGL_3D-000000?style=for-the-badge&logo=three.js&logoColor=white)](https://threejs.org/)
+[![PWA Ready](https://img.shields.io/badge/PWA-Installable_%26_Offline-10B981?style=for-the-badge&logo=pwa&logoColor=white)](https://web.dev/progressive-web-apps/)
+[![Automated QA Tests](https://img.shields.io/badge/QA_Tests-46%20Passed-10B981?style=for-the-badge&logo=githubactions&logoColor=white)](./src/utils/generators.test.ts)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-F59E0B?style=for-the-badge)](./LICENSE)
 
 <p align="center">
-  <strong>An elite developer platform and interactive engineering workbench dedicated to mastering Agent-First Systems, Multi-Agent Orchestration, and Autonomous IDE Workflows with <a href="https://antigravity.google/docs">Google Antigravity</a>.</strong>
+  <strong>An elite developer platform, architectural masterclass, and live engineering simulator designed to master Agent-First Systems, Deterministic Guardrails, FastMCP 2.0, and Autonomous Multi-Agent Workspaces with <a href="https://antigravity.google/docs">Google Antigravity</a>.</strong>
 </p>
 
 <!-- Quick Navigation Action Badges -->
 <p align="center">
-  <a href="#-local-development-guide-step-by-step">
-    <img src="https://img.shields.io/badge/⚡_Local_Development_Guide-10B981?style=for-the-badge&logoColor=white" alt="Local Development Guide" />
+  <a href="#-quick-tour--visual-interface-showcase">
+    <img src="https://img.shields.io/badge/🖼️_Visual_Tour-8B5CF6?style=for-the-badge&logoColor=white" alt="Visual Tour" />
   </a>
-  <a href="#-key-features--workbench-capabilities">
-    <img src="https://img.shields.io/badge/✨_Features_Overview-2563EB?style=for-the-badge&logoColor=white" alt="Features Overview" />
-  </a>
-  <a href="#-structured-technology-stack-summary">
-    <img src="https://img.shields.io/badge/🛠️_Technology_Stack-F9A03C?style=for-the-badge&logoColor=white" alt="Technology Stack" />
+  <a href="#-key-features--capabilities">
+    <img src="https://img.shields.io/badge/✨_Features-2563EB?style=for-the-badge&logoColor=white" alt="Features Overview" />
   </a>
   <a href="#-8-module-engineering-curriculum">
     <img src="https://img.shields.io/badge/📚_8--Module_Curriculum-0F172A?style=for-the-badge&logoColor=white" alt="Curriculum" />
   </a>
-  <a href="#-interactive-studios--simulators">
-    <img src="https://img.shields.io/badge/🎛️_Interactive_Studios-6366F1?style=for-the-badge&logoColor=white" alt="Interactive Studios" />
+  <a href="#-architect-profile--learning-transcript">
+    <img src="https://img.shields.io/badge/👤_Profile_%26_Transcripts-10B981?style=for-the-badge&logoColor=white" alt="Profile and Transcripts" />
+  </a>
+  <a href="#-local-development--quickstart">
+    <img src="https://img.shields.io/badge/⚡_Quickstart_%26_Env-F9A03C?style=for-the-badge&logoColor=white" alt="Quickstart and Environment" />
   </a>
   <a href="./CONTRIBUTING.md">
     <img src="https://img.shields.io/badge/🤝_Contributing-4F46E5?style=for-the-badge&logoColor=white" alt="Contributing Guide" />
@@ -47,362 +46,192 @@
 
 ---
 
-## 🌌 Overview
+## 🌟 معرفی پروژه (Project Overview)
 
-**Google Antigravity Academy & Mission Control Studio** is an open-source, production-grade educational platform and hands-on engineering simulator built for **Principal AI Systems Architects, Staff Engineers, and Engineering Leaders** making the paradigm leap from synchronous, line-by-line copilot autocompletions to **Asynchronous, Artifact-Driven Multi-Agent Engineering**.
+پلتفرم **Google Antigravity Academy & Mission Control Studio** یک بستر آموزشی و شبیه‌ساز مهندسی سطح سازمانی (Enterprise-Grade) است که برای **معماران ارشد سیستم‌های هوش مصنوعی (Principal AI Systems Architects)، مهندسان ارشد و مدیران فنی** بازطراحی شده است تا تحول بنیادین از اتوکامپلیت‌های خط‌به‌خط (Copilot) به سمت **مهندسی ایجنت‌محور خودکار و مبتنی بر آرتیفکت** را محقق سازد.
 
-Rather than presenting static documentation walls, this workbench provides a live, telemetry-rich environment to **simulate, configure, audit, and benchmark** real-world Antigravity development flows:
-- **Dual-View Ergonomics:** Mastering the interaction boundary between real-time **Editor View** (`Supercomplete`, `Tab-to-Jump`, `Inline Command`) and asynchronous **Agent Manager** orchestration.
-- **Audit-First Artifact Lifecycles:** Enforcing explicit verification gates via structured `task.md`, `implementation_plan.md`, and `walkthrough.md` files.
-- **Strict Context Engineering:** Designing `.agent/rules/*.md` and `.agent/workflows/*.md` to prevent Context Rot and optimize token budgets.
-- **Enterprise Integrations:** Visual configuring of the Model Context Protocol (**MCP**), Python `FastMCP` servers, and parallel Git Worktree pipelines.
+> Moving from synchronous, line-by-line copilot completions to **Asynchronous, Artifact-Driven Multi-Agent Engineering**.
+
+این سامانه به جای ارائه مستندات خشک متنی، یک محیط آزمایشگاهی کاملاً تعاملی با قابلیت اجرای زنده کد، ممیزی اسناد `task.md` و `implementation_plan.md`، مهار پوسیدگی زمینه (Context Rot)، تست پروتکل FastMCP 2.0 و ارکستریشن چندایجنتی روی شاخه‌های ایزوله Git Worktree فراهم آورده است.
 
 ---
 
-## 🛠️ Structured Technology Stack Summary
+## 🖼️ گشت بصری در محیط برنامه (Visual Interface Showcase)
 
-The following matrix outlines the production technologies, versions, and architectural responsibilities that power the workbench:
+### ۱. لندپیج جذاب آکادمی و نقشه راه جامع (Academy Landing Page & Roadmap)
+نمای صفحه اصلی آکادمی شامل شمارنده‌های زنده تلمتری، سرفصل‌های ۸گانه دوره، استودیوهای تعاملی، جدول نخبگان و ماموریت‌های روزانه معمار:
 
-| Architectural Layer | Technology / Framework | Version | Core Role & Responsibility |
-| :--- | :--- | :--- | :--- |
-| **Frontend Framework** | [React](https://react.dev/) | `^19.0.0` | Reactive UI, concurrent rendering, and hooks-based state management |
-| **Language & Typing** | [TypeScript](https://www.typescriptlang.org/) | `~5.8.2` | Strict end-to-end type safety across client, server, and curriculum data |
-| **Styling & Design System** | [Tailwind CSS v4](https://tailwindcss.com/) | `^4.0.0` | Zero-runtime CSS, dark/light glassmorphic UI, and bidirectional RTL/LTR layout |
-| **Data Visualization Engine** | [D3.js](https://d3js.org/) | `^7.9.0` | 52-week calendar heatmaps and concept tag bubble co-occurrence graphs |
-| **Backend & Development** | [Express 4](https://expressjs.com/) + [Vite 6](https://vite.dev/) | `^4.21.2` / `^6.2.0` | Full-stack proxy, Gemini API integration, and lightning-fast build pipeline |
-| **Persistence & Cloud Sync** | [Firebase Firestore & Auth](https://firebase.google.com/) | `^11.4.0` | User telemetry backup, Google authentication, and zero-trust security rules |
-| **Offline Engine & PWA** | [Vite PWA (Workbox)](https://vite-pwa-org.netlify.app/) | `^0.21.1` | Service worker caching, offline asset fallback, and desktop/mobile installability |
-| **Motion & Micro-Interactions** | [Motion (Framer)](https://motion.dev/) | `^12.4.7` | Fluid layout transitions, modal overlays, and interactive stepper animations |
-| **Iconography** | [Lucide React](https://lucide.dev/) | `^1.16.0` | Crisp, accessible SVG iconography across all navigation and studio views |
-| **Unit Testing Framework** | [Node.js Test Runner](https://nodejs.org/api/test.html) + [tsx](https://github.com/privatenumber/tsx) | Native / `^4.19.3` | Decoupled pure-logic unit testing with zero runtime overhead |
-| **Security & Quality Auditing** | [ESLint](https://eslint.org/) + [@firebase/security-rules](https://www.npmjs.com/package/@firebase/eslint-plugin-security-rules) | `^9.21.0` | AST validation and automated security auditing for `firestore.rules` |
+<div align="center">
+  <img src="./public/assets/aistudio/image_fda022d4.png" alt="Google Antigravity Landing Page & Curriculum Roadmap" width="900" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);" />
+  <p><em>نمای لندپیج اختصاصی آکادمی: نقشه راه فازبندی‌شده، معرفی استودیوها، آزمون‌های تحلیلی و تابلوی نخبگان</em></p>
+</div>
+
+<br />
+
+### ۲. شبیه‌ساز زنده اتاق فرمان و ممیزی آرتیفکت‌ها (Mission Control Simulator)
+شبیه‌ساز محیط دوگانه **Editor View** و **Agent Manager** همراه با فرآیند ممیزی گیت‌های تایید انسان در حلقه (Human-in-the-Loop):
+
+<div align="center">
+  <img src="./public/assets/aistudio/image_3d4ce0e1.png" alt="Mission Control Simulator & Artifact Auditor" width="900" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);" />
+  <p><em>شبیه‌ساز اتاق فرمان: اجرای دستورات زنده، بررسی تلمتری و ممیزی فایل‌های task.md و implementation_plan.md</em></p>
+</div>
+
+<br />
+
+### ۳. استودیوی بصری FastMCP و گراف دانش پایدار D3 (FastMCP & Knowledge Base)
+محیط توسعه سرورهای پایتون FastMCP 2.0، بازرس بسته‌های JSON-RPC و گراف خوشه‌ای مفاهیم همراه با هیت‌مپ ۵۲ هفته‌ای:
+
+<div align="center">
+  <img src="./public/assets/aistudio/image_73440cb6.png" alt="FastMCP Visual Studio and Context Rot Sentinel" width="900" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);" />
+  <p><em>استودیوی FastMCP و پایگاه دانش: هرس حافظه پوسیده (Context Rot)، بازرس JSON-RPC و نمودار حباب‌های تعاملی</em></p>
+</div>
 
 ---
 
-## 🏛️ System Architecture
+## ✨ ویژگی‌ها و قابلیت‌های کلیدی (Key Features & Capabilities)
 
-The application runs as a cohesive full-stack TypeScript workspace pairing an Express.js API proxy with Vite 6, React 19, Tailwind CSS v4, D3.js interactive telemetry, and Firebase Cloud Firestore:
+### 🚀 ۱. لندپیج استاندارد و مدرن (Flagship Educational Landing Page)
+- **هدر الهام‌بخش با تلمتری زنده:** نمایش ۴ آمار حیاتی آکادمی (۸ فصل تخصصی، ۴ استودیو، ۴۶+ تست خودکار و ۲,۹۰۰+ میانگین XP).
+- **نقشه راه تعاملی فازبندی‌شده:** فیلتر بر اساس فاز ۱ (معماری هسته)، فاز ۲ (قوانین و کانتکست) و فاز ۳ (FastMCP و مقیاس‌پذیری).
+- **ویترین استودیوهای تعاملی:** کارت‌های هدایت مستقیم به شبیه‌سازها با یک کلیک.
+- **پیش‌نمایش جدول نخبگان آکادمی:** نمایش رده‌بندی برترین معماران همراه با شناسه‌های ایمن، امتیاز XP و دقت در کوییزها.
+- **ماموریت روزانه معمار (Daily Mission):** تسک تصادفی معماری همراه با پاداش امتیاز XP جهت ارتقای استمرار مطالعه.
 
-```text
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                                   CLIENT SPA (React 19)                                │
-│                                                                                        │
-│  ┌─────────────────────────┐  ┌───────────────────────────┐  ┌──────────────────────┐  │
-│  │ 8-Module Curriculum UI  │  │ 3 Interactive Studios     │  │ Achievements & Rank  │  │
-│  │ • Editor vs Agent Mgr   │  │ • Mission Control PR Sim  │  │ • Mastery Ranks      │  │
-│  │ • Artifact Workflows    │  │ • Rule & Workflow Studio  │  │ • Daily Study Timer  │  │
-│  │ • Terminal & Autonomy   │  │ • Enterprise FastMCP Bldr │  │ • Rare Trophy Case   │  │
-│  └───────────┬─────────────┘  └─────────────┬─────────────┘  └──────────┬───────────┘  │
-│              │                              │                           │              │
-│  ┌───────────┴──────────────────────────────┴───────────────────────────┴───────────┐  │
-│  │                   D3.js Data Telemetry & Analytics Engine                        │  │
-│  │     • 52-Week Activity Heatmap  • Concept Tag Co-occurrence Bubble Graph        │  │
-│  └──────────────────────────────────────────┬───────────────────────────────────────┘  │
-│                                             │                                          │
-│  ┌──────────────────────────────────────────┴───────────────────────────────────────┐  │
-│  │   Offline Engine (PWA Workbox)   │   Client Data Layer (LocalStorage & JSON IO)  │  │
-│  └──────────────────────┬───────────────────────────────────┬───────────────────────┘  │
-└─────────────────────────┼───────────────────────────────────┼──────────────────────────┘
-                          │                                   │
-                          ▼                                   ▼
-          ┌───────────────────────────────┐   ┌───────────────────────────────┐
-          │  Express 4 + Vite Full-Stack  │   │  Firebase Firestore & Auth    │
-          │  • /api/antigravity/assistant │   │  • ABAC Zero-Trust Rules      │
-          │  • Gemini 3.8 Flash Proxy     │   │  • Cross-Device Cloud Sync    │
-          │  • Live Search Grounding      │   │  • Elevated Security Guard    │
-          └───────────────────────────────┘   └───────────────────────────────┘
+### 👤 ۲. پروفایل و کارنامه جامع تحصیلی (Architect Profile & Transcript)
+- **کارت شناسنامه معمار:** نام قابل ویرایش (ذخیره پایدار در مرورگر)، شناسه رسمی، سطح مهارت و آواتار سفارشی.
+- **پایش پیشرفت و XP:** نوار وضعیت ارتقا به سطح ۵ (Principal Architect) و نمایش استمرار مطالعه (Study Streak).
+- **هیت‌مپ فعالیت سالانه (۵۲ هفته):** گرید سبک گیت‌هاب جهت رهگیری تعاملات روزانه، جلسات پومودورو و کوییزها.
+- **مجموعه نشان‌ها و گواهینامه‌های رسمی:** نشان‌های قابل بازگشایی (Dual-Surface Pilot, Context Rot Sentinel, FastMCP 2.0 Architect, Quiz Grandmaster).
+- **جدول ریزنمرات آزمون‌های سنجش مهارت (Knowledge Check Transcripts):** ثبت نمرات آزمون‌های ۳ سوالی هر ماژول با قابلیت آزمون مجدد.
+- **خروجی استاندارد JSON:** امکان دانلود کارنامه با کد اعتبارسنجی یکتا (`antigravity-transcript-*.json`).
+
+### 📚 ۳. سرفصل‌های ۸گانه معمار ارشد (8-Module Curriculum)
+| شماره | عنوان فصل (Persian / English) | فاز | مدت زمان | مبحث کلیدی |
+|---|---|---|---|---|
+| **۰۱** | **معماری دوگانه ویرایشگر و مدیر**<br>Dual-Surface Architecture | فاز ۱ | ۱۵ دقیقه | مرز Editor View و Agent Manager |
+| **۰۲** | **چرخه عمر آرتیفکت‌های تاییدپذیر**<br>Verifiable Artifact Lifecycles | فاز ۱ | ۲۰ دقیقه | گیت‌های ممیزی task.md و plan.md |
+| **۰۳** | **امنیت ترمینال و ایزولاسیون دستورات**<br>Terminal Sandboxing & Guardrails | فاز ۱ | ۱۸ دقیقه | جلوگیری از فرامین مخرب `rm -rf` |
+| **۰۴** | **قوانین ۴ حالته و مهار Context Rot**<br>4-Mode Rules & Context Hygiene | فاز ۲ | ۲۵ دقیقه | Always On, Glob, Model, Manual |
+| **۰۵** | **پایپ‌لاین‌های اتوماسیون // turbo**<br>Deterministic Workflow Pipelines | فاز ۲ | ۲۲ دقیقه | دستورات بدون توقف توربو و SOP |
+| **۰۶** | **عامل مرورگر و تلمتری بازرسی UI**<br>Browser Subagents & DOM Testing | فاز ۲ | ۳۰ دقیقه | تست‌های خودکار Playwright و کنسول |
+| **۰۷** | **توسعه سرورهای FastMCP 2.0 در پایتون**<br>FastMCP 2.0 Server Development | فاز ۳ | ۳۵ دقیقه | JSON-RPC، ابزارهای سفارشی و منابع |
+| **۰۸** | **ارکستریشن چندایجنتی روی Git Worktree**<br>Parallel Multi-Agent Worktrees | فاز ۳ | ۴۰ دقیقه | اجرای موازی چند ایجنت بدون کانفلیکت |
+
+### 🛠️ ۴. استودیوهای تعاملی (Interactive Engineering Sandboxes)
+- **Mission Control Simulator:** شبیه‌سازی زنده تبادل فرامین، تولید خودکار کد و ممیزی اسناد.
+- **Rule & Workflow Studio:** طراحی قوانین `.agent/rules/*.md` و ارزیابی زنده ریسک دستورات در محیط‌های Sandboxed.
+- **FastMCP Visual Studio:** تولید کد سرورهای پایتون با دکوراتورهای `@mcp.tool` و تولید فایل پیکربندی `mcp_config.json`.
+- **Architect Scenario Lab:** ۸ سناریوی بحران در پروداکشن واقعی با تحلیل تریدآف و فیدبک تحلیلی.
+- **Knowledge Base Explorer:** پایگاه دانش مبتنی بر D3 با نمودارهای خوشه‌ای و پالایش توکن‌ها.
+- **3D Cyber Arena Defense Game:** شبیه‌ساز گیم سه‌بعدی WebGL با Three.js برای دفاع ایجنت در برابر حملات سایبری.
+
+---
+
+## 🛠️ ساختار ماژولار و مهندسی پروژه (Modular Architecture)
+
+```
+├── .env                  # متغیرهای محیطی محلی توسعه
+├── .env-sample           # فایل نمونه متغیرهای استاندارد
+├── .env.example          # فایل مستندسازی متغیرها برای کلود
+├── public/               # دارایی‌های استاتیک، آیکون‌ها و تصاویر
+│   ├── assets/aistudio/  # تصاویر محیط کاربری و شبیه‌سازها
+│   └── github-banner.svg # بنر رسمی ریپازیتوری
+├── src/
+│   ├── components/       # کامپوننت‌های مستقل و ماژولار
+│   │   ├── LandingPage.tsx                      # لندپیج جامع آکادمی
+│   │   ├── ProfilePage.tsx                      # پروفایل و کارنامه معمار
+│   │   ├── ModuleContentView.tsx                # نمایشگر محتوای سرفصل‌ها
+│   │   ├── ModuleKnowledgeCheck.tsx             # آزمون ۳ سوالی انتهای هر ماژول
+│   │   ├── AcademyKnowledgeCheckLeaderboard.tsx # جدول رده‌بندی نخبگان
+│   │   └── ...
+│   ├── studios/          # استودیوهای زنده مهندسی
+│   │   ├── MissionControlSimulator.tsx          # شبیه‌ساز Mission Control
+│   │   ├── GuardrailAutomationStudio.tsx        # استودیوی قوانین و پایپ‌لاین
+│   │   └── McpCheatSheetScenarioStudios.tsx     # استودیوی FastMCP و سناریوها
+│   ├── data/             # سرفصل‌ها و داده‌های معماری
+│   ├── utils/            # موتورهای الگوریتمی و تست‌ها
+│   │   ├── generators.ts                        # موتورهای لیدربورد، هیت‌مپ و آزمون‌ها
+│   │   └── generators.test.ts                   # ۴۶ تست اتوماتیک با node:test
+│   ├── context/          # زمینه زبان و مدیریت RTL/LTR دوطرفه
+│   └── types/            # تایپ‌های قدرتمند TypeScript
+├── server.ts             # سرور پروداکشن Express + پروکسی Vite
+└── package.json          # اسکریپت‌ها و وابستگی‌ها
 ```
 
 ---
 
-## ✨ Key Features & Workbench Capabilities
+## ⚡ راهنمای راه‌اندازی و توسعه محلی (Local Development & Quickstart)
 
-### 1. 📖 Unabridged 8-Module Curriculum
-Full technical depth covering the complete specification of `antigravity.google/docs` with zero placeholders, interactive code sandboxes (Python Async, TypeScript, SQL, Bash), and architecture comparison matrices.
+### پیش‌نیازها
+- **Node.js**: نسخه `18.0` یا بالاتر (`v20.x` یا `v22.x` پیشنهاد می‌شود)
+- **npm** یا **bun** یا **pnpm**
 
-### 2. 🎛️ 3 Interactive Mission Control Studios + 8 Production Scenarios
-- **Mission Control & PR Review Simulator:** Run a simulated 4-stage asynchronous agent execution pipeline, review diffs, attach inline audit comments to `implementation_plan.md`, and verify Chromium visual telemetry.
-- **Rule, Workflow & Guardrail Studio:** Build `.agent/rules/*.md` with 4 activation modes (`Always On`, `Glob`, `Model Decision`, `Manual`) and `.agent/workflows/*.md` with `// turbo` directives, featuring a live **Context Window Token Overhead** calculator.
-- **Enterprise FastMCP Server Builder:** Visually configure connectors (PostgreSQL, GitHub Enterprise, OpenSearch, Rocket.Chat) to generate valid `mcp_config.json` and production Python `FastMCP` server code.
-
-### 3. 📊 D3.js Data Visualizations
-- **52-Week Yearly Calendar Heatmap:** Visualizes daily knowledge base usage frequency and research velocity over the past year.
-- **Concept Tag Bubble Graph:** Interactive D3 force-directed tag pack demonstrating engineering concept relationships, occurrence counts, and co-occurrence clusters.
-
-### 4. 🔍 Full-Text Search & Live Tag Filtering
-Instant real-time search across the entire knowledge base with substring content matching and a multi-category dropdown filter to isolate topics by engineering domain.
-
-### 5. 🎖️ Mastery Rank System & Gamification
-- **Mastery Ranks:** Four progressive titles (`Trainee` → `Specialist` → `Architect` → `Principal`) calculated deterministically from accumulated XP and completed milestones.
-- **Streak Tracker:** Real-time consecutive study streak counter with automatic milestone badges at **7**, **30**, and **100** days.
-- **Daily Planner & Timer:** Customizable target study sessions with an active `MM:SS` timer and weekly target ratio visualization.
-- **Trophy Case:** Digital trophies spanning Common, Rare, Epic, Legendary, and Mythic tiers.
-
-### 6. 💾 Bulk Data Management & Backup Engine
-One-click JSON bulk export of learning history, unlocked badges, and accumulated XP for external backup, sharing, or migration between development environments.
-
-### 7. 📄 Scoped On-Demand PDF Export Engine
-Export any chapter, cheat sheet, generated configuration, or report card as a clean, high-contrast, print-optimized standalone PDF.
-
-### 8. ☁️ Cloud Firestore Persistence & Google Auth
-Seamless cloud backup for learning telemetry backed by hardened Attribute-Based Access Control (`firestore.rules`) and verified via `@firebase/eslint-plugin-security-rules`.
-
-### 9. 📲 Installable Offline-First PWA
-Complete Progressive Web App with custom service worker caching (Workbox), custom vector emblems, offline fallback indicator, and desktop/mobile installability.
-
----
-
-## 📚 8-Module Engineering Curriculum
-
-| Module | Chapter Title | Core Engineering Concepts | Artifacts & Output |
-| :---: | :--- | :--- | :--- |
-| **01** | **Core Architecture: Editor View vs. Agent Manager** | Synchronous Copilot era vs. Asynchronous Agent-First orchestration | `Supercomplete`, `Tab-to-Jump`, `Cmd/Ctrl + I`, `@file` / `@rule` / `@mcp` |
-| **02** | **Artifact-Driven Engineering & Inline Auditing** | Audit-first development loops and structured verification gates | `task.md`, `implementation_plan.md`, `walkthrough.md`, Inline PR Review |
-| **03** | **Execution Modes, Terminal Policies & Autonomy** | Balancing velocity with safety in automated terminal operations | `Planning` vs. `Fast Mode`, Terminal `Off`/`Auto`/`Turbo`, Command Allow/Deny Lists |
-| **04** | **Context Engineering & `.agent/rules` Architecture** | Eliminating Context Rot and enforcing codebase invariants | `.agent/rules/*.md`, YAML Frontmatter, 4 Activation Modes |
-| **05** | **Workflows, Slash Commands & Turbo Pipelines** | Standardizing repeatable team procedures and zero-friction commands | `.agent/workflows/*.md`, `/safe-migration`, `// turbo`, `// turbo-all` |
-| **06** | **Browser Subagent & Visual E2E Telemetry** | Automated browser verification and frontend visual regression testing | Headless Chromium AXTree, Network Interception, `WebP` Visual Proof |
-| **07** | **Enterprise Model Context Protocol (MCP) & FastMCP** | Standardized tool and data integration for enterprise infrastructure | `mcp_config.json` (`stdio`/`sse`), Python `FastMCP` (`@mcp.tool`, `@mcp.resource`) |
-| **08** | **Multi-Agent Orchestration, Git Worktrees & ROI** | Scalable agent parallelism, knowledge curation, and engineering economics | Parallel `Git Worktrees`, `Inbox` Triage, Persistent Knowledge Base, Zero Context Rot |
-
----
-
-## 💻 Local Development Guide (Step-by-Step)
-
-Follow this step-by-step guide to clone, install dependencies, configure, test, and run the complete workbench locally on your machine.
-
-### Step 1: System Prerequisites
-
-Ensure you have the following installed on your operating system:
-- **Node.js:** Version `20.0.0` or higher (recommended: `22.x LTS`)
-- **npm:** Version `10.0.0` or higher
-- **Git:** Version `2.30+`
-- **Modern Web Browser:** Chrome, Chromium, Edge, Firefox, or Safari
-
-Verify your environment by running:
+### ۱. کلون ریپازیتوری
 ```bash
-node -v   # Should output v20.x.x or higher
-npm -v    # Should output 10.x.x or higher
-git --version
+git clone https://github.com/mmmas1383/google-antigravity-academy.git
+cd google-antigravity-academy
 ```
 
----
-
-### Step 2: Clone the Repository
-
-Clone the project repository to your local machine and navigate into the root directory:
-
+### ۲. تنظیم فایل‌های محیطی (`.env` و `.env-sample`)
+فایل نمونه را کپی کرده و در صورت نیاز متغیرها را تنظیم کنید:
 ```bash
-git clone https://github.com/<your-username>/google-antigravity-academy-studio.git
-cd google-antigravity-academy-studio
+cp .env-sample .env
+```
+محتوای پیش‌فرض فایل `.env`:
+```ini
+PORT=3000
+NODE_ENV=development
+APP_URL=http://localhost:3000
+VITE_APP_NAME="Google Antigravity Academy & Mission Control"
+VITE_APP_DEFAULT_LANG=fa
+VITE_APP_THEME=dark
+GEMINI_API_KEY=""
 ```
 
----
-
-### Step 3: Install Dependencies
-
-Install all production and development dependencies using `npm install`:
-
+### ۳. نصب وابستگی‌ها
 ```bash
 npm install
 ```
 
-> **Note:** This installs all core libraries including React 19, Vite 6, Tailwind CSS v4, Express, D3.js, Firebase, Motion, Lucide icons, and the ESLint security rule plugins.
-
----
-
-### Step 4: Configure Environment Variables
-
-The project includes an `.env.example` file with documented variable definitions:
-
-1. Copy the example environment file to `.env`:
-   ```bash
-   cp .env.example .env
-   ```
-
-2. *(Optional)* Configure your Google Gemini API Key:
-   Open `.env` in your editor:
-   ```ini
-   # Optional: Enables real-time AI assistant search grounding via Google GenAI SDK.
-   # If left empty, the built-in offline architectural knowledge base serves responses gracefully.
-   GEMINI_API_KEY="your-gemini-api-key-here"
-
-   # App hosting URL (defaults to http://localhost:3000 in local development)
-   APP_URL="http://localhost:3000"
-   ```
-
-3. **Firebase Cloud Configuration:**
-   - The repository comes pre-bundled with a ready-to-use development configuration in `firebase-applet-config.json`.
-   - The application functions **100% offline-first** using `localStorage` even without an active internet connection.
-   - If you want to connect your own Firebase project, simply update the fields in `firebase-applet-config.json` with your project's credentials.
-
----
-
-### Step 5: Start the Development Server
-
-Start the full-stack Express + Vite development server:
-
+### ۴. اجرای سرور توسعه (Dev Server)
 ```bash
 npm run dev
 ```
+برنامه در آدرس `http://localhost:3000` به صورت زنده در دسترس قرار می‌گیرد.
 
-You should see output similar to:
-```text
-🚀 Antigravity Full-Stack Server listening on http://localhost:3000
-   Express API routes mounted at /api/antigravity/*
-   Vite client SPA mounted with HMR disabled
-```
-
-Open your browser and navigate to:
-👉 **`http://localhost:3000`**
-
----
-
-### Step 6: Run Automated Tests
-
-The repository includes a comprehensive unit test suite leveraging Node.js native test runner (`node:test`) and `tsx`. The tests validate all pure generators, token overhead calculators, D3 data structures, Mastery Rank calculations, and Cloud Firestore security rules.
-
-Run the test suite:
+### ۵. اجرای تست‌های خودکار تضمین کیفیت (QA Test Suite)
 ```bash
 npm test
 ```
+این دستور **۴۶ تست مستقل واحد و تجمیعی** در `src/utils/generators.test.ts` و فایل‌های امنیتی را بدون خطا اجرا می‌کند.
 
-Expected test result:
-```text
-✔ Firestore security rules enforce all 8 hardened pillars and reject Dirty Dozen patterns
-✔ buildRuleMarkdown generates valid Glob frontmatter and selected domain sections
-✔ buildWorkflowMarkdown respects // turbo-all vs step-level // turbo directives
-✔ recommendAutonomyPolicy enforces Request Review for enterprise-prod and destructive DB access
-✔ buildMcpConfigJson and buildFastMcpPythonCode generate valid JSON and FastMCP tools
-✔ estimateRuleTokenOverhead calculates lower per-turn cost for Glob than Always On
-✔ calculateStreakSummary computes current consecutive streak and longest streak
-✔ buildKnowledgeBaseYearlyCalendarHeatmap constructs 52-week D3 calendar heatmap
-✔ searchKnowledgeBaseFullText filters knowledge items in real-time by title and content
-✔ calculateMasteryRankStanding assigns Trainee, Specialist, Architect, and Principal ranks
-...
-1..26
-# tests 26
-# pass 26
-# fail 0
-```
-
----
-
-### Step 7: Linting & Security Rule Auditing
-
-Validate TypeScript types across the entire project:
+### ۶. بیلد پروداکشن و بررسی استاتیک
 ```bash
 npm run lint
-```
-
-Audit Cloud Firestore security rules for anti-patterns or logic vulnerabilities:
-```bash
-npx eslint firestore.rules
-```
-
----
-
-### Step 8: Production Build & Local Preview
-
-To build the project for production deployment:
-
-```bash
-# 1. Compile the production bundle and generate the PWA service worker
 npm run build
-
-# 2. Test the compiled production build locally
-npm start
-```
-
-The production server will serve the optimized bundle from the `dist/` directory at **`http://localhost:3000`**.
-
----
-
-## 🛠️ Troubleshooting Local Setup
-
-| Issue | Cause | Solution |
-| :--- | :--- | :--- |
-| **Port 3000 already in use** | Another process is occupying port 3000 | Find and terminate the process: <br />`lsof -ti :3000 \| xargs kill -9` or edit `PORT = 3000` in `server.ts`. |
-| **`WebSocket closed without opened`** | HMR WebSocket connection blocked or disabled | Expected in containerized environments; HMR is intentionally set to `false` in `server.ts` to ensure stable runtime. |
-| **Firebase offline warning** | Device is offline or project network sandbox blocks WebChannel | The app will automatically run in local mode; user progress, XP, and streaks are safely persisted in `localStorage`. |
-| **Type errors during `npm run lint`** | Stale TypeScript build cache | Run `npx tsc --build --clean` followed by `npm run lint`. |
-| **Service Worker not updating** | Browser cached previous PWA service worker | Open DevTools (`F12`), go to **Application > Service Workers**, and click **Unregister** or check **Update on reload**. |
-
----
-
-## 📂 Project Structure
-
-```text
-├── .github/
-│   └── workflows/
-│       └── main.yml                         # GitHub Actions CI (Node 22, Install, Lint, Test, Build)
-├── public/
-│   ├── github-banner.svg                    # Repository banner graphic
-│   ├── icon.svg                             # Scalable application emblem
-│   └── pwa-*.png / apple-touch-icon.png     # PWA icons and app store manifests
-├── src/
-│   ├── components/
-│   │   ├── AchievementsCertificationView.tsx # Mastery Ranks, XP Engine, Daily Streak & Cloud Sync
-│   │   ├── CodeAndPdfTools.tsx              # Syntax-highlighted code blocks & Scoped PDF export
-│   │   ├── GlobalSearchAndAiCopilot.tsx     # Cmd+K Instant search modal & Gemini assistant
-│   │   ├── KnowledgeBaseExplorer.tsx        # D3 Yearly Heatmap, Tag Bubble Graph & Full-Text Search
-│   │   ├── ModuleContentView.tsx            # Interactive curriculum reader, matrices & TOC
-│   │   └── PWAInstallAndOffline.tsx         # PWA install prompt & offline status indicator
-│   ├── data/
-│   │   ├── modulesPart1.ts                  # Modules 01–04 full curriculum data
-│   │   ├── modulesPart2.ts                  # Modules 05–08 full curriculum data
-│   │   └── curriculumIndex.ts               # Search index, case studies & cheat sheets
-│   ├── lib/
-│   │   └── firebase.ts                      # Firebase SDK init, Google Auth & Firestore client
-│   ├── studios/
-│   │   ├── MissionControlSimulator.tsx      # 4-stage agent pipeline & inline PR review simulator
-│   │   ├── GuardrailAutomationStudio.tsx    # .agent/rules & .agent/workflows generator
-│   │   └── McpCheatSheetScenarioStudios.tsx # Visual FastMCP server builder & cheat sheets
-│   ├── utils/
-│   │   ├── achievements.ts                  # Pure logic: Mastery Ranks, XP, Streak milestones, D3 maps
-│   │   ├── generators.ts                    # Pure logic: Rule, Workflow, FastMCP & Token generators
-│   │   └── generators.test.ts               # Automated unit tests (node:test)
-│   ├── App.tsx                              # Main layout, router, navigation bar & modal host
-│   ├── index.css                            # Tailwind CSS v4 configuration & bidirectional typography
-│   └── main.tsx                             # React 19 application entry point
-├── .env.example                             # Environment variable template
-├── firebase-blueprint.json                  # Firestore data schema intermediate representation (IR)
-├── firestore.rules                          # Hardened 8-Pillar Cloud Firestore security rules
-├── firestore.rules.test.ts                  # Security rule invariant unit tests
-├── package.json                             # Project dependencies and executable npm scripts
-├── server.ts                                # Express 4 full-stack server with Vite middleware
-├── tsconfig.json                            # TypeScript strict configuration
-└── vite.config.ts                           # Vite 6 + Tailwind CSS v4 + VitePWA configuration
 ```
 
 ---
 
-## 🤝 Contributing
+## 🌐 پشتیبانی دوزبانه و استانداردسازی جهت (Bilingual RTL / LTR)
 
-Contributions from the developer community are warmly welcomed! Whether you are adding a new architectural scenario, optimizing a D3 visualization, or expanding the curriculum:
-
-1. **Review Guidelines:** Please review our **[`CONTRIBUTING.md`](./CONTRIBUTING.md)** for detailed instructions on code conventions, PR descriptions, and architectural standards.
-2. **Fork & Branch:** Create a feature branch from `main`:
-   ```bash
-   git checkout -b feature/my-new-feature
-   ```
-3. **Write Unit Tests:** Ensure all pure logic is decoupled in `src/utils/` and covered by automated tests.
-4. **Verify Standards:** Ensure all tests, lints, and builds pass before submitting a Pull Request:
-   ```bash
-   npm test && npm run lint && npm run build
-   ```
+برنامه به صورت کامپوننت‌محور و داینامیک از دو زبان پشتیبانی کامل می‌کند:
+- **فارسی (پیش‌فرض - RTL):** فونت استاندارد و خوانای **Vazirmatn** با چیدمان اصولی و راست‌به‌چپ تمامی جداول، کارت‌ها و نمودارها.
+- **English (LTR):** فونت مدرن **Inter** و **JetBrains Mono** برای دستورات ترمینال، کدهای JSON و آرتیفکت‌های معماری.
+- **کلید جابجایی:** تغییر آنی زبان با کلید میانبر یا دکمه موجود در نوار بالا (`Globe`).
 
 ---
 
-## 📜 License
+## 🤝 مشارکت در توسعه (Contributing)
 
-This project is licensed under the **Apache License 2.0**. See the [`LICENSE`](./LICENSE) file for the full license text.
+مشارکت شما در ارتقای سرفصل‌ها، طراحی قوانین جدید برای استودیوی گاردریل، و بهبود شبیه‌ساز بسیار ارزشمند است. لطفاً پیش از ارسال Pull Request موارد زیر را بررسی فرمایید:
+1. ایجاد برنچ با نام مشخص: `git checkout -b feature/new-studio-widget`
+2. اطمینان از پاس شدن کلیه تست‌ها: `npm test`
+3. اعتبارسنجی تایپ‌ها بدون خطا: `npm run lint`
+4. ارسال PR با توضیحات شفاف مطابق با راهنمای [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ---
 
-<div align="center">
+## 📄 مجوز (License)
 
-**Built with precision for the next generation of Agentic Software Architects.**  
-*Official Google Antigravity Documentation: [antigravity.google/docs](https://antigravity.google/docs)*
-
-</div>
+این پروژه تحت مجوز متن‌باز **Apache License 2.0** منتشر شده است. استفاده، بازنشر و توسعه آن با رعایت شرایط مجوز بلامانع است. جزئیات بیشتر در فایل [LICENSE](./LICENSE) موجود است.

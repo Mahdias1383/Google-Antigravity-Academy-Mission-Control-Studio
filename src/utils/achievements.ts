@@ -1771,5 +1771,716 @@ export function calculateMasteryRankStanding(params: {
   };
 }
 
+// ============================================================================
+// ACADEMY LEADERBOARD & AI WEEKLY RANKING CHALLENGES
+// ============================================================================
 
+export type WeeklyChallengeTrackId =
+  | 'worktree-orchestration'
+  | 'fastmcp-security'
+  | 'zero-context-rot';
 
+export interface WeeklyRankingChallengeItem {
+  id: string;
+  code: string;
+  title: string;
+  scenarioBrief: string;
+  verificationCriterion: string;
+  targetArtifactOrPath: string;
+  difficulty: 'SPECIALIST' | 'ARCHITECT' | 'PRINCIPAL';
+  xpReward: number;
+}
+
+export interface AiWeeklyLeaderboardChallengeSuite {
+  weekCode: string;
+  track: WeeklyChallengeTrackId;
+  language: 'fa' | 'en';
+  themeHeadline: string;
+  aiDirectiveSummary: string;
+  challenges: WeeklyRankingChallengeItem[];
+  modelUsed: string;
+  source: 'ai-live' | 'deterministic-fallback';
+}
+
+export interface LeaderboardArchitectEntry {
+  architectId: string;
+  anonymizedHandle: string;
+  strictHandle: string;
+  displayHandle: string;
+  isCurrentUser: boolean;
+  rank: number;
+  cumulativeXp: number;
+  weeklyXpGain: number;
+  completedModulesCount: number;
+  streakDays: number;
+  challengesSolved: number;
+  masteryRankId: MasteryRankId;
+  masteryRankCode: string;
+  masteryRankNameEn: string;
+  masteryRankTitleFa: string;
+  accentHex: string;
+  specializationBadge: string;
+}
+
+export interface AcademyLeaderboardSummary {
+  entries: LeaderboardArchitectEntry[];
+  currentUserEntry: LeaderboardArchitectEntry;
+  topThreePodium: LeaderboardArchitectEntry[];
+  cohortTotalXp: number;
+  currentUserPercentile: number;
+  xpToNextLeaderboardSpot: number;
+}
+
+/**
+ * Deterministically converts a raw student architect name or email into a
+ * privacy-preserving anonymized handle so raw PII is never displayed on the leaderboard.
+ */
+export function anonymizeArchitectHandle(
+  rawName: string,
+  architectId: string,
+  strictPrivacyMode = false
+): string {
+  const safeId = (architectId || 'anon').trim().toLowerCase();
+  const cleanedRaw = (rawName || 'Architect')
+    .replace(/<[^>]*>/g, '')
+    .split('@')[0]
+    .trim();
+
+  // Compute deterministic 16-bit hex digest from architectId + cleanedRaw
+  const seedInput = `${safeId}::${cleanedRaw}`;
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < seedInput.length; i++) {
+    hash ^= seedInput.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  const hexTag = ((hash >>> 0) & 0xffff).toString(16).padStart(4, '0');
+
+  if (strictPrivacyMode) {
+    return `zk-node#${hexTag}`;
+  }
+
+  const tokens = cleanedRaw
+    .split(/[\s._-]+/)
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0);
+
+  if (tokens.length === 0) {
+    return `arch#${hexTag} · A.***`;
+  }
+
+  const firstChar = Array.from(tokens[0])[0] || 'A';
+  if (tokens.length === 1) {
+    return `arch#${hexTag} · ${firstChar.toUpperCase()}.***`;
+  }
+
+  const secondChar = Array.from(tokens[tokens.length - 1])[0] || 'X';
+  return `arch#${hexTag} · ${firstChar.toUpperCase()}.${secondChar.toUpperCase()}***`;
+}
+
+interface SeededPeerArchitect {
+  architectId: string;
+  rawName: string;
+  baseCumulativeXp: number;
+  weeklyXpGain: number;
+  completedModulesCount: number;
+  streakDays: number;
+  challengesSolved: number;
+  specializationBadge: string;
+}
+
+const SEEDED_ACADEMY_PEERS: ReadonlyArray<SeededPeerArchitect> = [
+  {
+    architectId: 'peer-arch-01',
+    rawName: 'Kourosh Rostami',
+    baseCumulativeXp: 4480,
+    weeklyXpGain: 820,
+    completedModulesCount: 8,
+    streakDays: 21,
+    challengesSolved: 6,
+    specializationBadge: 'Git Worktree Commander',
+  },
+  {
+    architectId: 'peer-arch-02',
+    rawName: 'Elena Vance',
+    baseCumulativeXp: 3960,
+    weeklyXpGain: 690,
+    completedModulesCount: 8,
+    streakDays: 16,
+    challengesSolved: 5,
+    specializationBadge: 'FastMCP Zero-Trust Lead',
+  },
+  {
+    architectId: 'peer-arch-03',
+    rawName: 'Nima Farhadi',
+    baseCumulativeXp: 3520,
+    weeklyXpGain: 540,
+    completedModulesCount: 7,
+    streakDays: 14,
+    challengesSolved: 4,
+    specializationBadge: 'Browser Subagent Auditor',
+  },
+  {
+    architectId: 'peer-arch-04',
+    rawName: 'Sora Takahashi',
+    baseCumulativeXp: 3080,
+    weeklyXpGain: 480,
+    completedModulesCount: 6,
+    streakDays: 11,
+    challengesSolved: 4,
+    specializationBadge: 'LSP Supercomplete Specialist',
+  },
+  {
+    architectId: 'peer-arch-05',
+    rawName: 'Parnia Alavi',
+    baseCumulativeXp: 2640,
+    weeklyXpGain: 410,
+    completedModulesCount: 5,
+    streakDays: 9,
+    challengesSolved: 3,
+    specializationBadge: 'Glob Rule Strategist',
+  },
+  {
+    architectId: 'peer-arch-06',
+    rawName: 'Marcus Lindqvist',
+    baseCumulativeXp: 2190,
+    weeklyXpGain: 330,
+    completedModulesCount: 4,
+    streakDays: 7,
+    challengesSolved: 2,
+    specializationBadge: 'Artifact PR Reviewer',
+  },
+  {
+    architectId: 'peer-arch-07',
+    rawName: 'Darya Mohammadi',
+    baseCumulativeXp: 1680,
+    weeklyXpGain: 260,
+    completedModulesCount: 3,
+    streakDays: 5,
+    challengesSolved: 2,
+    specializationBadge: 'Context Hygiene Analyst',
+  },
+];
+
+function resolveRankSpecForLeaderboardEntry(
+  cumulativeXp: number,
+  completedModulesCount: number,
+  streakDays: number
+): MasteryRankTierSpec {
+  const streakMilestones =
+    streakDays >= 14 ? 3 : streakDays >= 7 ? 2 : streakDays >= 3 ? 1 : 0;
+  const standing = calculateMasteryRankStanding({
+    totalCombinedXp: cumulativeXp,
+    completedModulesCount,
+    unlockedStreakMilestonesCount: streakMilestones,
+    unlockedTrophiesCount: Math.min(4, Math.floor(completedModulesCount / 2)),
+  });
+  return standing.currentRank;
+}
+
+export function buildAcademyLeaderboardStandings(params: {
+  currentArchitectName: string;
+  currentArchitectId?: string;
+  currentUserCumulativeXp: number;
+  currentUserCompletedModules: number;
+  currentUserStreakDays: number;
+  currentUserChallengesSolved?: number;
+  currentUserWeeklyBonusXp?: number;
+  strictPrivacyMode?: boolean;
+}): AcademyLeaderboardSummary {
+  const strictMode = Boolean(params.strictPrivacyMode);
+  const userArchId = params.currentArchitectId || 'current-session-architect';
+  const safeUserXp = Math.max(0, Math.floor(params.currentUserCumulativeXp));
+  const safeUserModules = Math.max(
+    0,
+    Math.min(8, Math.floor(params.currentUserCompletedModules))
+  );
+  const safeUserStreak = Math.max(0, Math.floor(params.currentUserStreakDays));
+  const safeUserSolved = Math.max(
+    0,
+    Math.floor(params.currentUserChallengesSolved ?? 0)
+  );
+  const safeWeeklyBonus = Math.max(
+    0,
+    Math.floor(params.currentUserWeeklyBonusXp ?? 0)
+  );
+
+  const rawRows: Omit<LeaderboardArchitectEntry, 'rank'>[] =
+    SEEDED_ACADEMY_PEERS.map((peer) => {
+      const rankSpec = resolveRankSpecForLeaderboardEntry(
+        peer.baseCumulativeXp,
+        peer.completedModulesCount,
+        peer.streakDays
+      );
+      const anonymizedHandle = anonymizeArchitectHandle(
+        peer.rawName,
+        peer.architectId,
+        false
+      );
+      const strictHandle = anonymizeArchitectHandle(
+        peer.rawName,
+        peer.architectId,
+        true
+      );
+      return {
+        architectId: peer.architectId,
+        anonymizedHandle,
+        strictHandle,
+        displayHandle: strictMode ? strictHandle : anonymizedHandle,
+        isCurrentUser: false,
+        cumulativeXp: peer.baseCumulativeXp,
+        weeklyXpGain: peer.weeklyXpGain,
+        completedModulesCount: peer.completedModulesCount,
+        streakDays: peer.streakDays,
+        challengesSolved: peer.challengesSolved,
+        masteryRankId: rankSpec.rankId,
+        masteryRankCode: rankSpec.rankCode,
+        masteryRankNameEn: rankSpec.rankNameEn,
+        masteryRankTitleFa: rankSpec.rankTitleFa,
+        accentHex: rankSpec.accentHex,
+        specializationBadge: peer.specializationBadge,
+      };
+    });
+
+  const userRankSpec = resolveRankSpecForLeaderboardEntry(
+    safeUserXp,
+    safeUserModules,
+    safeUserStreak
+  );
+  const userAnonHandle = anonymizeArchitectHandle(
+    params.currentArchitectName || 'Principal Architect',
+    userArchId,
+    false
+  );
+  const userStrictHandle = anonymizeArchitectHandle(
+    params.currentArchitectName || 'Principal Architect',
+    userArchId,
+    true
+  );
+
+  rawRows.push({
+    architectId: userArchId,
+    anonymizedHandle: userAnonHandle,
+    strictHandle: userStrictHandle,
+    displayHandle: strictMode ? userStrictHandle : userAnonHandle,
+    isCurrentUser: true,
+    cumulativeXp: safeUserXp,
+    weeklyXpGain: 320 + safeWeeklyBonus,
+    completedModulesCount: safeUserModules,
+    streakDays: safeUserStreak,
+    challengesSolved: 2 + safeUserSolved,
+    masteryRankId: userRankSpec.rankId,
+    masteryRankCode: userRankSpec.rankCode,
+    masteryRankNameEn: userRankSpec.rankNameEn,
+    masteryRankTitleFa: userRankSpec.rankTitleFa,
+    accentHex: userRankSpec.accentHex,
+    specializationBadge: 'Active Studio Architect',
+  });
+
+  rawRows.sort((a, b) => {
+    if (b.cumulativeXp !== a.cumulativeXp) {
+      return b.cumulativeXp - a.cumulativeXp;
+    }
+    if (b.completedModulesCount !== a.completedModulesCount) {
+      return b.completedModulesCount - a.completedModulesCount;
+    }
+    if (b.streakDays !== a.streakDays) {
+      return b.streakDays - a.streakDays;
+    }
+    return a.isCurrentUser ? -1 : 1;
+  });
+
+  const entries: LeaderboardArchitectEntry[] = rawRows.map((row, index) => ({
+    ...row,
+    rank: index + 1,
+  }));
+
+  const currentUserEntry =
+    entries.find((e) => e.isCurrentUser) || entries[entries.length - 1];
+
+  const topThreePodium = entries.slice(0, 3);
+  const cohortTotalXp = entries.reduce((acc, e) => acc + e.cumulativeXp, 0);
+
+  const totalParticipants = entries.length;
+  const currentUserPercentile = Math.max(
+    1,
+    Math.min(
+      99,
+      Math.round(
+        ((totalParticipants - currentUserEntry.rank + 1) / totalParticipants) *
+          100
+      )
+    )
+  );
+
+  let xpToNextLeaderboardSpot = 0;
+  if (currentUserEntry.rank > 1) {
+    const aboveEntry = entries[currentUserEntry.rank - 2];
+    if (aboveEntry) {
+      xpToNextLeaderboardSpot = Math.max(
+        10,
+        aboveEntry.cumulativeXp - currentUserEntry.cumulativeXp + 10
+      );
+    }
+  }
+
+  return {
+    entries,
+    currentUserEntry,
+    topThreePodium,
+    cohortTotalXp,
+    currentUserPercentile,
+    xpToNextLeaderboardSpot,
+  };
+}
+
+export function buildWeeklyLeaderboardChallengePrompt(params: {
+  track: WeeklyChallengeTrackId;
+  language: 'fa' | 'en';
+  currentRankNameEn?: string;
+  completedModulesCount?: number;
+}): string {
+  const {
+    track,
+    language,
+    currentRankNameEn = 'Architect',
+    completedModulesCount = 4,
+  } = params;
+
+  const trackDescriptions: Record<WeeklyChallengeTrackId, string> = {
+    'worktree-orchestration':
+      'Parallel Multi-Agent Orchestration in isolated Git Worktrees, Mission Control Inbox triage, and zero-conflict branch merges.',
+    'fastmcp-security':
+      'Zero-Trust FastMCP Server Governance, mcp_config.json schema hardening, read-only database pools, and terminal command policy enforcement.',
+    'zero-context-rot':
+      'Context Window Hygiene, .agent/knowledge-base/ invariant offloading, Glob-scoped .agent/rules/, and Browser Subagent WebP verification.',
+  };
+
+  const langDirective =
+    language === 'en'
+      ? 'Write all titles, scenario briefs, and verification criteria in clear, technical English.'
+      : 'Write all titles, scenario briefs, and verification criteria in fluent Persian (فارسی) while keeping technical identifiers, file paths (.agent/rules/, mcp_config.json, task.md, implementation_plan.md, walkthrough.md), and codes in English.';
+
+  return [
+    `Generate 3 weekly ranking engineering challenges for the Google Antigravity Academy Leaderboard.`,
+    `Selected Track: ${track} (${trackDescriptions[track]})`,
+    `Student Standing: ${currentRankNameEn} (${completedModulesCount}/8 modules mastered).`,
+    langDirective,
+    `Each challenge must include a code (e.g., WRC-44-01), title, scenarioBrief, verificationCriterion, targetArtifactOrPath, difficulty (SPECIALIST, ARCHITECT, or PRINCIPAL), and xpReward (between 200 and 500).`,
+  ].join('\n');
+}
+
+export function buildDeterministicWeeklyLeaderboardChallenges(params: {
+  track: WeeklyChallengeTrackId;
+  language: 'fa' | 'en';
+}): AiWeeklyLeaderboardChallengeSuite {
+  const { track, language } = params;
+  const isEn = language === 'en';
+
+  if (track === 'fastmcp-security') {
+    return {
+      weekCode: '2026-W44',
+      track,
+      language,
+      themeHeadline: isEn
+        ? 'Week 44 Sprint: FastMCP Zero-Trust Perimeter & Terminal Guardrails'
+        : 'اسپرینت هفته ۴۴: حصار امنیتی Zero-Trust در FastMCP و گاردریل‌های ترمینال',
+      aiDirectiveSummary: isEn
+        ? 'AI Challenge Agent synthesized 3 high-signal security audits targeting mcp_config.json transport isolation, read-only SQL pools, and Glob-scoped rule enforcement.'
+        : 'ایجنت طراح چالش، ۳ ممیزی امنیتی پیشرفته با محوریت ایزولاسیون ترنسپورت در mcp_config.json، استخرهای دیتابیس Read-Only و قوانین Glob-scoped تولید کرده است.',
+      challenges: [
+        {
+          id: 'wrc-fastmcp-1',
+          code: 'WRC-44-01',
+          title: isEn
+            ? 'Enforce Read-Only Transaction Pool in FastMCP Server'
+            : 'اعمال استخر تراکنش Read-Only در سرور FastMCP',
+          scenarioBrief: isEn
+            ? 'Prevent autonomous background agents from executing DDL/DML mutations via the PostgreSQL telemetry MCP server.'
+            : 'جلوگیری از اجرای دستورات تغییر ساختار یا داده (DDL/DML) توسط ایجنت‌های پس‌زمینه در سرور تله‌متری PostgreSQL MCP.',
+          verificationCriterion: isEn
+            ? 'Verify default_transaction_read_only=on in mcp_config.json and @mcp.tool() decorator guardrails.'
+            : 'صحت‌سنجی پارامتر default_transaction_read_only=on در فایل mcp_config.json و گاردریل دکوراتور @mcp.tool().',
+          targetArtifactOrPath: 'mcp_config.json',
+          difficulty: 'SPECIALIST',
+          xpReward: 250,
+        },
+        {
+          id: 'wrc-fastmcp-2',
+          code: 'WRC-44-02',
+          title: isEn
+            ? 'Lock Destructive Shell Flags via Terminal Policy Deny-List'
+            : 'مسدودسازی فلگ‌های مخرب شل در Deny-List سیاست ترمینال',
+          scenarioBrief: isEn
+            ? 'Configure Auto terminal execution policy while intercepting force-push, raw rm -rf, and unreviewed migration drops.'
+            : 'تنظیم سیاست اجرای ترمینال روی حالت Auto همراه با رهگیری و مسدودسازی دستورات force-push، حذف بازگشتی و drop مایگریشن.',
+          verificationCriterion: isEn
+            ? 'Audit .agent/rules/security-governance.md with Always On activation and explicit command deny patterns.'
+            : 'ممیزی فایل .agent/rules/security-governance.md با حالت فعال‌سازی Always On و الگوهای مسدودسازی صریح.',
+          targetArtifactOrPath: '.agent/rules/security-governance.md',
+          difficulty: 'ARCHITECT',
+          xpReward: 350,
+        },
+        {
+          id: 'wrc-fastmcp-3',
+          code: 'WRC-44-03',
+          title: isEn
+            ? 'Zero-Trust SSE Gateway Token Rotation & Schema Pinning'
+            : 'چرخش توکن درگاه SSE Zero-Trust و تثبیت اسکیما (Schema Pinning)',
+          scenarioBrief: isEn
+            ? 'Eliminate configuration drift between local stdio development and remote SSE production MCP endpoints.'
+            : 'حذف انحراف پیکربندی (Configuration Drift) میان محیط توسعه محلی stdio و درگاه عملیاتی راه دور SSE در سرورهای MCP.',
+          verificationCriterion: isEn
+            ? 'Validate pinned tool schema digests in implementation_plan.md before agent tool invocation.'
+            : 'اعتبارسنجی هش اسکیماهای ابزار در implementation_plan.md پیش از فراخوانی ابزار توسط ایجنت.',
+          targetArtifactOrPath: 'implementation_plan.md',
+          difficulty: 'PRINCIPAL',
+          xpReward: 450,
+        },
+      ],
+      modelUsed: 'gemini-3.8-flash',
+      source: 'deterministic-fallback',
+    };
+  }
+
+  if (track === 'zero-context-rot') {
+    return {
+      weekCode: '2026-W44',
+      track,
+      language,
+      themeHeadline: isEn
+        ? 'Week 44 Sprint: Zero Context Rot & Knowledge Base Distillation'
+        : 'اسپرینت هفته ۴۴: مهار کامل Context Rot و تقطیر پایگاه دانش',
+      aiDirectiveSummary: isEn
+        ? 'AI Challenge Agent generated 3 context-efficiency challenges focused on pruning stale AST dumps, scoping rules via Glob, and compacting long-horizon sessions.'
+        : 'ایجنت هوش مصنوعی ۳ چالش بهینه‌سازی پنجره زمینه با تمرکز بر حذف لاگ‌های منسوخ، محدودسازی قوانین با Glob و فشرده‌سازی نشست‌های طولانی تولید کرد.',
+      challenges: [
+        {
+          id: 'wrc-rot-1',
+          code: 'WRC-44-01',
+          title: isEn
+            ? 'Convert Global Domain Rules to Scoped Glob Activation'
+            : 'تبدیل قوانین سراسری دامنه به حالت فعال‌سازی هدفمند Glob',
+          scenarioBrief: isEn
+            ? 'Reduce baseline token overhead by ensuring database migration rules only load when editing SQLAlchemy or Alembic files.'
+            : 'کاهش مصرف پایه توکن با محدود کردن بارگذاری قوانین مایگریشن دیتابیس صرفاً هنگام ویرایش فایل‌های SQLAlchemy یا Alembic.',
+          verificationCriterion: isEn
+            ? 'Set activation: glob with pattern alembic/versions/*.py in .agent/rules/db-migrations.md.'
+            : 'تنظیم هدر activation: glob با الگوی alembic/versions/*.py در فایل .agent/rules/db-migrations.md.',
+          targetArtifactOrPath: '.agent/rules/db-migrations.md',
+          difficulty: 'SPECIALIST',
+          xpReward: 250,
+        },
+        {
+          id: 'wrc-rot-2',
+          code: 'WRC-44-02',
+          title: isEn
+            ? 'Prune Stale Monolith Snapshots from .agent/knowledge-base/'
+            : 'پاک‌سازی اسنپ‌شات‌های منسوخ از مسیر .agent/knowledge-base/',
+          scenarioBrief: isEn
+            ? 'Identify and archive knowledge base entries with >65% staleness score before they trigger hallucinated tool calls.'
+            : 'شناسایی و آرشیو اسناد دارای شاخص فرسودگی بالای ۶۵٪ در پایگاه دانش پیش از ایجاد خطای تصمیم‌گیری در ایجنت.',
+          verificationCriterion: isEn
+            ? 'Distill core invariants into a <350-token architectural summary in .agent/knowledge-base/core-invariants.md.'
+            : 'تقطیر قواعد کلیدی معماری در یک خلاصه زیر ۳۵۰ توکن درون فایل .agent/knowledge-base/core-invariants.md.',
+          targetArtifactOrPath: '.agent/knowledge-base/core-invariants.md',
+          difficulty: 'ARCHITECT',
+          xpReward: 350,
+        },
+        {
+          id: 'wrc-rot-3',
+          code: 'WRC-44-03',
+          title: isEn
+            ? 'Checkpoint State Handoff via task.md & walkthrough.md'
+            : 'انتقال وضعیت بدون افت حافظه با آرتیفکت‌های task.md و walkthrough.md',
+          scenarioBrief: isEn
+            ? 'Terminate a bloated 90k-token debugging thread and bootstrap a fresh agent using only structured artifact state.'
+            : 'بستن نشست دیباگ متورم ۹۰ هزار توکنی و راه‌اندازی ایجنت تازه صرفاً با تکیه بر وضعیت ساختاریافته آرتیفکت‌ها.',
+          verificationCriterion: isEn
+            ? 'Verify 100% task continuity in fresh Agent Manager session with <12% context utilization.'
+            : 'صحت‌سنجی تداوم ۱۰۰٪ تسک در نشست جدید Agent Manager با اشغال کمتر از ۱۲٪ پنجره زمینه.',
+          targetArtifactOrPath: 'task.md',
+          difficulty: 'PRINCIPAL',
+          xpReward: 450,
+        },
+      ],
+      modelUsed: 'gemini-3.8-flash',
+      source: 'deterministic-fallback',
+    };
+  }
+
+  // Default: 'worktree-orchestration'
+  return {
+    weekCode: '2026-W44',
+    track: 'worktree-orchestration',
+    language,
+    themeHeadline: isEn
+      ? 'Week 44 Sprint: Multi-Agent Git Worktree Orchestration & PR Review'
+      : 'اسپرینت هفته ۴۴: ارکستریشن چندایجنتی در Git Worktrees و ممیزی PR-Style',
+    aiDirectiveSummary: isEn
+      ? 'AI Challenge Agent curated 3 Principal-grade orchestration missions testing parallel worktree isolation, PR-style plan review, and Browser Subagent WebP proof capture.'
+      : 'ایجنت هوش مصنوعی ۳ مأموریت ارکستریشن در سطح Principal شامل ایزولاسیون Git Worktree، ممیزی PR-Style روی طرح پیاده‌سازی و ثبت مدرک بصری WebP طراحی کرده است.',
+    challenges: [
+      {
+        id: 'wrc-worktree-1',
+        code: 'WRC-44-01',
+        title: isEn
+          ? 'Inline PR-Style Audit on implementation_plan.md Before Codegen'
+          : 'ممیزی خطی PR-Style روی implementation_plan.md پیش از تولید کد',
+        scenarioBrief: isEn
+          ? 'Intercept an agent plan that mutates API contracts without updating Pydantic v2 schemas and steer it via inline comments.'
+          : 'رهگیری طرح ایجنت که قرارداد API را بدون به‌روزرسانی اسکیمای Pydantic v2 تغییر می‌دهد و اصلاح مسیر آن با کامنت خطی.',
+        verificationCriterion: isEn
+          ? 'Attach 2 inline review directives on implementation_plan.md in Planning Mode prior to approval.'
+          : 'ثبت ۲ دستور بازنگری خطی روی فایل implementation_plan.md در حالت Planning Mode پیش از تایید نهایی.',
+        targetArtifactOrPath: 'implementation_plan.md',
+        difficulty: 'SPECIALIST',
+        xpReward: 250,
+      },
+      {
+        id: 'wrc-worktree-2',
+        code: 'WRC-44-02',
+        title: isEn
+          ? 'Spawn 3 Parallel Agents Across Isolated Git Worktrees'
+          : 'اجرای همزمان ۳ ایجنت موازی روی Git Worktreeهای ایزوله',
+        scenarioBrief: isEn
+          ? 'Run schema migration, FastAPI router refactoring, and Playwright E2E verification simultaneously without index.lock collisions.'
+          : 'اجرای موازی مایگریشن اسکیما، بازآرایی روتر FastAPI و تست Playwright بدون تداخل فایل‌های قفل گیت (index.lock).',
+        verificationCriterion: isEn
+          ? 'Verify clean worktree branch merge and zero file-tree conflicts in Mission Control Inbox.'
+          : 'صحت‌سنجی ادغام تمیز شاخه‌های Worktree و عدم تداخل درخت فایل در صندوق ورودی Mission Control.',
+        targetArtifactOrPath: '.agent/workflows/parallel-worktrees.md',
+        difficulty: 'ARCHITECT',
+        xpReward: 350,
+      },
+      {
+        id: 'wrc-worktree-3',
+        code: 'WRC-44-03',
+        title: isEn
+          ? 'Automated Browser Subagent DOM Audit & walkthrough.md WebP Proof'
+          : 'ممیزی خودکار DOM با Browser Subagent و ثبت مدرک WebP در walkthrough.md',
+        scenarioBrief: isEn
+          ? 'Dispatch the headless Browser Subagent to verify zero console errors and embed visual WebP recordings in walkthrough.md.'
+          : 'اعزام Browser Subagent برای تایید نبود خطای کنسول و الصاق ویدیوی WebP صحت‌سنجی در آرتیفکت walkthrough.md.',
+        verificationCriterion: isEn
+          ? 'Confirm walkthrough.md contains verified DOM assertions and embedded WebP replay artifact.'
+          : 'تایید وجود گزارش صحت‌سنجی DOM و آرتیفکت تصویری WebP درون فایل walkthrough.md.',
+        targetArtifactOrPath: 'walkthrough.md',
+        difficulty: 'PRINCIPAL',
+        xpReward: 450,
+      },
+    ],
+    modelUsed: 'gemini-3.8-flash',
+    source: 'deterministic-fallback',
+  };
+}
+
+export function normalizeAiWeeklyLeaderboardChallengesResponse(
+  raw: unknown,
+  fallback: AiWeeklyLeaderboardChallengeSuite
+): AiWeeklyLeaderboardChallengeSuite {
+  if (!raw || typeof raw !== 'object') {
+    return fallback;
+  }
+
+  const candidate = raw as Record<string, unknown>;
+  const themeHeadline =
+    typeof candidate.themeHeadline === 'string' &&
+    candidate.themeHeadline.trim().length > 5
+      ? candidate.themeHeadline.trim()
+      : fallback.themeHeadline;
+
+  const aiDirectiveSummary =
+    typeof candidate.aiDirectiveSummary === 'string' &&
+    candidate.aiDirectiveSummary.trim().length > 10
+      ? candidate.aiDirectiveSummary.trim()
+      : fallback.aiDirectiveSummary;
+
+  const rawChallenges = Array.isArray(candidate.challenges)
+    ? candidate.challenges
+    : [];
+
+  const validDifficulties = new Set(['SPECIALIST', 'ARCHITECT', 'PRINCIPAL']);
+
+  const normalizedChallenges: WeeklyRankingChallengeItem[] = rawChallenges
+    .filter((item): item is Record<string, unknown> =>
+      Boolean(item && typeof item === 'object')
+    )
+    .slice(0, 4)
+    .map((item, idx) => {
+      const fbItem =
+        fallback.challenges[idx % fallback.challenges.length] ||
+        fallback.challenges[0];
+      const rawDiff = String(item.difficulty || '')
+        .trim()
+        .toUpperCase();
+      const difficulty = validDifficulties.has(rawDiff)
+        ? (rawDiff as 'SPECIALIST' | 'ARCHITECT' | 'PRINCIPAL')
+        : fbItem.difficulty;
+
+      const numericXp = Number(item.xpReward);
+      const xpReward =
+        Number.isFinite(numericXp) && numericXp >= 100 && numericXp <= 1000
+          ? Math.round(numericXp)
+          : fbItem.xpReward;
+
+      return {
+        id:
+          typeof item.id === 'string' && item.id.trim()
+            ? item.id.trim()
+            : `${fallback.track}-ai-${idx + 1}`,
+        code:
+          typeof item.code === 'string' && item.code.trim()
+            ? item.code.trim()
+            : `WRC-44-0${idx + 1}`,
+        title:
+          typeof item.title === 'string' && item.title.trim().length > 3
+            ? item.title.trim()
+            : fbItem.title,
+        scenarioBrief:
+          typeof item.scenarioBrief === 'string' &&
+          item.scenarioBrief.trim().length > 5
+            ? item.scenarioBrief.trim()
+            : fbItem.scenarioBrief,
+        verificationCriterion:
+          typeof item.verificationCriterion === 'string' &&
+          item.verificationCriterion.trim().length > 5
+            ? item.verificationCriterion.trim()
+            : fbItem.verificationCriterion,
+        targetArtifactOrPath:
+          typeof item.targetArtifactOrPath === 'string' &&
+          item.targetArtifactOrPath.trim().length > 1
+            ? item.targetArtifactOrPath.trim()
+            : fbItem.targetArtifactOrPath,
+        difficulty,
+        xpReward,
+      };
+    });
+
+  if (normalizedChallenges.length < 2) {
+    return {
+      ...fallback,
+      themeHeadline,
+      aiDirectiveSummary,
+      source:
+        candidate.source === 'ai-live' ? 'ai-live' : fallback.source,
+    };
+  }
+
+  return {
+    weekCode:
+      typeof candidate.weekCode === 'string' && candidate.weekCode.trim()
+        ? candidate.weekCode.trim()
+        : fallback.weekCode,
+    track: fallback.track,
+    language: fallback.language,
+    themeHeadline,
+    aiDirectiveSummary,
+    challenges: normalizedChallenges,
+    modelUsed:
+      typeof candidate.modelUsed === 'string' && candidate.modelUsed.trim()
+        ? candidate.modelUsed.trim()
+        : fallback.modelUsed,
+    source:
+      candidate.source === 'ai-live' ? 'ai-live' : fallback.source,
+  };
+}

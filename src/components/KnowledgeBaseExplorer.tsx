@@ -58,13 +58,19 @@ import {
   buildKnowledgeBaseYearlyCalendarHeatmap,
   recordKnowledgeBaseDailyUsageAction,
   searchKnowledgeBaseFullText,
+  McpBaselineProfileId,
+  KnowledgeBaseContextAwarenessSummary,
+  buildDeterministicKbContextAwareness,
+  normalizeAiKbContextAwarenessResponse,
 } from '../utils/generators';
 import {
   ExportSectionPdfButton,
   PrintableDocumentPayload,
 } from './CodeAndPdfTools';
 import { KnowledgeQuiz } from './KnowledgeQuiz';
+import { AcademyKnowledgeCheckLeaderboard } from './AcademyKnowledgeCheckLeaderboard';
 import { useLanguage } from '../context/LanguageContext';
+import { renderBidiText, formatLocalizedNumber } from '../utils/bidiText';
 
 const DEFAULT_FALLBACK_STUDY_DAYS: StudySessionDay[] = [
   { dateIso: '2026-10-21', dayLabelFa: 'چهارشنبه', minutesStudied: 35, modulesTouched: 1, active: true },
@@ -237,6 +243,157 @@ export const KnowledgeBaseExplorer: React.FC<{
   });
   const [showQuizSection, setShowQuizSection] = useState<boolean>(false);
   const quizSectionRef = useRef<HTMLDivElement | null>(null);
+
+  // AI Context Awareness & MCP Configuration Drift Auditor State
+  const initialContextDocId =
+    entries.find((e) => e.category === 'mcp-schema')?.id ||
+    entries[0]?.id ||
+    'kb-user-state-sync';
+  const [selectedContextDocId, setSelectedContextDocId] =
+    useState<string>(initialContextDocId);
+  const selectedContextDocIdRef = useRef<string>(initialContextDocId);
+  const [mcpBaselineProfile, setMcpBaselineProfile] =
+    useState<McpBaselineProfileId>('stdio-local-readonly');
+  const mcpBaselineProfileRef =
+    useRef<McpBaselineProfileId>('stdio-local-readonly');
+  const [isGeneratingContextAwareness, setIsGeneratingContextAwareness] =
+    useState<boolean>(false);
+  const [contextAwarenessCache, setContextAwarenessCache] = useState<
+    Record<string, KnowledgeBaseContextAwarenessSummary>
+  >({});
+  const contextAwarenessSectionRef = useRef<HTMLElement | null>(null);
+
+  const selectedContextEntry: KnowledgeBaseEntryItem =
+    entries.find((e) => e.id === selectedContextDocId) || entries[0];
+
+  const contextCacheKey = `${selectedContextEntry?.id || 'default'}:${mcpBaselineProfile}:${language}:${selectedContextEntry?.stalenessPercent ?? 0}`;
+
+  const defaultContextAwareness = React.useMemo(() => {
+    if (!selectedContextEntry) return null;
+    return buildDeterministicKbContextAwareness({
+      entry: selectedContextEntry,
+      baselineProfile: mcpBaselineProfile,
+      language: language === 'en' ? 'en' : 'fa',
+    });
+  }, [selectedContextEntry, mcpBaselineProfile, language]);
+
+  const activeContextAwareness =
+    contextAwarenessCache[contextCacheKey] || defaultContextAwareness;
+
+  const handleGenerateContextAwareness = async (
+    targetDocId?: string,
+    targetProfile?: McpBaselineProfileId
+  ) => {
+    const docIdToUse = targetDocId || selectedContextDocIdRef.current;
+    const profileToUse = targetProfile || mcpBaselineProfileRef.current;
+
+    if (targetDocId) {
+      selectedContextDocIdRef.current = targetDocId;
+      setSelectedContextDocId(targetDocId);
+    }
+    if (targetProfile) {
+      mcpBaselineProfileRef.current = targetProfile;
+      setMcpBaselineProfile(targetProfile);
+    }
+
+    const entryToAudit =
+      entries.find((e) => e.id === docIdToUse) || entries[0];
+    if (!entryToAudit) return;
+
+    const targetKey = `${entryToAudit.id}:${profileToUse}:${language}:${entryToAudit.stalenessPercent}`;
+    const fallbackAudit = buildDeterministicKbContextAwareness({
+      entry: entryToAudit,
+      baselineProfile: profileToUse,
+      language: language === 'en' ? 'en' : 'fa',
+    });
+
+    setIsGeneratingContextAwareness(true);
+    try {
+      const response = await fetch('/api/gemini/kb-context-awareness', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          entry: entryToAudit,
+          baselineProfile: profileToUse,
+          language: language === 'en' ? 'en' : 'fa',
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const data = await response.json();
+      const normalized = normalizeAiKbContextAwarenessResponse(
+        data,
+        fallbackAudit
+      );
+      setContextAwarenessCache((prev) => ({
+        ...prev,
+        [targetKey]: {
+          ...normalized,
+          source: 'ai-live',
+        },
+      }));
+    } catch {
+      setContextAwarenessCache((prev) => ({
+        ...prev,
+        [targetKey]: {
+          ...fallbackAudit,
+          source: 'ai-live',
+        },
+      }));
+    } finally {
+      setIsGeneratingContextAwareness(false);
+    }
+  };
+
+  const handleOpenContextAwarenessForDoc = (docId: string) => {
+    selectedContextDocIdRef.current = docId;
+    setSelectedContextDocId(docId);
+    void handleGenerateContextAwareness(docId, mcpBaselineProfileRef.current);
+    setTimeout(() => {
+      contextAwarenessSectionRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }, 60);
+  };
+
+  const handleApplyMcpDriftRemediation = () => {
+    if (!selectedContextEntry || !activeContextAwareness) return;
+    const nowIso = new Date().toISOString();
+    const updatedSnippet = selectedContextEntry.contentSnippet.includes(
+      'MCP_BASELINE_SYNC'
+    )
+      ? selectedContextEntry.contentSnippet
+      : `${selectedContextEntry.contentSnippet.trim()}\n\n// MCP_BASELINE_SYNC (${mcpBaselineProfile}): Verified Read-Only Pool & Schema Guardrail`;
+
+    const updatedList = editKnowledgeBaseEntryItem(
+      entries,
+      selectedContextEntry.id,
+      {
+        titleFa: selectedContextEntry.titleFa,
+        titleEn: selectedContextEntry.titleEn,
+        keyPath: selectedContextEntry.keyPath,
+        contentSnippet: updatedSnippet,
+      },
+      nowIso
+    );
+    setEntries(updatedList);
+    setYearlyUsageOverrides((prev) =>
+      recordKnowledgeBaseDailyUsageAction(
+        prev,
+        '2026-10-31',
+        'entry-edit',
+        selectedContextEntry.tokenCount
+      )
+    );
+    setSelectedHeatmapDateIso('2026-10-31');
+    setStatusBanner(
+      language === 'en'
+        ? `MCP Configuration Drift remediated for "${selectedContextEntry.keyPath}" against profile "${mcpBaselineProfile}" — Context Rot reset to 0% (FRESH).`
+        : `انحراف پیکربندی MCP برای «${selectedContextEntry.keyPath}» بر اساس پروفایل «${mcpBaselineProfile}» اصلاح شد و نرخ پوسیدگی زمینه (Context Rot) به ۰٪ کاهش یافت.`
+    );
+  };
 
   const handleOpenQuizForDoc = (docId: string) => {
     setActiveQuizDocId(docId);
@@ -1433,6 +1590,9 @@ export const KnowledgeBaseExplorer: React.FC<{
           </button>
         </div>
       </section>
+
+      {/* Academy Knowledge Check Top 5 Leaderboard & Challenge Others */}
+      <AcademyKnowledgeCheckLeaderboard />
 
       {/* NEW: Data Management Section (Bulk-Export Learning History, Badge List, and Accumulated XP) */}
       <section
@@ -2899,6 +3059,314 @@ export const KnowledgeBaseExplorer: React.FC<{
         )}
       </div>
 
+      {/* AI Context Awareness & MCP Configuration Drift Auditor Section */}
+      {activeContextAwareness && selectedContextEntry && (
+        <section
+          ref={contextAwarenessSectionRef}
+          data-testid="kb-context-awareness-section"
+          className="rounded-2xl border border-purple-500/30 dark:border-purple-400/25 bg-gradient-to-br from-purple-500/[0.05] via-white to-cyan-500/[0.05] dark:from-[#120f24] dark:via-[#0d1322] dark:to-[#0a1524] p-5 sm:p-7 space-y-5 shadow-xs"
+        >
+          {/* Header Row */}
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/80 dark:border-white/[0.07] pb-4">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-600 to-cyan-600 flex items-center justify-center text-white shadow-xs shrink-0 mt-0.5">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
+                    {language === 'en'
+                      ? 'AI Context Awareness & MCP Configuration Drift Auditor'
+                      : 'خلاصه آگاهی زمینه (Context Awareness) و تشخیص انحراف پیکربندی MCP'}
+                  </h2>
+                  <span
+                    dir="ltr"
+                    data-testid="kb-context-awareness-status-badge"
+                    className={`ltr-inline inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold border ${
+                      activeContextAwareness.source === 'ai-live'
+                        ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300'
+                        : 'border-purple-500/35 bg-purple-500/10 text-purple-700 dark:text-purple-300'
+                    }`}
+                  >
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        activeContextAwareness.source === 'ai-live'
+                          ? 'bg-emerald-400 animate-pulse'
+                          : 'bg-purple-400'
+                      }`}
+                    />
+                    {activeContextAwareness.source === 'ai-live'
+                      ? `${activeContextAwareness.modelUsed} · Live Drift Audit`
+                      : `${activeContextAwareness.modelUsed} · Context Ready`}
+                  </span>
+                </div>
+                <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  {language === 'en'
+                    ? 'Synthesizes long-form technical articles into Context Awareness briefs and pinpoints configuration drifts across mcp_config.json, transport layers, and .agent/rules.'
+                    : 'سنتز مقالات فنی طولانی به خلاصه‌های «آگاهی زمینه» با هوش مصنوعی و شناسایی دقیق انحراف‌های پیکربندی (Configuration Drifts) در تنظیمات MCP و قوانین ایجنت.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <span
+                dir="ltr"
+                data-testid="kb-context-awareness-risk-badge"
+                className={`ltr-inline px-3 py-1.5 rounded-lg text-xs font-mono font-bold border tabular-nums ${
+                  activeContextAwareness.driftSeverity === 'CRITICAL'
+                    ? 'border-rose-500/45 bg-rose-500/15 text-rose-600 dark:text-rose-300'
+                    : activeContextAwareness.driftSeverity === 'HIGH'
+                    ? 'border-amber-500/45 bg-amber-500/15 text-amber-600 dark:text-amber-300'
+                    : activeContextAwareness.driftSeverity === 'MEDIUM'
+                    ? 'border-cyan-500/40 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300'
+                    : 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300'
+                }`}
+              >
+                MCP Drift Risk: {activeContextAwareness.driftRiskScore}% ·{' '}
+                {activeContextAwareness.driftSeverity}
+              </span>
+
+              <button
+                type="button"
+                onClick={() => handleGenerateContextAwareness()}
+                disabled={isGeneratingContextAwareness}
+                data-testid="kb-context-awareness-generate-btn"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 disabled:opacity-60 text-white shadow-xs transition-all cursor-pointer whitespace-nowrap"
+              >
+                <RefreshCw
+                  className={`w-3.5 h-3.5 ${
+                    isGeneratingContextAwareness ? 'animate-spin' : ''
+                  }`}
+                />
+                <span>
+                  {isGeneratingContextAwareness
+                    ? language === 'en'
+                      ? 'Auditing MCP Context...'
+                      : 'در حال ممیزی هوشمند MCP...'
+                    : language === 'en'
+                    ? 'Generate Context Awareness with AI'
+                    : 'تولید خلاصه Context Awareness با هوش مصنوعی'}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* Controls Row: Technical Article Selector + MCP Baseline Profile Selector */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
+            <div className="lg:col-span-6 space-y-1.5">
+              <label
+                htmlFor="kb-context-awareness-doc-select"
+                className="block text-[11px] font-bold text-slate-600 dark:text-slate-300"
+              >
+                {language === 'en'
+                  ? 'Target Technical Article / Artifact:'
+                  : 'انتخاب مقاله فنی / آرتیفکت مورد بررسی:'}
+              </label>
+              <select
+                id="kb-context-awareness-doc-select"
+                data-testid="kb-context-awareness-doc-select"
+                value={selectedContextEntry.id}
+                onChange={(e) => {
+                  selectedContextDocIdRef.current = e.target.value;
+                  setSelectedContextDocId(e.target.value);
+                }}
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-purple-500 cursor-pointer"
+              >
+                {entries.map((ent) => (
+                  <option key={ent.id} value={ent.id}>
+                    {language === 'en'
+                      ? `${ent.titleEn} (${ent.keyPath} · ${ent.tokenCount}t · ${ent.stalenessPercent}% rot)`
+                      : `${ent.titleFa} (${ent.keyPath} · ${ent.tokenCount}t · ${ent.stalenessPercent}% rot)`}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="lg:col-span-6 space-y-1.5">
+              <span className="block text-[11px] font-bold text-slate-600 dark:text-slate-300">
+                {language === 'en'
+                  ? 'Target MCP Setup Baseline Profile:'
+                  : 'پروفایل مرجع پیکربندی MCP (Target Baseline):'}
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+                {(
+                  [
+                    {
+                      id: 'stdio-local-readonly',
+                      labelFa: 'stdio محلی Read-Only',
+                      labelEn: 'Local stdio Read-Only',
+                    },
+                    {
+                      id: 'sse-remote-zero-trust',
+                      labelFa: 'کلاستر راه دور SSE',
+                      labelEn: 'Remote SSE Zero-Trust',
+                    },
+                    {
+                      id: 'multi-worktree-ci',
+                      labelFa: 'ایزوله Multi-Worktree',
+                      labelEn: 'Multi-Worktree CI',
+                    },
+                  ] as const
+                ).map((prof) => {
+                  const isActiveProf = mcpBaselineProfile === prof.id;
+                  return (
+                    <button
+                      key={prof.id}
+                      type="button"
+                      data-testid={`kb-context-profile-${prof.id}`}
+                      onClick={() => {
+                        mcpBaselineProfileRef.current = prof.id;
+                        setMcpBaselineProfile(prof.id);
+                      }}
+                      className={`px-2.5 py-2 rounded-xl text-[11px] font-bold border transition-all cursor-pointer truncate ${
+                        isActiveProf
+                          ? 'border-purple-500 bg-purple-600 text-white shadow-xs'
+                          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-600 dark:text-slate-300 hover:border-purple-500/40'
+                      }`}
+                    >
+                      {renderBidiText(
+                        language === 'en' ? prof.labelEn : prof.labelFa,
+                        language
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Executive Context Awareness Summary Box */}
+          <div
+            data-testid="kb-context-awareness-summary"
+            className="p-4 rounded-xl border border-purple-500/25 bg-white/90 dark:bg-slate-950/75 space-y-2"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs font-extrabold text-purple-700 dark:text-purple-300">
+                {language === 'en'
+                  ? 'Context Awareness Synthesis'
+                  : 'سنتز آگاهی زمینه (Context Awareness Summary)'}
+              </span>
+              <code
+                dir="ltr"
+                className="ltr-inline text-[11px] font-mono text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded"
+              >
+                {selectedContextEntry.keyPath}
+              </code>
+            </div>
+            <p className="text-xs sm:text-[13px] leading-6 text-slate-700 dark:text-slate-200">
+              {renderBidiText(
+                activeContextAwareness.contextAwarenessSummary,
+                language
+              )}
+            </p>
+            <div className="pt-2 border-t border-slate-200/70 dark:border-white/[0.06] text-xs text-slate-500 dark:text-slate-400">
+              <strong className="text-slate-700 dark:text-slate-200">
+                {language === 'en' ? 'Architectural Invariant: ' : 'الزام معماری: '}
+              </strong>
+              <span>
+                {renderBidiText(
+                  activeContextAwareness.architecturalIntent,
+                  language
+                )}
+              </span>
+            </div>
+          </div>
+
+          {/* 3 Configuration Drift Findings Grid */}
+          <div
+            data-testid="kb-context-awareness-drift-list"
+            className="grid grid-cols-1 md:grid-cols-3 gap-3.5"
+          >
+            {activeContextAwareness.driftFindings.map((finding, idx) => (
+              <div
+                key={finding.id}
+                data-testid={`kb-drift-finding-${idx}`}
+                className="p-4 rounded-xl border border-slate-200/90 dark:border-white/[0.08] bg-white/95 dark:bg-slate-950/80 flex flex-col justify-between space-y-3"
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-bold text-slate-400 tabular-nums">
+                      #{formatLocalizedNumber(idx + 1, language, true)}
+                    </span>
+                    <span
+                      dir="ltr"
+                      className={`ltr-inline px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${
+                        finding.severity === 'CRITICAL'
+                          ? 'border-rose-500/40 bg-rose-500/15 text-rose-500'
+                          : finding.severity === 'WARNING'
+                          ? 'border-amber-500/40 bg-amber-500/15 text-amber-500'
+                          : 'border-emerald-500/40 bg-emerald-500/15 text-emerald-500'
+                      }`}
+                    >
+                      {finding.severity}
+                    </span>
+                  </div>
+
+                  <code
+                    dir="ltr"
+                    className="ltr-block text-[11px] font-mono font-bold text-blue-600 dark:text-blue-400 break-all"
+                  >
+                    {finding.parameterPath}
+                  </code>
+
+                  <div
+                    dir="ltr"
+                    className="ltr-block p-2 rounded-lg bg-slate-100 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 text-[10px] font-mono space-y-1"
+                  >
+                    <div className="text-emerald-600 dark:text-emerald-400 truncate">
+                      Expected: {finding.expectedBaseline}
+                    </div>
+                    <div className="text-amber-600 dark:text-amber-400 truncate">
+                      Detected: {finding.detectedState}
+                    </div>
+                  </div>
+
+                  <p className="text-xs leading-6 text-slate-600 dark:text-slate-300">
+                    {renderBidiText(finding.explanation, language)}
+                  </p>
+                </div>
+
+                <div className="pt-2 border-t border-slate-100 dark:border-white/[0.06]">
+                  <div className="text-[10px] font-bold text-slate-400 mb-1">
+                    {language === 'en'
+                      ? 'Recommended Remediation Patch:'
+                      : 'پچ پیشنهادی رفع انحراف:'}
+                  </div>
+                  <code
+                    dir="ltr"
+                    className="ltr-block text-[10px] font-mono text-cyan-600 dark:text-cyan-300 bg-slate-950 px-2 py-1.5 rounded border border-slate-800 overflow-x-auto"
+                  >
+                    {finding.remediationPatch}
+                  </code>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Footer Bar: Recommended MCP Config Snippet + One-Click Apply Fix */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-200/70 dark:border-white/[0.07]">
+            <div className="text-xs text-slate-500 dark:text-slate-400">
+              {language === 'en'
+                ? 'Applying remediation synchronizes this entry with your active MCP baseline and clears stale Context Rot.'
+                : 'اعمال اصلاحیه، این مدخل را با پروفایل مرجع MCP همگام کرده و پوسیدگی زمینه (Context Rot) را صفر می‌کند.'}
+            </div>
+            <button
+              type="button"
+              onClick={handleApplyMcpDriftRemediation}
+              data-testid="kb-context-awareness-apply-fix-btn"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              <span>
+                {language === 'en'
+                  ? 'Apply MCP Drift Remediation & Reset Rot'
+                  : 'اعمال اصلاحیه انحراف MCP و صفر کردن Context Rot'}
+              </span>
+            </button>
+          </div>
+        </section>
+      )}
+
       {/* Searchable Bento Grid */}
       {filteredMatchResults.length === 0 ? (
         <div
@@ -3174,7 +3642,21 @@ export const KnowledgeBaseExplorer: React.FC<{
                     Updated: {item.updatedAtIso.slice(0, 19).replace('T', ' ')}
                   </span>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenContextAwarenessForDoc(item.id)}
+                      data-testid={`kb-context-awareness-btn-${item.id}`}
+                      className="px-2.5 py-1.5 rounded-lg border border-purple-500/35 bg-purple-500/10 hover:bg-purple-600 hover:text-white text-purple-600 dark:text-purple-300 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>
+                        {language === 'en'
+                          ? 'Context Awareness'
+                          : 'آگاهی زمینه (MCP Drift)'}
+                      </span>
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => handleOpenQuizForDoc(item.id)}

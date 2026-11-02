@@ -45,6 +45,7 @@ import {
   loadArchitectProgressFromCloud,
 } from '../lib/firebase';
 import { CurriculumModule } from '../types/curriculum';
+import { AcademyLeaderboard } from './AcademyLeaderboard';
 import {
   StudySessionDay,
   DailyStudyGoalItem,
@@ -256,6 +257,32 @@ export const AchievementsCertificationView: React.FC<{
     'scenario-fastmcp-security',
   ]);
 
+  // AI Weekly Ranking Challenges State (for Academy Leaderboard)
+  const [completedWeeklyChallenges, setCompletedWeeklyChallenges] = useState<
+    Record<string, number>
+  >({});
+
+  const handleToggleWeeklyChallengeComplete = (
+    challengeId: string,
+    xpReward: number
+  ) => {
+    setCompletedWeeklyChallenges((prev) => {
+      const next = { ...prev };
+      if (challengeId in next) {
+        delete next[challengeId];
+      } else {
+        next[challengeId] = xpReward;
+      }
+      return next;
+    });
+  };
+
+  const completedWeeklyChallengeIds = Object.keys(completedWeeklyChallenges);
+  const weeklyChallengeBonusXp = Object.values(completedWeeklyChallenges).reduce(
+    (sum, val) => sum + val,
+    0
+  );
+
   // Firebase Auth & Cloud Firestore Sync State
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [cloudSyncStatus, setCloudSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
@@ -388,8 +415,16 @@ export const AchievementsCertificationView: React.FC<{
     metrics.totalModules,
     completedScenarioIds
   );
-  const xpProgression = calculateXpAndLevelProgression(
+  const baseProgressionWithoutWeeklyChallenges = calculateXpAndLevelProgression(
     metrics.totalXp + trophyCase.trophyBonusXp + streakMilestoneEval.totalMilestoneBonusXp,
+    streakStats.totalMinutesStudied,
+    studioUsageItems
+  );
+  const xpProgression = calculateXpAndLevelProgression(
+    metrics.totalXp +
+      trophyCase.trophyBonusXp +
+      streakMilestoneEval.totalMilestoneBonusXp +
+      weeklyChallengeBonusXp,
     streakStats.totalMinutesStudied,
     studioUsageItems
   );
@@ -1410,6 +1445,17 @@ export const AchievementsCertificationView: React.FC<{
           </div>
         </div>
       </div>
+
+      {/* Academy Leaderboard & AI Weekly Ranking Challenges */}
+      <AcademyLeaderboard
+        architectName={displayArchitectName}
+        baseCumulativeXp={baseProgressionWithoutWeeklyChallenges.totalCombinedXp}
+        completedModulesCount={metrics.completedCount}
+        currentStreakDays={streakStats.currentStreakDays}
+        bonusChallengeXp={weeklyChallengeBonusXp}
+        completedChallengeIds={completedWeeklyChallengeIds}
+        onToggleChallengeComplete={handleToggleWeeklyChallengeComplete}
+      />
 
       {/* Mastery Rank System Ladder (Trainee · Specialist · Architect · Principal) */}
       <div

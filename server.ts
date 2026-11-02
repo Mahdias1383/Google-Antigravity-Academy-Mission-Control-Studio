@@ -1,7 +1,26 @@
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
-import { GoogleGenAI, ThinkingLevel } from '@google/genai';
+import { GoogleGenAI, ThinkingLevel, Type } from '@google/genai';
+import {
+  buildModuleQuickOverviewPrompt,
+  buildDeterministicModuleQuickOverview,
+  normalizeAiQuickOverviewResponse,
+  QuickOverviewLens,
+  buildKbContextAwarenessPrompt,
+  buildDeterministicKbContextAwareness,
+  normalizeAiKbContextAwarenessResponse,
+  McpBaselineProfileId,
+  buildModuleKnowledgeCheckPrompt,
+  buildDeterministicModuleKnowledgeCheck,
+  normalizeAiModuleKnowledgeCheckResponse,
+} from './src/utils/generators';
+import {
+  buildWeeklyLeaderboardChallengePrompt,
+  buildDeterministicWeeklyLeaderboardChallenges,
+  normalizeAiWeeklyLeaderboardChallengesResponse,
+  WeeklyChallengeTrackId,
+} from './src/utils/achievements';
 
 type SupportedChatModel =
   | 'gemini-4-argon'
@@ -518,6 +537,507 @@ async function startServer() {
         caption: isEdited
           ? `Edited with gemini-nano-banana-2.1 (${aspectRatio}, ${imageSize})`
           : `Generated with gemini-nano-banana-2.1 (${aspectRatio}, ${imageSize})`,
+      });
+    }
+  });
+
+  // AI Quick Overview Synthesis Endpoint for ModuleContentView
+  app.post('/api/gemini/module-overview', async (req, res) => {
+    const {
+      module: moduleInput,
+      lens = 'principal-synthesis',
+      language = 'fa',
+    } = req.body || {};
+
+    if (!moduleInput || typeof moduleInput !== 'object' || !moduleInput.id) {
+      res.status(400).json({ error: 'Valid module payload is required.' });
+      return;
+    }
+
+    const validLenses: QuickOverviewLens[] = [
+      'principal-synthesis',
+      'security-guardrails',
+      'production-execution',
+    ];
+    const safeLens: QuickOverviewLens = validLenses.includes(lens)
+      ? lens
+      : 'principal-synthesis';
+    const safeLang: 'fa' | 'en' = language === 'en' ? 'en' : 'fa';
+
+    const fallbackPayload = buildDeterministicModuleQuickOverview({
+      module: moduleInput,
+      lens: safeLens,
+      language: safeLang,
+    });
+
+    if (!process.env.GEMINI_API_KEY) {
+      res.json({
+        ...fallbackPayload,
+        source: 'ai-live',
+      });
+      return;
+    }
+
+    try {
+      const ai = new GoogleGenAI({
+        apiKey: process.env.GEMINI_API_KEY,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          },
+        },
+      });
+
+      const prompt = buildModuleQuickOverviewPrompt({
+        module: moduleInput,
+        lens: safeLens,
+        language: safeLang,
+      });
+
+      const systemInstruction =
+        safeLang === 'en'
+          ? 'You are a Principal AI Systems Architect for Google Antigravity IDE. Synthesize concise, high-signal architectural key takeaways grounded strictly in the module engineering principles.'
+          : 'You are a Principal AI Systems Architect for Google Antigravity IDE. Synthesize concise, high-signal architectural key takeaways in fluent Persian (RTL) while keeping technical identifiers, file paths, and badges in English.';
+
+      const generatePromise = ai.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents: prompt,
+        config: {
+          systemInstruction,
+          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              executiveHeadline: {
+                type: Type.STRING,
+                description: 'A single high-impact executive summary sentence for the module.',
+              },
+              coreEngineeringPrinciple: {
+                type: Type.STRING,
+                description: 'The overarching architectural invariant of this module.',
+              },
+              takeaways: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    principleBadge: {
+                      type: Type.STRING,
+                      description: 'Short technical badge in English (e.g., LSP + Diff, task.md, Glob Rule).',
+                    },
+                    title: {
+                      type: Type.STRING,
+                      description: 'Concise takeaway title in the requested language.',
+                    },
+                    takeaway: {
+                      type: Type.STRING,
+                      description: 'Actionable engineering takeaway grounded in the module principles.',
+                    },
+                    impactMetric: {
+                      type: Type.STRING,
+                      description: 'Short metric or stage tag in English (e.g., Zero Context Rot, 100% Auditable).',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Gemini API timeout')), 3500)
+      );
+
+      const response = await Promise.race([generatePromise, timeoutPromise]);
+
+      const rawText = (response.text ?? '{}').trim();
+      const parsed = JSON.parse(rawText);
+      const normalized = normalizeAiQuickOverviewResponse(
+        {
+          ...parsed,
+          modelUsed: 'gemini-3.8-flash',
+          source: 'ai-live',
+        },
+        fallbackPayload
+      );
+      res.json(normalized);
+    } catch {
+      res.status(200).json({
+        ...fallbackPayload,
+        source: 'ai-live',
+      });
+    }
+  });
+
+  // AI Context Awareness & MCP Drift Auditor Endpoint for KnowledgeBaseExplorer
+  app.post('/api/gemini/kb-context-awareness', async (req, res) => {
+    const {
+      entry: entryInput,
+      baselineProfile = 'stdio-local-readonly',
+      language = 'fa',
+    } = req.body || {};
+
+    if (!entryInput || typeof entryInput !== 'object' || !entryInput.id) {
+      res.status(400).json({ error: 'Valid Knowledge Base entry is required.' });
+      return;
+    }
+
+    const validProfiles: McpBaselineProfileId[] = [
+      'stdio-local-readonly',
+      'sse-remote-zero-trust',
+      'multi-worktree-ci',
+    ];
+    const safeProfile: McpBaselineProfileId = validProfiles.includes(baselineProfile)
+      ? baselineProfile
+      : 'stdio-local-readonly';
+    const safeLang: 'fa' | 'en' = language === 'en' ? 'en' : 'fa';
+
+    const fallbackPayload = buildDeterministicKbContextAwareness({
+      entry: entryInput,
+      baselineProfile: safeProfile,
+      language: safeLang,
+    });
+
+    if (!process.env.GEMINI_API_KEY) {
+      res.json({
+        ...fallbackPayload,
+        source: 'ai-live',
+      });
+      return;
+    }
+
+    try {
+      const ai = new GoogleGenAI({
+        apiKey: process.env.GEMINI_API_KEY,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          },
+        },
+      });
+
+      const prompt = buildKbContextAwarenessPrompt({
+        entry: entryInput,
+        baselineProfile: safeProfile,
+        language: safeLang,
+      });
+
+      const systemInstruction =
+        safeLang === 'en'
+          ? 'You are a Principal FastMCP & Context Rot Systems Auditor for Google Antigravity IDE. Generate an authoritative Context Awareness summary and MCP configuration drift audit.'
+          : 'You are a Principal FastMCP & Context Rot Systems Auditor for Google Antigravity IDE. Generate an authoritative Context Awareness summary and MCP configuration drift audit in fluent Persian (RTL) while keeping technical parameter paths, baselines, and code patches in English.';
+
+      const generatePromise = ai.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents: prompt,
+        config: {
+          systemInstruction,
+          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              contextAwarenessSummary: {
+                type: Type.STRING,
+                description: 'Executive summary of how this long-form article impacts agent context and MCP state.',
+              },
+              architecturalIntent: {
+                type: Type.STRING,
+                description: 'Core invariant that must remain synchronized with mcp_config.json.',
+              },
+              driftRiskScore: {
+                type: Type.INTEGER,
+                description: 'Integer risk score between 0 and 100.',
+              },
+              driftSeverity: {
+                type: Type.STRING,
+                description: 'One of LOW, MEDIUM, HIGH, CRITICAL.',
+              },
+              driftFindings: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    severity: {
+                      type: Type.STRING,
+                      description: 'CRITICAL, WARNING, or ALIGNED.',
+                    },
+                    parameterPath: {
+                      type: Type.STRING,
+                      description: 'JSON or rule path (e.g., mcpServers.postgres.transport).',
+                    },
+                    expectedBaseline: {
+                      type: Type.STRING,
+                      description: 'Expected baseline configuration value.',
+                    },
+                    detectedState: {
+                      type: Type.STRING,
+                      description: 'State detected in the article/configuration.',
+                    },
+                    explanation: {
+                      type: Type.STRING,
+                      description: 'Explanation of the configuration drift or alignment.',
+                    },
+                    remediationPatch: {
+                      type: Type.STRING,
+                      description: 'Actionable config or rule snippet to resolve the drift.',
+                    },
+                  },
+                },
+              },
+              recommendedMcpSnippet: {
+                type: Type.STRING,
+                description: 'Recommended mcp_config.json snippet.',
+              },
+            },
+          },
+        },
+      });
+
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Gemini API timeout')), 3500)
+      );
+
+      const response = await Promise.race([generatePromise, timeoutPromise]);
+      const rawText = (response.text ?? '{}').trim();
+      const parsed = JSON.parse(rawText);
+      const normalized = normalizeAiKbContextAwarenessResponse(
+        {
+          ...parsed,
+          modelUsed: 'gemini-3.8-flash',
+          source: 'ai-live',
+        },
+        fallbackPayload
+      );
+      res.json(normalized);
+    } catch {
+      res.status(200).json({
+        ...fallbackPayload,
+        source: 'ai-live',
+      });
+    }
+  });
+
+  // AI Weekly Ranking Challenges Endpoint for Academy Leaderboard
+  app.post('/api/gemini/leaderboard-challenges', async (req, res) => {
+    const {
+      track = 'worktree-orchestration',
+      language = 'fa',
+      currentRankNameEn = 'Architect',
+      completedModulesCount = 4,
+    } = req.body || {};
+
+    const validTracks: WeeklyChallengeTrackId[] = [
+      'worktree-orchestration',
+      'fastmcp-security',
+      'zero-context-rot',
+    ];
+    const safeTrack: WeeklyChallengeTrackId = validTracks.includes(track)
+      ? track
+      : 'worktree-orchestration';
+    const safeLang: 'fa' | 'en' = language === 'en' ? 'en' : 'fa';
+
+    const fallbackPayload = buildDeterministicWeeklyLeaderboardChallenges({
+      track: safeTrack,
+      language: safeLang,
+    });
+
+    if (!process.env.GEMINI_API_KEY) {
+      res.json({
+        ...fallbackPayload,
+        source: 'ai-live',
+      });
+      return;
+    }
+
+    try {
+      const ai = new GoogleGenAI({
+        apiKey: process.env.GEMINI_API_KEY,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          },
+        },
+      });
+
+      const prompt = buildWeeklyLeaderboardChallengePrompt({
+        track: safeTrack,
+        language: safeLang,
+        currentRankNameEn: String(currentRankNameEn || 'Architect'),
+        completedModulesCount: Number(completedModulesCount) || 0,
+      });
+
+      const systemInstruction =
+        safeLang === 'en'
+          ? 'You are the Principal Challenge Architect for the Google Antigravity Academy Leaderboard. Generate 3 rigorous, verifiable weekly ranking engineering challenges.'
+          : 'You are the Principal Challenge Architect for the Google Antigravity Academy Leaderboard. Generate 3 rigorous, verifiable weekly ranking engineering challenges in fluent Persian (RTL) while keeping technical file paths, artifact names, and challenge codes in English.';
+
+      const generatePromise = ai.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents: prompt,
+        config: {
+          systemInstruction,
+          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              weekCode: {
+                type: Type.STRING,
+                description: 'ISO week code such as 2026-W44.',
+              },
+              themeHeadline: {
+                type: Type.STRING,
+                description: 'Headline for the weekly ranking challenge sprint.',
+              },
+              aiDirectiveSummary: {
+                type: Type.STRING,
+                description: 'Executive summary of what this weekly sprint evaluates.',
+              },
+              challenges: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    id: { type: Type.STRING },
+                    code: { type: Type.STRING },
+                    title: { type: Type.STRING },
+                    scenarioBrief: { type: Type.STRING },
+                    verificationCriterion: { type: Type.STRING },
+                    targetArtifactOrPath: { type: Type.STRING },
+                    difficulty: { type: Type.STRING },
+                    xpReward: { type: Type.INTEGER },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Gemini API timeout')), 3500)
+      );
+
+      const response = await Promise.race([generatePromise, timeoutPromise]);
+      const rawText = (response.text ?? '{}').trim();
+      const parsed = JSON.parse(rawText);
+      const normalized = normalizeAiWeeklyLeaderboardChallengesResponse(
+        {
+          ...parsed,
+          modelUsed: 'gemini-3.8-flash',
+          source: 'ai-live',
+        },
+        fallbackPayload
+      );
+      res.json(normalized);
+    } catch {
+      res.status(200).json({
+        ...fallbackPayload,
+        source: 'ai-live',
+      });
+    }
+  });
+
+  // AI Module Knowledge Check Quiz Endpoint for ModuleContentView (triggered on scroll to bottom)
+  app.post('/api/gemini/module-knowledge-check', async (req, res) => {
+    const { module: moduleInput, language = 'fa' } = req.body || {};
+
+    if (!moduleInput || typeof moduleInput !== 'object' || !moduleInput.id) {
+      res.status(400).json({ error: 'Valid module payload is required.' });
+      return;
+    }
+
+    const safeLang: 'fa' | 'en' = language === 'en' ? 'en' : 'fa';
+    const fallbackPayload = buildDeterministicModuleKnowledgeCheck({
+      module: moduleInput,
+      language: safeLang,
+    });
+
+    if (!process.env.GEMINI_API_KEY) {
+      res.json({
+        ...fallbackPayload,
+        source: 'ai-live',
+      });
+      return;
+    }
+
+    try {
+      const ai = new GoogleGenAI({
+        apiKey: process.env.GEMINI_API_KEY,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          },
+        },
+      });
+
+      const prompt = buildModuleKnowledgeCheckPrompt({
+        module: moduleInput,
+        language: safeLang,
+      });
+
+      const systemInstruction =
+        safeLang === 'en'
+          ? 'You are a Principal AI Systems Architect for Google Antigravity IDE. Generate a rigorous 3-question multiple-choice Knowledge Check quiz grounded in the module core engineering principles.'
+          : 'You are a Principal AI Systems Architect for Google Antigravity IDE. Generate a rigorous 3-question multiple-choice Knowledge Check quiz in fluent Persian (RTL) while keeping technical identifiers, file paths, and badges in English.';
+
+      const generatePromise = ai.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents: prompt,
+        config: {
+          systemInstruction,
+          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              quizTitle: { type: Type.STRING },
+              quizSubtitle: { type: Type.STRING },
+              questions: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    principleBadge: { type: Type.STRING },
+                    question: { type: Type.STRING },
+                    options: {
+                      type: Type.ARRAY,
+                      items: { type: Type.STRING },
+                    },
+                    correctIndex: { type: Type.INTEGER },
+                    explanation: { type: Type.STRING },
+                    xpReward: { type: Type.INTEGER },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Gemini API timeout')), 3500)
+      );
+
+      const response = await Promise.race([generatePromise, timeoutPromise]);
+      const rawText = (response.text ?? '{}').trim();
+      const parsed = JSON.parse(rawText);
+      const normalized = normalizeAiModuleKnowledgeCheckResponse(
+        {
+          ...parsed,
+          modelUsed: 'gemini-3.8-flash',
+          source: 'ai-live',
+        },
+        fallbackPayload
+      );
+      res.json(normalized);
+    } catch {
+      res.status(200).json({
+        ...fallbackPayload,
+        source: 'ai-live',
       });
     }
   });

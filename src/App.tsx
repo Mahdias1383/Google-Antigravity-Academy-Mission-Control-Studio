@@ -32,6 +32,9 @@ import {
   LayoutGrid,
   Menu,
   Layers,
+  RefreshCw,
+  Zap,
+  Target,
 } from 'lucide-react';
 import { ALL_CURRICULUM_MODULES } from './data/curriculumIndex';
 import {
@@ -51,8 +54,15 @@ import {
   buildMissionMilestoneNotification,
   MissionMilestonePayload,
   computeReadingEstimateForModule,
+  buildBreadcrumbDescriptorWithTooltips,
+  BreadcrumbTooltipDetail,
+  buildSidebarModulePathGraph,
+  ArchitectDailyMissionTask,
+  selectArchitectDailyMission,
+  completeArchitectDailyMission,
 } from './utils/generators';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
+import { getEnglishModuleContent } from './utils/curriculumEnglishContent';
 import { formatLocalizedNumber, renderBidiText } from './utils/bidiText';
 import { ModuleContentView } from './components/ModuleContentView';
 import {
@@ -105,6 +115,33 @@ function MainWorkspace() {
   const [pdfPayload, setPdfPayload] = useState<PrintableDocumentPayload | null>(null);
   const [inviteModalOpen, setInviteModalOpen] = useState<boolean>(false);
   const [userBonusXp, setUserBonusXp] = useState<number>(0);
+
+  // Architect's Daily Mission Widget State (Sidebar random technical task for extra XP)
+  const [activeDailyMission, setActiveDailyMission] =
+    useState<ArchitectDailyMissionTask>(() =>
+      selectArchitectDailyMission({ seedOrIndex: 0 })
+    );
+  const [completedDailyMissionIds, setCompletedDailyMissionIds] = useState<
+    string[]
+  >([]);
+
+  const handleRerollDailyMission = () => {
+    setActiveDailyMission((prev) =>
+      selectArchitectDailyMission({ excludeMissionId: prev.id })
+    );
+  };
+
+  const handleCompleteDailyMission = () => {
+    const result = completeArchitectDailyMission({
+      mission: activeDailyMission,
+      completedMissionIds: completedDailyMissionIds,
+      currentBonusXp: userBonusXp,
+    });
+    if (!result.alreadyCompleted) {
+      setCompletedDailyMissionIds(result.updatedCompletedIds);
+      setUserBonusXp(result.updatedBonusXp);
+    }
+  };
 
   // Comprehensive Sidebar Groups State (Default: all closed per user request)
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
@@ -434,6 +471,65 @@ function MainWorkspace() {
     (completedModules.length / ALL_CURRICULUM_MODULES.length) * 100
   );
 
+  const [hoveredBreadcrumbSegment, setHoveredBreadcrumbSegment] = useState<
+    'group' | 'subgroup' | 'item' | null
+  >(null);
+  const [hoveredPathNodeId, setHoveredPathNodeId] = useState<string | null>(null);
+
+  const sidebarPathGraph = React.useMemo(
+    () =>
+      buildSidebarModulePathGraph({
+        modules: ALL_CURRICULUM_MODULES,
+        completedModules,
+        activeModuleId,
+        activeSection,
+      }),
+    [completedModules, activeModuleId, activeSection]
+  );
+
+  const inspectedPathNode = React.useMemo(() => {
+    if (hoveredPathNodeId) {
+      const found = sidebarPathGraph.nodes.find((n) => n.id === hoveredPathNodeId);
+      if (found) return found;
+    }
+    return (
+      sidebarPathGraph.nodes.find((n) => n.isCurrent) ||
+      sidebarPathGraph.nodes[0]
+    );
+  }, [hoveredPathNodeId, sidebarPathGraph]);
+
+  const activeBreadcrumb = React.useMemo(() => {
+    const enMod = getEnglishModuleContent(currentModule.id);
+    const formattedModNumber = formatLocalizedNumber(
+      currentModule.number,
+      language,
+      true
+    );
+    return buildBreadcrumbDescriptorWithTooltips({
+      activeSection,
+      language,
+      currentModule: {
+        number: currentModule.number,
+        titleFa: currentModule.titleFa,
+        titleEn: currentModule.titleEn,
+        summaryFa: currentModule.summaryFa,
+        summaryEn: enMod?.summaryEn,
+        readingTime: currentModule.readingTime,
+        difficulty: currentModule.difficulty,
+      },
+      formattedModNumber,
+    });
+  }, [activeSection, currentModule, language]);
+
+  const activeBreadcrumbTooltip: BreadcrumbTooltipDetail | null =
+    hoveredBreadcrumbSegment === 'group'
+      ? activeBreadcrumb.groupTooltip
+      : hoveredBreadcrumbSegment === 'subgroup'
+      ? activeBreadcrumb.subgroupTooltip
+      : hoveredBreadcrumbSegment === 'item'
+      ? activeBreadcrumb.itemTooltip
+      : null;
+
   // Full-Viewport Game Shell Mode: when in 3D Cyber Arena ('game-3d'), render only the 100vw x 100vh WebGL Game Shell without website chrome
   if (activeSection === 'game-3d') {
     return (
@@ -442,62 +538,6 @@ function MainWorkspace() {
       />
     );
   }
-
-  const activeBreadcrumb = React.useMemo(() => {
-    if (activeSection === 'curriculum') {
-      const phaseTitle =
-        currentModule.number <= 3
-          ? (language === 'en' ? 'Phase 1 · Core Architecture' : 'گام اول · معماری هسته و اجرا')
-          : currentModule.number <= 6
-          ? (language === 'en' ? 'Phase 2 · Rules & Automation' : 'گام دوم · قوانین و اتوماسیون')
-          : (language === 'en' ? 'Phase 3 · Scale & Multi-Agent' : 'گام سوم · مقیاس‌پذیری و MCP');
-      return {
-        group: language === 'en' ? 'Curriculum' : 'سرفصل‌های آموزشی',
-        subgroup: phaseTitle,
-        item:
-          language === 'en'
-            ? `Module ${formatLocalizedNumber(currentModule.number, 'en', true)}: ${currentModule.titleEn}`
-            : `فصل ${formatLocalizedNumber(currentModule.number, 'fa', true)}: ${currentModule.titleFa}`,
-      };
-    }
-    if (['simulator', 'guardrails', 'mcp', 'scenarios'].includes(activeSection)) {
-      const map: Record<string, { fa: string; en: string }> = {
-        simulator: { fa: 'شبیه‌ساز Mission Control', en: 'Mission Control Simulator' },
-        guardrails: { fa: 'مهندسی Rule و Workflow', en: 'Rule & Workflow Studio' },
-        mcp: { fa: 'استودیو بصری FastMCP', en: 'FastMCP Visual Studio' },
-        scenarios: { fa: 'آزمایشگاه سناریوهای معماری', en: 'Architect Scenario Lab' },
-      };
-      return {
-        group: language === 'en' ? 'Engineering Studios' : 'استودیوهای مهندسی زنده',
-        subgroup: language === 'en' ? 'Interactive Workbenches' : 'میز کارهای تعاملی',
-        item: language === 'en' ? map[activeSection]?.en : map[activeSection]?.fa,
-      };
-    }
-    if (['knowledge-base', 'ai-architect', 'cheatsheets'].includes(activeSection)) {
-      const map: Record<string, { fa: string; en: string }> = {
-        'knowledge-base': { fa: 'پایگاه دانش و مهار Context Rot', en: 'Knowledge Base & Context Rot' },
-        'ai-architect': { fa: 'دستیار هوشمند و کاوشگر مستندات', en: 'AI Architect & Live Docs' },
-        cheatsheets: { fa: 'مرکز چیت‌شیت‌ها و مراجع PDF', en: 'Reference Cheat Sheets & PDF' },
-      };
-      return {
-        group: language === 'en' ? 'Knowledge & AI' : 'پایگاه دانش و هوش مصنوعی',
-        subgroup: language === 'en' ? 'Documentation & Memory' : 'کانتکست و مستندات رسمی',
-        item: language === 'en' ? map[activeSection]?.en : map[activeSection]?.fa,
-      };
-    }
-    if (activeSection === 'achievements') {
-      return {
-        group: language === 'en' ? 'Mastery & Evaluation' : 'ارزیابی و کارنامه مهندسی',
-        subgroup: language === 'en' ? 'Certification' : 'رتبه‌بندی و نشان‌ها',
-        item: language === 'en' ? 'Official Architect Certification' : 'کارنامه مهارت و صدور گواهینامه',
-      };
-    }
-    return {
-      group: language === 'en' ? 'Mission Control' : 'میز کار مهندسی',
-      subgroup: '',
-      item: '',
-    };
-  }, [activeSection, currentModule, language]);
 
   // Reusable Comprehensive Sidebar Content (Unified across Desktop and Mobile Drawer)
   const renderComprehensiveSidebarContent = (isMobile = false) => (
@@ -569,34 +609,411 @@ function MainWorkspace() {
           </kbd>
         </button>
 
-        {/* Overall Mastery Progress Bar Card */}
-        <div className="p-3.5 rounded-2xl border border-slate-200/80 dark:border-blue-500/15 bg-gradient-to-br from-slate-50 via-white to-slate-100/80 dark:from-[#0d1424] dark:via-[#0b101c] dark:to-[#080d17] space-y-2.5 shadow-2xs">
+        {/* Overall Mastery Progress Bar & Visual Curved Module Path Map */}
+        <div
+          data-testid="sidebar-module-path-map"
+          className="p-3.5 rounded-2xl border border-slate-200/80 dark:border-blue-500/20 bg-gradient-to-br from-slate-50 via-white to-slate-100/80 dark:from-[#0d1424] dark:via-[#0b101c] dark:to-[#080d17] space-y-3 shadow-2xs"
+        >
           <div className="flex items-center justify-between text-[11px] font-bold text-slate-700 dark:text-slate-200">
             <div className="flex items-center gap-1.5">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
               </span>
-              <span>{language === 'en' ? 'Curriculum Mastery' : 'روند تسلط بر آکادمی'}</span>
+              <span>{language === 'en' ? 'Curriculum Path Map' : 'نقشه مسیر پیشرفت آکادمی'}</span>
             </div>
             <span dir="ltr" className="ltr-inline font-mono text-emerald-600 dark:text-emerald-400 tabular-nums font-extrabold">
               {completedModules.length}/8 ({completionPercent}%)
             </span>
           </div>
-          <div className="w-full h-1.5 rounded-full bg-slate-200/80 dark:bg-white/[0.06] overflow-hidden p-0.5">
-            <div
-              className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-400 rounded-full transition-all duration-500 shadow-xs shadow-blue-500/40"
-              style={{ width: `${completionPercent}%` }}
-            />
+
+          {/* Interactive Curved Serpentine Module Path SVG */}
+          <div
+            className="relative rounded-xl border border-slate-200/70 dark:border-white/[0.06] bg-white/80 dark:bg-[#070b13]/80 px-2 py-2 overflow-hidden"
+            onMouseLeave={() => setHoveredPathNodeId(null)}
+          >
+            <svg
+              viewBox="0 0 280 94"
+              className="w-full h-[88px] overflow-visible select-none"
+              role="img"
+              aria-label={
+                language === 'en'
+                  ? 'Visual curved module progression map showing completed, active, and pending chapters'
+                  : 'نقشه بصری منحنی مسیر فصل‌های آموزشی شامل فصل‌های تکمیل‌شده، فعال و در انتظار'
+              }
+            >
+              <defs>
+                <linearGradient id="sidebar-path-completed-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#10b981" />
+                  <stop offset="100%" stopColor="#06b6d4" />
+                </linearGradient>
+                <linearGradient id="sidebar-path-active-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#3b82f6" />
+                  <stop offset="100%" stopColor="#818cf8" />
+                </linearGradient>
+                <filter id="sidebar-node-glow" x="-35%" y="-35%" width="170%" height="170%">
+                  <feGaussianBlur stdDeviation="2.5" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
+
+              {/* Continuous Subtle Base Serpentine Track */}
+              <path
+                d={sidebarPathGraph.fullTrackPathD}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                className="text-slate-200 dark:text-slate-800/90"
+                strokeLinecap="round"
+              />
+
+              {/* Curved Bézier Connection Segments by State */}
+              {sidebarPathGraph.segments.map((seg) => {
+                const isSegCompleted = seg.status === 'completed';
+                const isSegActive = seg.status === 'active';
+                return (
+                  <path
+                    key={seg.id}
+                    data-testid={`path-segment-${seg.id}`}
+                    data-status={seg.status}
+                    d={seg.pathD}
+                    fill="none"
+                    stroke={
+                      isSegCompleted
+                        ? 'url(#sidebar-path-completed-grad)'
+                        : isSegActive
+                        ? 'url(#sidebar-path-active-grad)'
+                        : 'currentColor'
+                    }
+                    strokeWidth={isSegCompleted || isSegActive ? '2.8' : '1.8'}
+                    strokeDasharray={
+                      isSegCompleted ? undefined : isSegActive ? '5 3' : '3 4'
+                    }
+                    className={
+                      isSegCompleted || isSegActive
+                        ? 'transition-all duration-500'
+                        : 'text-slate-300 dark:text-slate-700/70 transition-all duration-500'
+                    }
+                    strokeLinecap="round"
+                  />
+                );
+              })}
+
+              {/* Interactive Chapter Nodes (01 - 08) */}
+              {sidebarPathGraph.nodes.map((node) => {
+                const isHovered = hoveredPathNodeId === node.id;
+                const isNodeActive = node.status === 'active';
+                const isNodeCompleted = node.isCompleted;
+                const fillClass = isNodeActive
+                  ? '#2563eb'
+                  : isNodeCompleted
+                  ? '#10b981'
+                  : '#1e293b';
+                const strokeClass = isNodeActive
+                  ? '#93c5fd'
+                  : isNodeCompleted
+                  ? '#6ee7b7'
+                  : '#475569';
+
+                return (
+                  <g
+                    key={node.id}
+                    role="button"
+                    tabIndex={0}
+                    data-testid={`path-node-${node.id}`}
+                    data-status={node.status}
+                    aria-label={`${
+                      language === 'en' ? node.titleEn : node.titleFa
+                    } (${node.status})`}
+                    onClick={() => handleNavigate('curriculum', node.id)}
+                    onMouseEnter={() => setHoveredPathNodeId(node.id)}
+                    onFocus={() => setHoveredPathNodeId(node.id)}
+                    onBlur={() => setHoveredPathNodeId(null)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleNavigate('curriculum', node.id);
+                      }
+                    }}
+                    className="cursor-pointer focus:outline-none"
+                  >
+                    {/* Active or Hovered Outer Halo */}
+                    {(isNodeActive || isHovered) && (
+                      <circle
+                        cx={node.x}
+                        cy={node.y}
+                        r={isNodeActive ? 13.5 : 12}
+                        fill="none"
+                        stroke={isNodeActive ? '#3b82f6' : '#10b981'}
+                        strokeWidth="1.5"
+                        strokeOpacity={isNodeActive ? '0.65' : '0.45'}
+                        strokeDasharray={isNodeActive ? '3 2' : undefined}
+                      />
+                    )}
+
+                    {/* Node Circle */}
+                    <circle
+                      cx={node.x}
+                      cy={node.y}
+                      r={isNodeActive ? 9.5 : 8.5}
+                      fill={fillClass}
+                      stroke={strokeClass}
+                      strokeWidth={isNodeActive || isHovered ? '2' : '1.4'}
+                      filter={isNodeActive || isNodeCompleted ? 'url(#sidebar-node-glow)' : undefined}
+                    />
+
+                    {/* Completed Mini Dot Indicator on Active+Completed Node */}
+                    {isNodeActive && isNodeCompleted && (
+                      <circle
+                        cx={node.x + 6.5}
+                        cy={node.y - 6.5}
+                        r="3"
+                        fill="#10b981"
+                        stroke="#090d16"
+                        strokeWidth="1"
+                      />
+                    )}
+
+                    {/* Node Chapter Number Label */}
+                    <text
+                      x={node.x}
+                      y={node.y + 3.2}
+                      textAnchor="middle"
+                      fill="#ffffff"
+                      fontSize="8.5"
+                      fontWeight="800"
+                      className="tabular-nums pointer-events-none"
+                    >
+                      {formatLocalizedNumber(node.number, language, true)}
+                    </text>
+                  </g>
+                );
+              })}
+            </svg>
+
+            {/* Inspected / Active Node Footer Strip + Legend */}
+            {inspectedPathNode && (
+              <div className="mt-1 pt-1.5 border-t border-slate-200/60 dark:border-white/[0.06] flex items-center justify-between gap-2 text-[10px]">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                      inspectedPathNode.status === 'active'
+                        ? 'bg-blue-500 animate-pulse'
+                        : inspectedPathNode.isCompleted
+                        ? 'bg-emerald-500'
+                        : 'bg-slate-400'
+                    }`}
+                  />
+                  <span
+                    data-testid="path-map-inspected-title"
+                    className="font-bold text-slate-700 dark:text-slate-200 truncate"
+                  >
+                    {renderBidiText(
+                      language === 'en'
+                        ? `${formatLocalizedNumber(inspectedPathNode.number, 'en', true)}. ${inspectedPathNode.titleEn}`
+                        : `${formatLocalizedNumber(inspectedPathNode.number, 'fa', true)}. ${inspectedPathNode.titleFa}`,
+                      language
+                    )}
+                  </span>
+                </div>
+                <span
+                  data-testid="path-map-inspected-status"
+                  className={`px-1.5 py-0.2 rounded text-[9px] font-bold shrink-0 ${
+                    inspectedPathNode.status === 'active'
+                      ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400'
+                      : inspectedPathNode.isCompleted
+                      ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                      : 'bg-slate-200/70 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400'
+                  }`}
+                >
+                  {inspectedPathNode.status === 'active'
+                    ? language === 'en'
+                      ? 'Active'
+                      : 'در حال مطالعه'
+                    : inspectedPathNode.isCompleted
+                    ? language === 'en'
+                      ? 'Completed'
+                      : 'تکمیل‌شده'
+                    : language === 'en'
+                    ? 'Pending'
+                    : 'در انتظار'}
+                </span>
+              </div>
+            )}
           </div>
-          <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 font-mono pt-0.5">
-            <span className="tabular-nums">LVL 4 · 2900 XP</span>
-            <span className="text-amber-500 dark:text-amber-400 font-semibold flex items-center gap-1">
-              <Award className="w-3 h-3 text-amber-500 inline shrink-0" />
-              <span>Architect Rank</span>
+
+          {/* State Counts Legend & XP Standing */}
+          <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 pt-0.5 tabular-nums">
+            <div className="flex items-center gap-2.5">
+              <span className="inline-flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                <span>
+                  {formatLocalizedNumber(sidebarPathGraph.counts.completed, language)}{' '}
+                  {language === 'en' ? 'Done' : 'تکمیل'}
+                </span>
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
+                <span>
+                  {formatLocalizedNumber(sidebarPathGraph.counts.active, language)}{' '}
+                  {language === 'en' ? 'Active' : 'فعال'}
+                </span>
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-600 inline-block" />
+                <span>
+                  {formatLocalizedNumber(sidebarPathGraph.counts.pending, language)}{' '}
+                  {language === 'en' ? 'Pending' : 'مانده'}
+                </span>
+              </span>
+            </div>
+            <span
+              dir="ltr"
+              data-testid="sidebar-path-xp-counter"
+              className="ltr-inline text-amber-500 dark:text-amber-400 font-mono font-semibold tabular-nums"
+            >
+              {2900 + userBonusXp} XP
             </span>
           </div>
         </div>
+
+        {/* Architect's Daily Mission Widget (Random Technical Task for Extra XP) */}
+        {(() => {
+          const isMissionDone = completedDailyMissionIds.includes(
+            activeDailyMission.id
+          );
+          const missionTitle =
+            language === 'en'
+              ? activeDailyMission.titleEn
+              : activeDailyMission.titleFa;
+          const missionDesc =
+            language === 'en'
+              ? activeDailyMission.descEn
+              : activeDailyMission.descFa;
+
+          return (
+            <div
+              data-testid="sidebar-daily-mission-widget"
+              className={`p-3.5 rounded-2xl border transition-all space-y-2.5 shadow-2xs ${
+                isMissionDone
+                  ? 'border-emerald-500/40 bg-gradient-to-br from-emerald-500/[0.08] via-slate-50 to-white dark:from-emerald-950/30 dark:via-[#0b121e] dark:to-[#090d16]'
+                  : 'border-amber-500/30 dark:border-amber-500/25 bg-gradient-to-br from-amber-500/[0.06] via-white to-slate-50 dark:from-[#13111c] dark:via-[#0c111d] dark:to-[#090d16]'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="p-1 rounded-lg bg-amber-500/15 text-amber-500 ring-1 ring-amber-500/30 shrink-0">
+                    <Target className="w-3.5 h-3.5" />
+                  </span>
+                  <span className="text-[11px] font-extrabold text-slate-800 dark:text-slate-100 truncate">
+                    {language === 'en'
+                      ? "Architect's Daily Mission"
+                      : 'مأموریت روزانه معمار'}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1 shrink-0">
+                  <span
+                    dir="ltr"
+                    data-testid="daily-mission-xp-badge"
+                    className="ltr-inline px-1.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-mono text-[10px] font-extrabold tabular-nums"
+                  >
+                    +{activeDailyMission.xpReward} XP
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleRerollDailyMission}
+                    data-testid="daily-mission-reroll-btn"
+                    title={
+                      language === 'en'
+                        ? 'Draw another random technical task'
+                        : 'انتخاب تصادفی یک تسک فنی دیگر'
+                    }
+                    className="p-1 rounded-lg border border-slate-200/80 dark:border-white/[0.08] bg-white/80 dark:bg-white/[0.04] hover:bg-amber-500/15 hover:border-amber-500/40 text-slate-500 dark:text-slate-400 hover:text-amber-500 transition-colors cursor-pointer"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex items-center justify-between gap-1.5">
+                  <span
+                    dir="ltr"
+                    data-testid="daily-mission-code"
+                    className="ltr-inline text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-600 dark:text-amber-300 border border-amber-500/30"
+                  >
+                    {activeDailyMission.code} · {activeDailyMission.categoryBadge}
+                  </span>
+                  <span
+                    dir="ltr"
+                    data-testid="daily-mission-artifact"
+                    className="ltr-inline text-[9px] font-mono text-blue-600 dark:text-blue-400 truncate max-w-[140px]"
+                  >
+                    {activeDailyMission.targetArtifact}
+                  </span>
+                </div>
+
+                <div
+                  data-testid="daily-mission-title"
+                  className="text-xs font-bold text-slate-900 dark:text-white leading-snug"
+                >
+                  {renderBidiText(missionTitle, language)}
+                </div>
+
+                <p
+                  data-testid="daily-mission-desc"
+                  className="text-[10px] text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-2"
+                >
+                  {renderBidiText(missionDesc, language)}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-1.5 pt-0.5">
+                <button
+                  type="button"
+                  onClick={handleCompleteDailyMission}
+                  disabled={isMissionDone}
+                  data-testid="daily-mission-complete-btn"
+                  className={`flex-1 py-1.5 px-2.5 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    isMissionDone
+                      ? 'bg-emerald-600/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/40 cursor-default'
+                      : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-xs'
+                  }`}
+                >
+                  {isMissionDone ? (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                      <span>
+                        {language === 'en'
+                          ? `Claimed +${activeDailyMission.xpReward} XP`
+                          : `دریافت شد (+${activeDailyMission.xpReward} XP)`}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-3.5 h-3.5 shrink-0" />
+                      <span>
+                        {language === 'en'
+                          ? `Complete (+${activeDailyMission.xpReward} XP)`
+                          : `انجام مأموریت (+${activeDailyMission.xpReward} XP)`}
+                      </span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleNavigate(activeDailyMission.targetSection)}
+                  data-testid="daily-mission-open-studio-btn"
+                  className="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white/80 dark:bg-white/[0.04] hover:border-blue-500/40 text-[10px] font-semibold text-slate-700 dark:text-slate-300 transition-colors cursor-pointer shrink-0"
+                >
+                  {language === 'en' ? 'Open' : 'باز کردن'}
+                </button>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Navigation Groups Header & Quick Master Toggles */}
         <div className="flex items-center justify-between px-1 pt-1 text-[11px] font-bold text-slate-500 dark:text-slate-400">
@@ -660,15 +1077,15 @@ function MainWorkspace() {
                   {!isOpen && isGroupActive && (
                     <span
                       dir="ltr"
-                      className="ltr-inline flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30"
+                      className="ltr-inline tabular-nums flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30"
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-                      0{currentModule.number}
+                      {formatLocalizedNumber(currentModule.number, language, true)}
                     </span>
                   )}
                   <span
                     dir="ltr"
-                    className="ltr-inline text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                    className="ltr-inline tabular-nums text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400"
                   >
                     8 Ch
                   </span>
@@ -726,7 +1143,7 @@ function MainWorkspace() {
                                 }`}
                               >
                                 <span
-                                  className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5 ${
+                                  className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5 tabular-nums ${
                                     language === 'en' ? 'ltr-inline font-mono' : 'font-sans'
                                   } ${
                                     isCurrent
@@ -1261,8 +1678,8 @@ function MainWorkspace() {
               <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
                 {language === 'en' ? 'Aria Rostami' : 'آریا رستمی'}
               </span>
-              <span className="text-[10px] text-amber-500 dark:text-amber-400 font-mono font-medium truncate">
-                Lead Architect · 2900 XP
+              <span className="text-[10px] text-amber-500 dark:text-amber-400 font-mono font-medium truncate tabular-nums">
+                Lead Architect · {2900 + userBonusXp} XP
               </span>
             </div>
           </div>
@@ -1331,23 +1748,86 @@ function MainWorkspace() {
 
             <span className="h-4 w-px bg-slate-200 dark:bg-white/[0.08] shrink-0" aria-hidden="true" />
 
-            {/* Hierarchical Breadcrumb */}
-            <nav aria-label="Breadcrumb Navigation" className="flex items-center gap-1.5 text-xs min-w-0 overflow-hidden">
-              <span className="font-semibold text-slate-400 dark:text-slate-500 truncate hidden sm:inline">
-                {activeBreadcrumb.group}
+            {/* Hierarchical Breadcrumb with Descriptive Hover Tooltips */}
+            <nav
+              aria-label="Breadcrumb Navigation"
+              data-testid="header-breadcrumb-nav"
+              onMouseLeave={() => setHoveredBreadcrumbSegment(null)}
+              className="relative flex items-center gap-1 text-xs min-w-0"
+            >
+              <span
+                tabIndex={0}
+                data-testid="breadcrumb-group"
+                title={`${activeBreadcrumb.groupTooltip.fullPath} — ${activeBreadcrumb.groupTooltip.description}`}
+                onMouseEnter={() => setHoveredBreadcrumbSegment('group')}
+                onFocus={() => setHoveredBreadcrumbSegment('group')}
+                onBlur={() => setHoveredBreadcrumbSegment(null)}
+                className="font-semibold text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-white/[0.06] px-1.5 py-1 rounded-md transition-colors truncate hidden sm:inline cursor-help focus:outline-none focus:ring-1 focus:ring-blue-500/40"
+              >
+                {renderBidiText(activeBreadcrumb.group, language)}
               </span>
-              <span className="text-slate-300 dark:text-slate-700 hidden sm:inline" aria-hidden="true">/</span>
+              <span className="text-slate-300 dark:text-slate-700 hidden sm:inline shrink-0" aria-hidden="true">/</span>
               {activeBreadcrumb.subgroup && (
                 <>
-                  <span className="text-slate-500 dark:text-slate-400 truncate hidden md:inline">
-                    {activeBreadcrumb.subgroup}
+                  <span
+                    tabIndex={0}
+                    data-testid="breadcrumb-subgroup"
+                    title={`${activeBreadcrumb.subgroupTooltip.fullPath} — ${activeBreadcrumb.subgroupTooltip.description}`}
+                    onMouseEnter={() => setHoveredBreadcrumbSegment('subgroup')}
+                    onFocus={() => setHoveredBreadcrumbSegment('subgroup')}
+                    onBlur={() => setHoveredBreadcrumbSegment(null)}
+                    className="text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-white/[0.06] px-1.5 py-1 rounded-md transition-colors truncate hidden md:inline cursor-help focus:outline-none focus:ring-1 focus:ring-blue-500/40"
+                  >
+                    {renderBidiText(activeBreadcrumb.subgroup, language)}
                   </span>
-                  <span className="text-slate-300 dark:text-slate-700 hidden md:inline" aria-hidden="true">/</span>
+                  <span className="text-slate-300 dark:text-slate-700 hidden md:inline shrink-0" aria-hidden="true">/</span>
                 </>
               )}
-              <span className="font-bold text-slate-800 dark:text-slate-100 truncate">
+              <span
+                tabIndex={0}
+                data-testid="breadcrumb-item"
+                title={`${activeBreadcrumb.itemTooltip.fullPath} — ${activeBreadcrumb.itemTooltip.description}`}
+                onMouseEnter={() => setHoveredBreadcrumbSegment('item')}
+                onFocus={() => setHoveredBreadcrumbSegment('item')}
+                onBlur={() => setHoveredBreadcrumbSegment(null)}
+                className="font-bold text-slate-800 dark:text-slate-100 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-white/[0.06] px-1.5 py-1 rounded-md transition-colors truncate cursor-help focus:outline-none focus:ring-1 focus:ring-blue-500/40"
+              >
                 {renderBidiText(activeBreadcrumb.item, language)}
               </span>
+
+              {/* Floating Descriptive Breadcrumb Tooltip Popover */}
+              {activeBreadcrumbTooltip && (
+                <div
+                  role="tooltip"
+                  data-testid="breadcrumb-tooltip-popover"
+                  className={`absolute top-full mt-2 z-50 w-80 sm:w-96 p-3.5 rounded-xl border border-slate-200/90 dark:border-blue-500/30 bg-white/98 dark:bg-[#0c121e]/98 backdrop-blur-xl shadow-xl shadow-slate-900/15 dark:shadow-black/50 space-y-2 pointer-events-none animate-scale-in ${
+                    isRTL ? 'right-0 text-right' : 'left-0 text-left'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2 border-b border-slate-200/70 dark:border-white/[0.07] pb-2">
+                    <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 truncate">
+                      {renderBidiText(activeBreadcrumbTooltip.fullPath, language)}
+                    </span>
+                    <span
+                      dir="ltr"
+                      className="ltr-inline tabular-nums px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-[10px] font-mono font-bold shrink-0"
+                    >
+                      {activeBreadcrumbTooltip.badge}
+                    </span>
+                  </div>
+                  <div className="text-xs font-extrabold text-slate-900 dark:text-white leading-snug">
+                    {renderBidiText(activeBreadcrumbTooltip.title, language)}
+                  </div>
+                  <p className="text-[11px] leading-5 text-slate-600 dark:text-slate-300 font-normal whitespace-normal">
+                    {renderBidiText(activeBreadcrumbTooltip.description, language)}
+                  </p>
+                  {activeBreadcrumbTooltip.meta && (
+                    <div className="pt-1 flex items-center gap-1.5 text-[10px] text-blue-600 dark:text-blue-400 font-medium tabular-nums">
+                      <span>{renderBidiText(activeBreadcrumbTooltip.meta, language)}</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </nav>
           </div>
 
@@ -1428,11 +1908,12 @@ function MainWorkspace() {
             {/* Rank / XP Pill */}
             <div
               dir="ltr"
-              className="ltr-inline hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-blue-500/25 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-mono font-bold"
+              data-testid="header-xp-pill"
+              className="ltr-inline tabular-nums hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-blue-500/25 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-mono font-bold"
             >
-              <span>LVL 4</span>
+              <span className="tabular-nums">LVL 4</span>
               <span className="opacity-40">·</span>
-              <span>{2900 + userBonusXp} XP</span>
+              <span className="tabular-nums">{2900 + userBonusXp} XP</span>
             </div>
 
             {/* Viral Share & Invite Academy Button */}
@@ -1446,7 +1927,7 @@ function MainWorkspace() {
             >
               <Share2 className="w-3.5 h-3.5 text-indigo-500 group-hover:scale-110 transition-transform" />
               <span className="hidden xl:inline">{t('inviteAndShare')}</span>
-              <span className="font-mono text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 border border-indigo-500/25">
+              <span className="font-mono tabular-nums text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 border border-indigo-500/25">
                 +250 XP
               </span>
             </button>
@@ -1518,10 +1999,13 @@ function MainWorkspace() {
         <main className="flex-1 min-w-0 h-full overflow-x-hidden overflow-y-auto flex flex-col justify-between">
           {/* Mobile Quick Action Pill (< md) */}
           <div className="md:hidden border-b border-slate-200/70 dark:border-white/[0.06] bg-white/80 dark:bg-[#0c121e]/80 px-3 py-2 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 text-xs truncate">
+            <div
+              className="flex items-center gap-1.5 text-xs truncate"
+              title={`${activeBreadcrumb.fullPath} — ${activeBreadcrumb.itemTooltip.description}`}
+            >
               <span className="font-bold text-blue-600 dark:text-blue-400">{activeBreadcrumb.group}</span>
               <span className="opacity-40" aria-hidden="true">/</span>
-              <span className="text-slate-700 dark:text-slate-200 truncate">{activeBreadcrumb.item}</span>
+              <span className="text-slate-700 dark:text-slate-200 truncate">{renderBidiText(activeBreadcrumb.item, language)}</span>
             </div>
             <button
               type="button"

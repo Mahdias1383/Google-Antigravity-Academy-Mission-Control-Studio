@@ -55,18 +55,55 @@
   line-gap-override: 0%;
 }
 
+@theme {
+  --font-sans: 'Vazirmatn', 'Vazirmatn Fallback', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Vazirmatn', 'JetBrains Mono Fallback', ui-monospace, SFMono-Regular, monospace;
+}
+
 @layer base {
   :root {
     --font-sans: 'Vazirmatn', 'Vazirmatn Fallback', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     --font-mono: 'JetBrains Mono', 'Vazirmatn', 'JetBrains Mono Fallback', ui-monospace, SFMono-Regular, monospace;
+    --tracking-ui: -0.011em;
+    --tracking-heading: -0.02em;
+    --tracking-numeric: 0em;
   }
 
-  html {
+  /* In RTL mode, prioritize Vazirmatn for all numeric characters and monospace badges to prevent font-switching inconsistencies */
+  [dir="rtl"] {
+    --font-sans: 'Vazirmatn', 'Vazirmatn Fallback', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'Vazirmatn', 'JetBrains Mono', 'Vazirmatn Fallback', ui-monospace, SFMono-Regular, monospace;
+    --tracking-ui: 0em;
+    --tracking-heading: 0em;
+    --tracking-numeric: 0em;
     font-family: var(--font-sans);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    letter-spacing: 0em;
+  }
+
+  html,
+  body {
+    font-family: var(--font-sans);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    letter-spacing: var(--tracking-ui);
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+  }
+
+  /* Global tabular-nums & consistent letter-spacing across all numerical, text, table, and interactive UI elements */
+  h1, h2, h3, h4, h5, h6 {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    letter-spacing: var(--tracking-heading);
+  }
+
+  p, span, div, a, button, input, select, textarea, label, li, td, th, time, progress, meter {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
   }
 
   ::selection {
@@ -80,6 +117,8 @@
     text-align: left;
     unicode-bidi: isolate;
     font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    letter-spacing: var(--tracking-numeric);
   }
 }
 
@@ -91,6 +130,8 @@
     unicode-bidi: isolate;
     text-align: left;
     font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    letter-spacing: var(--tracking-numeric);
   }
 
   .ltr-block {
@@ -101,6 +142,8 @@
     unicode-bidi: isolate;
     text-align: left;
     font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    letter-spacing: var(--tracking-numeric);
   }
 
   .bidi-ltr-run {
@@ -109,10 +152,36 @@
     unicode-bidi: isolate;
     text-align: left;
     max-width: 100%;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    letter-spacing: var(--tracking-numeric);
   }
 
   .tabular-nums {
+    font-variant-numeric: tabular-nums !important;
+    font-feature-settings: "tnum" 1 !important;
+    letter-spacing: var(--tracking-numeric);
+  }
+
+  /* Guarantee Vazirmatn font family and zero letter-spacing distortion on all numeric and UI elements in RTL mode */
+  [dir="rtl"] .font-sans,
+  [dir="rtl"] .font-mono,
+  [dir="rtl"] .tabular-nums,
+  [dir="rtl"] .ltr-inline,
+  [dir="rtl"] .bidi-ltr-run {
+    font-family: 'Vazirmatn', 'JetBrains Mono', 'Vazirmatn Fallback', system-ui, sans-serif;
     font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    letter-spacing: 0em;
+  }
+
+  [dir="rtl"] .tracking-tighter,
+  [dir="rtl"] .tracking-tight,
+  [dir="rtl"] .tracking-normal,
+  [dir="rtl"] .tracking-wide,
+  [dir="rtl"] .tracking-wider,
+  [dir="rtl"] .tracking-widest {
+    letter-spacing: 0em !important;
   }
 }
 

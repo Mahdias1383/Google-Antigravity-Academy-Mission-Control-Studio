@@ -2157,10 +2157,1974 @@ export function computeReadingEstimateForModule(moduleNumber: number): {
   };
 }
 
+export interface BreadcrumbTooltipDetail {
+  title: string;
+  fullPath: string;
+  description: string;
+  badge: string;
+  meta?: string;
+}
 
+export interface BreadcrumbDescriptorWithTooltips {
+  group: string;
+  subgroup: string;
+  item: string;
+  fullPath: string;
+  groupTooltip: BreadcrumbTooltipDetail;
+  subgroupTooltip: BreadcrumbTooltipDetail;
+  itemTooltip: BreadcrumbTooltipDetail;
+}
 
+export function buildBreadcrumbDescriptorWithTooltips(params: {
+  activeSection: string;
+  language: 'fa' | 'en';
+  currentModule: {
+    number: number;
+    titleFa: string;
+    titleEn: string;
+    summaryFa: string;
+    summaryEn?: string;
+    readingTime: string;
+    difficulty: string;
+  };
+  formattedModNumber: string;
+}): BreadcrumbDescriptorWithTooltips {
+  const { activeSection, language, currentModule, formattedModNumber } = params;
+  const isEn = language === 'en';
 
+  if (activeSection === 'curriculum') {
+    const phaseNumber = currentModule.number <= 3 ? 1 : currentModule.number <= 6 ? 2 : 3;
+    const subgroup =
+      phaseNumber === 1
+        ? isEn
+          ? 'Phase 1 · Core Architecture'
+          : 'گام اول · معماری هسته و اجرا'
+        : phaseNumber === 2
+        ? isEn
+          ? 'Phase 2 · Rules & Automation'
+          : 'گام دوم · قوانین و اتوماسیون'
+        : isEn
+        ? 'Phase 3 · Scale & Multi-Agent'
+        : 'گام سوم · مقیاس‌پذیری و MCP';
 
+    const phaseDesc =
+      phaseNumber === 1
+        ? isEn
+          ? 'Modules 01–03: Dual-workspace architecture, verifiable artifacts, and terminal sandboxing.'
+          : 'فصول ۰۱ تا ۰۳: معماری دوگانه Editor/Manager، ممیزی آرتیفکت‌ها و امنیت اجرای دستورات ترمینال.'
+        : phaseNumber === 2
+        ? isEn
+          ? 'Modules 04–06: 4-tier Rules, Knowledge Base memory hygiene, Workflows, and Browser Subagent QA.'
+          : 'فصول ۰۴ تا ۰۶: قوانین ۴ حالته، مدیریت حافظه و Context Rot، ورک‌فلوهای توربو و عامل مرورگر.'
+        : isEn
+        ? 'Modules 07–08: FastMCP 2.0 server extensibility and parallel multi-agent Git Worktree orchestration.'
+        : 'فصول ۰۷ تا ۰۸: توسعه سرورهای پایتون با پروتکل FastMCP 2.0 و ارکستریشن موازی روی Git Worktree.';
 
+    const group = isEn ? 'Curriculum' : 'سرفصل‌های آموزشی';
+    const item = isEn
+      ? `Module ${formattedModNumber}: ${currentModule.titleEn}`
+      : `فصل ${formattedModNumber}: ${currentModule.titleFa}`;
+    const fullPath = `${group} / ${subgroup} / ${item}`;
+    const modDesc =
+      isEn && currentModule.summaryEn ? currentModule.summaryEn : currentModule.summaryFa;
 
+    return {
+      group,
+      subgroup,
+      item,
+      fullPath,
+      groupTooltip: {
+        title: isEn ? 'Academy Curriculum (8 Modules)' : 'سرفصل‌های آموزشی آکادمی (۸ فصل جامع)',
+        fullPath: group,
+        description: isEn
+          ? 'Complete Principal Architect curriculum covering Agent-First engineering, security guardrails, MCP servers, and multi-agent scaling.'
+          : 'مسیر کامل معمار ارشد شامل مهندسی Agent-First، گاردریل‌های امنیتی، سرورهای MCP و مقیاس‌پذیری چندایجنتی.',
+        badge: isEn ? '8 Chapters' : '۸ فصل آموزشی',
+      },
+      subgroupTooltip: {
+        title: subgroup,
+        fullPath: `${group} / ${subgroup}`,
+        description: phaseDesc,
+        badge: isEn ? `Phase 0${phaseNumber}` : `فاز ۰${phaseNumber}`,
+      },
+      itemTooltip: {
+        title: item,
+        fullPath,
+        description: modDesc,
+        badge: `MOD-0${currentModule.number}`,
+        meta: `${currentModule.difficulty} · ${currentModule.readingTime}`,
+      },
+    };
+  }
+
+  if (['simulator', 'guardrails', 'mcp', 'scenarios'].includes(activeSection)) {
+    const studioMeta: Record<
+      string,
+      { fa: string; en: string; descFa: string; descEn: string; badge: string }
+    > = {
+      simulator: {
+        fa: 'شبیه‌ساز Mission Control',
+        en: 'Mission Control Simulator',
+        descFa:
+          'شبیه‌ساز زنده محیط دوگانه Editor View و Agent Manager با قابلیت ممیزی آرتیفکت‌ها (task.md, implementation_plan.md, walkthrough.md).',
+        descEn:
+          'Live dual-surface Editor View and Agent Manager simulator with interactive artifact auditing (task.md, implementation_plan.md, walkthrough.md).',
+        badge: 'Live IDE',
+      },
+      guardrails: {
+        fa: 'مهندسی Rule و Workflow',
+        en: 'Rule & Workflow Studio',
+        descFa:
+          'طراحی قوانین ۴ حالته (.agent/rules/*.md)، شبیه‌ساز گاردریل امنیت ترمینال و پایپ‌لاین اتوماسیون // turbo.',
+        descEn:
+          'Author 4-mode architectural rules (.agent/rules/*.md), test terminal command guardrails, and simulate // turbo workflow pipelines.',
+        badge: 'Turbo Rules',
+      },
+      mcp: {
+        fa: 'استودیو بصری FastMCP',
+        en: 'FastMCP Visual Studio',
+        descFa:
+          'طراحی و تولید کد سرورهای پایتون FastMCP 2.0، تست JSON-RPC و پیکربندی mcp_config.json.',
+        descEn:
+          'Design and generate Python FastMCP 2.0 servers, inspect JSON-RPC payloads, and build mcp_config.json.',
+        badge: 'MCP Hub',
+      },
+      scenarios: {
+        fa: 'آزمایشگاه سناریوهای معماری',
+        en: 'Architect Scenario Lab',
+        descFa:
+          '۸ چالش تصمیم‌گیری معماری در شرایط واقعی پروداکشن همراه با تحلیل تریدآف‌ها و امتیازدهی معمار ارشد.',
+        descEn:
+          '8 real-world production architecture decision challenges with trade-off analysis and Principal Architect scoring.',
+        badge: '8 Labs',
+      },
+    };
+
+    const selected = studioMeta[activeSection] || studioMeta.simulator;
+    const group = isEn ? 'Engineering Studios' : 'استودیوهای مهندسی زنده';
+    const subgroup = isEn ? 'Interactive Workbenches' : 'میز کارهای تعاملی';
+    const item = isEn ? selected.en : selected.fa;
+    const fullPath = `${group} / ${subgroup} / ${item}`;
+
+    return {
+      group,
+      subgroup,
+      item,
+      fullPath,
+      groupTooltip: {
+        title: group,
+        fullPath: group,
+        description: isEn
+          ? '4 interactive engineering sandboxes for hands-on practice with Mission Control, Rules, FastMCP, and Architecture Scenarios.'
+          : '۴ محیط آزمایشگاهی تعاملی برای تمرین عملی مدیریت ایجنت‌ها، قوانین امنیتی، پروتکل FastMCP و سناریوهای معماری.',
+        badge: '4 Studios',
+      },
+      subgroupTooltip: {
+        title: subgroup,
+        fullPath: `${group} / ${subgroup}`,
+        description: isEn
+          ? 'Real-time simulation workbenches with live code generation and telemetry inspection.'
+          : 'میز کارهای شبیه‌سازی بلادرنگ با قابلیت تولید زنده کد و بررسی تلمتری.',
+        badge: 'Interactive',
+      },
+      itemTooltip: {
+        title: item,
+        fullPath,
+        description: isEn ? selected.descEn : selected.descFa,
+        badge: selected.badge,
+      },
+    };
+  }
+
+  if (['knowledge-base', 'ai-architect', 'cheatsheets'].includes(activeSection)) {
+    const toolMeta: Record<
+      string,
+      { fa: string; en: string; descFa: string; descEn: string; badge: string }
+    > = {
+      'knowledge-base': {
+        fa: 'پایگاه دانش و مهار Context Rot',
+        en: 'Knowledge Base & Context Rot',
+        descFa:
+          'مدیریت حافظه پایدار ایجنت‌ها، هرس پوسیدگی کانتکست (Context Rot) و تحلیل گراف دانش و هیت‌مپ سالانه D3.',
+        descEn:
+          'Persistent agent memory management, Context Rot pruning, D3 concept bubble graphs, and 52-week research heatmaps.',
+        badge: 'Memory & D3',
+      },
+      'ai-architect': {
+        fa: 'دستیار هوشمند و کاوشگر مستندات',
+        en: 'AI Architect & Live Docs',
+        descFa:
+          'کاوشگر مستندات رسمی Google Antigravity همراه با آزمون‌های تعاملی سنجش تسلط و پاداش XP.',
+        descEn:
+          'Official Google Antigravity documentation explorer paired with interactive mastery quizzes and XP rewards.',
+        badge: 'Docs & Quiz',
+      },
+      cheatsheets: {
+        fa: 'مرکز چیت‌شیت‌ها و مراجع PDF',
+        en: 'Reference Cheat Sheets & PDF',
+        descFa:
+          'مجموعه کامل جداول شورتکات‌های کیبورد، دستورات اسلش، منشن‌های کانتکست و خروجی استاندارد PDF.',
+        descEn:
+          'Complete reference matrices for keyboard shortcuts, slash commands, context @mentions, and clean PDF exports.',
+        badge: 'PDF & Tables',
+      },
+    };
+
+    const selected = toolMeta[activeSection] || toolMeta['knowledge-base'];
+    const group = isEn ? 'Knowledge & AI' : 'پایگاه دانش و هوش مصنوعی';
+    const subgroup = isEn ? 'Documentation & Memory' : 'کانتکست و مستندات رسمی';
+    const item = isEn ? selected.en : selected.fa;
+    const fullPath = `${group} / ${subgroup} / ${item}`;
+
+    return {
+      group,
+      subgroup,
+      item,
+      fullPath,
+      groupTooltip: {
+        title: group,
+        fullPath: group,
+        description: isEn
+          ? 'Context engineering memory management, official documentation explorer, and reference cheat sheets.'
+          : 'مدیریت مهندسی کانتکست و حافظه، کاوشگر مستندات رسمی و مراجع سریع چیت‌شیت.',
+        badge: '3 Tools',
+      },
+      subgroupTooltip: {
+        title: subgroup,
+        fullPath: `${group} / ${subgroup}`,
+        description: isEn
+          ? 'Curated knowledge artifacts, semantic search, and printable architectural guides.'
+          : 'آرتیفکت‌های دانش سازمان‌یافته، جستجوی معنایی و راهنماهای قابل چاپ معماری.',
+        badge: 'Knowledge',
+      },
+      itemTooltip: {
+        title: item,
+        fullPath,
+        description: isEn ? selected.descEn : selected.descFa,
+        badge: selected.badge,
+      },
+    };
+  }
+
+  const group = isEn ? 'Mastery & Evaluation' : 'ارزیابی و کارنامه مهندسی';
+  const subgroup = isEn ? 'Certification' : 'رتبه‌بندی و نشان‌ها';
+  const item = isEn ? 'Official Architect Certification' : 'کارنامه مهارت و صدور گواهینامه';
+  const fullPath = `${group} / ${subgroup} / ${item}`;
+
+  return {
+    group,
+    subgroup,
+    item,
+    fullPath,
+    groupTooltip: {
+      title: group,
+      fullPath: group,
+      description: isEn
+        ? 'Track your XP standing, unlock engineering badges, and export your official Principal Architect certificate.'
+        : 'پایش امتیاز XP، دریافت نشان‌های تخصصی مهندسی و صدور گواهینامه رسمی معمار ارشد.',
+      badge: 'Mastery',
+    },
+    subgroupTooltip: {
+      title: subgroup,
+      fullPath: `${group} / ${subgroup}`,
+      description: isEn
+        ? 'Verifiable skill standing, streak heatmaps, and shareable progress cards.'
+        : 'رتبه‌بندی قابل راستی‌آزمایی، هیت‌مپ استمرار مطالعه و کارت‌های پیشرفت قابل اشتراک‌گذاری.',
+      badge: 'Rank & Cert',
+    },
+    itemTooltip: {
+      title: item,
+      fullPath,
+      description: isEn
+        ? 'View your complete mastery report card, earned trophies, and printable certification.'
+        : 'مشاهده کارنامه جامع مهارت، نشان‌های کسب‌شده و دریافت گواهینامه قابل چاپ.',
+      badge: 'Certificate',
+    },
+  };
+}
+
+export type ModuleNodeProgressState = 'completed' | 'active' | 'pending';
+
+export interface SidebarModulePathNode {
+  id: string;
+  number: number;
+  titleFa: string;
+  titleEn: string;
+  status: ModuleNodeProgressState;
+  isCurrent: boolean;
+  isCompleted: boolean;
+  x: number;
+  y: number;
+}
+
+export interface SidebarModulePathSegment {
+  id: string;
+  fromId: string;
+  toId: string;
+  pathD: string;
+  status: ModuleNodeProgressState;
+}
+
+export interface SidebarModulePathGraph {
+  nodes: SidebarModulePathNode[];
+  segments: SidebarModulePathSegment[];
+  fullTrackPathD: string;
+  counts: {
+    completed: number;
+    active: number;
+    pending: number;
+    total: number;
+  };
+}
+
+const SERPENTINE_NODE_COORDS: ReadonlyArray<{ x: number; y: number }> = [
+  { x: 28, y: 24 },
+  { x: 92, y: 16 },
+  { x: 158, y: 28 },
+  { x: 224, y: 18 },
+  { x: 224, y: 74 },
+  { x: 158, y: 64 },
+  { x: 92, y: 78 },
+  { x: 28, y: 68 },
+];
+
+export function buildSidebarModulePathGraph(params: {
+  modules: ReadonlyArray<{
+    id: string;
+    number: number;
+    titleFa: string;
+    titleEn: string;
+  }>;
+  completedModules: ReadonlyArray<string>;
+  activeModuleId: string;
+  activeSection: string;
+}): SidebarModulePathGraph {
+  const { modules, completedModules, activeModuleId, activeSection } = params;
+  const completedSet = new Set(completedModules);
+  const isCurriculumSection = activeSection === 'curriculum';
+
+  const nodes: SidebarModulePathNode[] = modules.map((mod, idx) => {
+    const coord = SERPENTINE_NODE_COORDS[idx] || {
+      x: 28 + (idx % 4) * 64,
+      y: idx < 4 ? 22 : 70,
+    };
+    const isCurrent = isCurriculumSection && mod.id === activeModuleId;
+    const isCompleted = completedSet.has(mod.id);
+    const status: ModuleNodeProgressState = isCurrent
+      ? 'active'
+      : isCompleted
+      ? 'completed'
+      : 'pending';
+
+    return {
+      id: mod.id,
+      number: mod.number,
+      titleFa: mod.titleFa,
+      titleEn: mod.titleEn,
+      status,
+      isCurrent,
+      isCompleted,
+      x: coord.x,
+      y: coord.y,
+    };
+  });
+
+  const segments: SidebarModulePathSegment[] = [];
+  const curveCommands: string[] = [];
+
+  for (let i = 0; i < nodes.length - 1; i++) {
+    const from = nodes[i];
+    const to = nodes[i + 1];
+    let pathD = '';
+    let cubicSuffix = '';
+
+    if (i === 3) {
+      // Smooth right-hand U-turn curve connecting Row 1 (Node 4) to Row 2 (Node 5)
+      cubicSuffix = `C 268 ${from.y}, 268 ${to.y}, ${to.x} ${to.y}`;
+      pathD = `M ${from.x} ${from.y} ${cubicSuffix}`;
+    } else {
+      const midX = Math.round((from.x + to.x) / 2);
+      cubicSuffix = `C ${midX} ${from.y}, ${midX} ${to.y}, ${to.x} ${to.y}`;
+      pathD = `M ${from.x} ${from.y} ${cubicSuffix}`;
+    }
+
+    if (i === 0) {
+      curveCommands.push(`M ${from.x} ${from.y} ${cubicSuffix}`);
+    } else {
+      curveCommands.push(cubicSuffix);
+    }
+
+    let segStatus: ModuleNodeProgressState = 'pending';
+    if (from.isCompleted && to.isCompleted) {
+      segStatus = 'completed';
+    } else if (
+      from.isCurrent ||
+      to.isCurrent ||
+      (from.isCompleted && !to.isCompleted)
+    ) {
+      segStatus = 'active';
+    }
+
+    segments.push({
+      id: `seg-${from.number}-${to.number}`,
+      fromId: from.id,
+      toId: to.id,
+      pathD,
+      status: segStatus,
+    });
+  }
+
+  const completedCount = nodes.filter((n) => n.isCompleted).length;
+  const activeCount = nodes.filter((n) => n.status === 'active').length;
+  const pendingCount = nodes.filter(
+    (n) => !n.isCompleted && n.status !== 'active'
+  ).length;
+
+  return {
+    nodes,
+    segments,
+    fullTrackPathD: curveCommands.join(' '),
+    counts: {
+      completed: completedCount,
+      active: activeCount,
+      pending: pendingCount,
+      total: nodes.length,
+    },
+  };
+}
+
+export type QuickOverviewLens =
+  | 'principal-synthesis'
+  | 'security-guardrails'
+  | 'production-execution';
+
+export interface QuickOverviewTakeawayItem {
+  id: string;
+  principleBadge: string;
+  title: string;
+  takeaway: string;
+  impactMetric: string;
+}
+
+export interface ModuleQuickOverviewPayload {
+  moduleId: string;
+  moduleNumber: number;
+  lens: QuickOverviewLens;
+  language: 'fa' | 'en';
+  executiveHeadline: string;
+  coreEngineeringPrinciple: string;
+  takeaways: QuickOverviewTakeawayItem[];
+  modelUsed: string;
+  generatedAtIso: string;
+  source: 'ai-live' | 'ai-curated';
+}
+
+export interface ModuleQuickOverviewInput {
+  id: string;
+  number: number;
+  titleFa: string;
+  titleEn: string;
+  summaryFa: string;
+  summaryEn?: string;
+  difficulty: string;
+  readingTime: string;
+  keyTakeaways: ReadonlyArray<{
+    titleFa?: string;
+    descFa?: string;
+    titleEn?: string;
+    descEn?: string;
+    metricOrBadge: string;
+  }>;
+  subSections?: ReadonlyArray<{
+    id: string;
+    titleFa: string;
+    titleEn: string;
+    bulletPoints?: ReadonlyArray<{
+      termEn: string;
+      descFa?: string;
+      descEn?: string;
+    }>;
+  }>;
+}
+
+export function buildModuleQuickOverviewPrompt(params: {
+  module: ModuleQuickOverviewInput;
+  lens: QuickOverviewLens;
+  language: 'fa' | 'en';
+}): string {
+  const { module, lens, language } = params;
+  const isEn = language === 'en';
+
+  const lensFocus =
+    lens === 'security-guardrails'
+      ? 'Zero-Trust Security, .agent/rules Guardrails, Terminal Governance, and Failure Prevention'
+      : lens === 'production-execution'
+      ? 'Production Implementation, Workflow Automation (// turbo), Artifact Verification, and Latency/Token Efficiency'
+      : 'Principal Architectural Synthesis, Agent-First Paradigm Shift, and System Design Trade-offs';
+
+  const takeawaysList = module.keyTakeaways
+    .map(
+      (kt, idx) =>
+        `${idx + 1}. [${kt.metricOrBadge}] ${
+          isEn ? kt.titleEn || kt.titleFa : kt.titleFa || kt.titleEn
+        }: ${isEn ? kt.descEn || kt.descFa : kt.descFa || kt.descEn}`
+    )
+    .join('\n');
+
+  const subSectionSummary = (module.subSections || [])
+    .map((s) => {
+      const terms = (s.bulletPoints || []).map((b) => b.termEn).join(', ');
+      return `- ${s.titleEn} (${s.titleFa})${terms ? ` [Key terms: ${terms}]` : ''}`;
+    })
+    .join('\n');
+
+  const langDirective = isEn
+    ? 'Write all titles, takeaways, and executiveHeadline in concise, authoritative English.'
+    : 'Write executiveHeadline, coreEngineeringPrinciple, and takeaway descriptions in fluent, natural Persian (RTL), while keeping technical terms, file paths (e.g., task.md, implementation_plan.md, walkthrough.md, .agent/rules/), and principleBadge / impactMetric in English.';
+
+  return [
+    `Generate a structured 'Quick Overview' with 3 high-signal AI-synthesized key takeaways for Module 0${module.number}: "${module.titleEn}" (${module.titleFa}).`,
+    `Focus Lens: ${lensFocus}`,
+    `Module Summary: ${isEn ? module.summaryEn || module.summaryFa : module.summaryFa}`,
+    `Core Module Takeaways:\n${takeawaysList}`,
+    subSectionSummary ? `Sub-sections & Engineering Primitives:\n${subSectionSummary}` : '',
+    `Language & Formatting Rule: ${langDirective}`,
+    `Return strict JSON matching the requested schema with executiveHeadline, coreEngineeringPrinciple, and exactly 3 takeaways.`,
+  ]
+    .filter(Boolean)
+    .join('\n\n');
+}
+
+export function buildDeterministicModuleQuickOverview(params: {
+  module: ModuleQuickOverviewInput;
+  lens: QuickOverviewLens;
+  language: 'fa' | 'en';
+  generatedAtIso?: string;
+}): ModuleQuickOverviewPayload {
+  const { module, lens, language } = params;
+  const isEn = language === 'en';
+  const nowIso = params.generatedAtIso || new Date().toISOString();
+
+  const lensPrefixEn =
+    lens === 'security-guardrails'
+      ? 'Zero-Trust Guardrail'
+      : lens === 'production-execution'
+      ? 'Production Execution'
+      : 'Principal Architecture';
+
+  const lensPrefixFa =
+    lens === 'security-guardrails'
+      ? 'گاردریل امنیت Zero-Trust'
+      : lens === 'production-execution'
+      ? 'اجرای عملیاتی Production'
+      : 'سنتز معماری Principal';
+
+  const firstSub = module.subSections?.[0];
+  const secondSub = module.subSections?.[1];
+  const allBullets = (module.subSections || []).flatMap((s) => s.bulletPoints || []);
+
+  const baseTakeaways: QuickOverviewTakeawayItem[] = module.keyTakeaways
+    .slice(0, 3)
+    .map((kt, idx) => {
+      const rawTitle = isEn
+        ? kt.titleEn || kt.titleFa || `Principle ${idx + 1}`
+        : kt.titleFa || kt.titleEn || `اصل مهندسی ${idx + 1}`;
+      const rawDesc = isEn
+        ? kt.descEn || kt.descFa || ''
+        : kt.descFa || kt.descEn || '';
+
+      if (lens === 'security-guardrails') {
+        const matchedBullet = allBullets[idx];
+        const termTag = matchedBullet?.termEn || kt.metricOrBadge;
+        return {
+          id: `${module.id}-qo-${lens}-${idx + 1}`,
+          principleBadge: termTag,
+          title: isEn
+            ? `${rawTitle} · Policy Enforcement`
+            : `${rawTitle} · اعمال سیاست امنیتی`,
+          takeaway: isEn
+            ? `${rawDesc} Enforced via deterministic ${termTag} verification boundaries before any workspace mutation.`
+            : `${rawDesc} اعمال‌شده از طریق مرزهای اعتبارسنجی قطعی ${termTag} پیش از هرگونه تغییر در فضای کاری.`,
+          impactMetric: `Zero-Trust #0${idx + 1}`,
+        };
+      }
+
+      if (lens === 'production-execution') {
+        const subRef = (idx === 0 ? firstSub : secondSub) || firstSub;
+        const subBadge = subRef?.titleEn?.split(':')[0]?.trim() || kt.metricOrBadge;
+        return {
+          id: `${module.id}-qo-${lens}-${idx + 1}`,
+          principleBadge: kt.metricOrBadge,
+          title: isEn
+            ? `${rawTitle} in CI/CD & IDE`
+            : `${rawTitle} در پایپ‌لاین عملیاتی`,
+          takeaway: isEn
+            ? `${rawDesc} Operationalized across ${subBadge} to eliminate manual debugging loops and reduce context overhead.`
+            : `${rawDesc} پیاده‌سازی در سطح ${subBadge} جهت حذف حلقه‌های دیباگ دستی و بهینه‌سازی مصرف توکن.`,
+          impactMetric: `Stage 0${idx + 1} · Ready`,
+        };
+      }
+
+      return {
+        id: `${module.id}-qo-${lens}-${idx + 1}`,
+        principleBadge: kt.metricOrBadge,
+        title: rawTitle,
+        takeaway: rawDesc,
+        impactMetric: `Principle 0${idx + 1}`,
+      };
+    });
+
+  while (baseTakeaways.length < 3) {
+    const idx = baseTakeaways.length;
+    const bullet = allBullets[idx];
+    baseTakeaways.push({
+      id: `${module.id}-qo-${lens}-${idx + 1}`,
+      principleBadge: bullet?.termEn || `MOD-0${module.number}.${idx + 1}`,
+      title: isEn
+        ? `${lensPrefixEn} Invariant #${idx + 1}: ${bullet?.termEn || module.titleEn}`
+        : `${lensPrefixFa} #${idx + 1}: ${bullet?.termEn || module.titleFa}`,
+      takeaway: isEn
+        ? bullet?.descEn ||
+          module.summaryEn ||
+          module.summaryFa ||
+          'Enforce structured artifact verification across asynchronous agent workflows.'
+        : bullet?.descFa ||
+          module.summaryFa ||
+          'اعمال اعتبارسنجی ساخت‌یافته آرتیفکت‌ها در جریان‌های کاری ناهمگام ایجنت.',
+      impactMetric: `Core #0${idx + 1}`,
+    });
+  }
+
+  const executiveHeadline = isEn
+    ? `${lensPrefixEn} Overview — ${
+        module.summaryEn || module.titleEn
+      }`
+    : `خلاصه کلیدی (${lensPrefixFa}) — ${module.summaryFa}`;
+
+  const coreEngineeringPrinciple = isEn
+    ? `Module 0${module.number} Core Principle (${lensPrefixEn}): Combine ${
+        baseTakeaways[0]?.principleBadge || 'Agent-First'
+      } with ${
+        baseTakeaways[1]?.principleBadge || 'Artifact Verification'
+      } to achieve deterministic, auditable engineering throughput.`
+    : `اصل محوری فصل ۰${module.number} (${lensPrefixFa}): ترکیب مکانیزم ${
+        baseTakeaways[0]?.principleBadge || 'Agent-First'
+      } با استاندارد ${
+        baseTakeaways[1]?.principleBadge || 'Artifact Verification'
+      } برای دستیابی به خروجی مهندسی قابل ممیزی و بدون خطا.`;
+
+  return {
+    moduleId: module.id,
+    moduleNumber: module.number,
+    lens,
+    language,
+    executiveHeadline,
+    coreEngineeringPrinciple,
+    takeaways: baseTakeaways.slice(0, 3),
+    modelUsed: 'gemini-3.8-flash',
+    generatedAtIso: nowIso,
+    source: 'ai-curated',
+  };
+}
+
+export function normalizeAiQuickOverviewResponse(
+  raw: unknown,
+  fallback: ModuleQuickOverviewPayload
+): ModuleQuickOverviewPayload {
+  if (!raw || typeof raw !== 'object') {
+    return fallback;
+  }
+
+  const obj = raw as Record<string, unknown>;
+  const executiveHeadline =
+    typeof obj.executiveHeadline === 'string' && obj.executiveHeadline.trim().length > 8
+      ? obj.executiveHeadline.trim()
+      : fallback.executiveHeadline;
+
+  const coreEngineeringPrinciple =
+    typeof obj.coreEngineeringPrinciple === 'string' &&
+    obj.coreEngineeringPrinciple.trim().length > 8
+      ? obj.coreEngineeringPrinciple.trim()
+      : fallback.coreEngineeringPrinciple;
+
+  const rawTakeaways = Array.isArray(obj.takeaways) ? obj.takeaways : [];
+  const normalizedTakeaways: QuickOverviewTakeawayItem[] = rawTakeaways
+    .map((item, idx) => {
+      if (!item || typeof item !== 'object') return null;
+      const tObj = item as Record<string, unknown>;
+      const fbItem = fallback.takeaways[idx] || fallback.takeaways[0];
+      const title =
+        typeof tObj.title === 'string' && tObj.title.trim().length > 2
+          ? tObj.title.trim()
+          : fbItem?.title || `Takeaway ${idx + 1}`;
+      const takeaway =
+        typeof tObj.takeaway === 'string' && tObj.takeaway.trim().length > 5
+          ? tObj.takeaway.trim()
+          : fbItem?.takeaway || '';
+      const principleBadge =
+        typeof tObj.principleBadge === 'string' && tObj.principleBadge.trim().length > 1
+          ? tObj.principleBadge.trim()
+          : fbItem?.principleBadge || `MOD-0${fallback.moduleNumber}`;
+      const impactMetric =
+        typeof tObj.impactMetric === 'string' && tObj.impactMetric.trim().length > 1
+          ? tObj.impactMetric.trim()
+          : fbItem?.impactMetric || `Key #0${idx + 1}`;
+
+      if (!takeaway) return null;
+      return {
+        id: `${fallback.moduleId}-ai-${fallback.lens}-${idx + 1}`,
+        principleBadge,
+        title,
+        takeaway,
+        impactMetric,
+      };
+    })
+    .filter((x): x is QuickOverviewTakeawayItem => x !== null);
+
+  const finalTakeaways =
+    normalizedTakeaways.length >= 2
+      ? normalizedTakeaways.slice(0, 4)
+      : fallback.takeaways;
+
+  return {
+    ...fallback,
+    executiveHeadline,
+    coreEngineeringPrinciple,
+    takeaways: finalTakeaways,
+    modelUsed:
+      typeof obj.modelUsed === 'string' && obj.modelUsed.trim()
+        ? obj.modelUsed.trim()
+        : 'gemini-3.8-flash',
+    generatedAtIso: new Date().toISOString(),
+    source: obj.source === 'ai-curated' ? 'ai-curated' : 'ai-live',
+  };
+}
+
+export type McpBaselineProfileId =
+  | 'stdio-local-readonly'
+  | 'sse-remote-zero-trust'
+  | 'multi-worktree-ci';
+
+export interface McpConfigurationDriftFinding {
+  id: string;
+  severity: 'CRITICAL' | 'WARNING' | 'ALIGNED';
+  parameterPath: string;
+  expectedBaseline: string;
+  detectedState: string;
+  explanation: string;
+  remediationPatch: string;
+}
+
+export interface KnowledgeBaseContextAwarenessSummary {
+  entryId: string;
+  keyPath: string;
+  baselineProfile: McpBaselineProfileId;
+  language: 'fa' | 'en';
+  contextAwarenessSummary: string;
+  architecturalIntent: string;
+  driftRiskScore: number;
+  driftSeverity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  driftFindings: McpConfigurationDriftFinding[];
+  recommendedMcpSnippet: string;
+  modelUsed: string;
+  generatedAtIso: string;
+  source: 'ai-live' | 'ai-curated';
+}
+
+export function buildKbContextAwarenessPrompt(params: {
+  entry: KnowledgeBaseEntryItem;
+  baselineProfile: McpBaselineProfileId;
+  language: 'fa' | 'en';
+}): string {
+  const { entry, baselineProfile, language } = params;
+  const isEn = language === 'en';
+
+  const baselineDescription =
+    baselineProfile === 'sse-remote-zero-trust'
+      ? 'Remote SSE FastMCP Cluster with mTLS / Bearer OAuth, strict read-only query timeout (3000ms), and explicit tool allowlist.'
+      : baselineProfile === 'multi-worktree-ci'
+      ? 'Isolated Git Worktree CI Pipeline with per-worktree database schema (test_db_wt_*), Glob-scoped .agent/rules, and zero stale AST dumps.'
+      : 'Local stdio uv/FastMCP Server with DB_POOL_MODE=read_only, statement_timeout=2500ms, and fresh Context Rot (<25%).';
+
+  const langRule = isEn
+    ? 'Write contextAwarenessSummary, architecturalIntent, and finding explanations in clear, authoritative English.'
+    : 'Write contextAwarenessSummary, architecturalIntent, and finding explanations in fluent Persian (RTL) while keeping parameterPath, expectedBaseline, detectedState, and remediationPatch in English.';
+
+  return [
+    `Analyze the following long-form Knowledge Base technical article/artifact and generate an AI 'Context Awareness' summary that identifies potential configuration drifts in the user's MCP (Model Context Protocol) and .agent/* setup.`,
+    `Entry ID: ${entry.id}`,
+    `Artifact Key Path: ${entry.keyPath}`,
+    `Category: ${entry.category}`,
+    `Title: ${entry.titleEn} (${entry.titleFa})`,
+    `Token Weight: ${entry.tokenCount} tokens | Context Rot Staleness: ${entry.stalenessPercent}%`,
+    `Target MCP Baseline Profile (${baselineProfile}): ${baselineDescription}`,
+    `Article / Configuration Content:\n${entry.contentSnippet}`,
+    `Language Directive: ${langRule}`,
+    `Return strict JSON with contextAwarenessSummary, architecturalIntent, driftRiskScore (0-100), driftSeverity (LOW, MEDIUM, HIGH, CRITICAL), driftFindings (3 items), and recommendedMcpSnippet.`,
+  ].join('\n\n');
+}
+
+export function buildDeterministicKbContextAwareness(params: {
+  entry: KnowledgeBaseEntryItem;
+  baselineProfile: McpBaselineProfileId;
+  language: 'fa' | 'en';
+  generatedAtIso?: string;
+}): KnowledgeBaseContextAwarenessSummary {
+  const { entry, baselineProfile, language } = params;
+  const isEn = language === 'en';
+  const nowIso = params.generatedAtIso || new Date().toISOString();
+  const snippetLower = entry.contentSnippet.toLowerCase();
+
+  const isStale = entry.stalenessPercent >= 65;
+  const mentionsSse = snippetLower.includes('sse') || snippetLower.includes('http');
+  const mentionsStdio = snippetLower.includes('stdio') || snippetLower.includes('uv');
+  const mentionsReadOnly =
+    snippetLower.includes('read_only') ||
+    snippetLower.includes('readonly') ||
+    snippetLower.includes('select ');
+  const mentionsGlob =
+    snippetLower.includes('glob:') ||
+    snippetLower.includes('alembic') ||
+    snippetLower.includes('src/');
+
+  // Compute deterministic drift risk score based on entry staleness + baseline mismatch
+  let baseRisk = Math.round(entry.stalenessPercent * 0.65);
+  if (baselineProfile === 'sse-remote-zero-trust' && !mentionsSse) {
+    baseRisk += 22;
+  }
+  if (baselineProfile === 'stdio-local-readonly' && !mentionsReadOnly) {
+    baseRisk += 18;
+  }
+  if (baselineProfile === 'multi-worktree-ci' && isStale) {
+    baseRisk += 20;
+  }
+  const driftRiskScore = Math.max(8, Math.min(96, baseRisk));
+
+  const driftSeverity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' =
+    driftRiskScore >= 75
+      ? 'CRITICAL'
+      : driftRiskScore >= 50
+      ? 'HIGH'
+      : driftRiskScore >= 25
+      ? 'MEDIUM'
+      : 'LOW';
+
+  const findings: McpConfigurationDriftFinding[] = [];
+
+  // Finding 1: Transport & MCP Baseline Alignment
+  if (baselineProfile === 'sse-remote-zero-trust') {
+    const aligned = mentionsSse;
+    findings.push({
+      id: `${entry.id}-drift-transport`,
+      severity: aligned ? 'ALIGNED' : 'WARNING',
+      parameterPath: 'mcpServers.postgres_telemetry.transport',
+      expectedBaseline: 'sse (https://mcp-gateway.internal/sse + Bearer Token)',
+      detectedState: mentionsStdio
+        ? 'stdio (local uv subprocess without mTLS/OAuth header)'
+        : aligned
+        ? 'sse (Remote SSE endpoint configured)'
+        : 'implicit local transport (unspecified SSE gateway)',
+      explanation: isEn
+        ? aligned
+          ? 'Transport layer matches the remote SSE Zero-Trust gateway specification.'
+          : 'Configuration drift detected: local stdio or implicit transport is active while the target baseline requires remote SSE with mTLS/OAuth headers.'
+        : aligned
+        ? 'لایه ترنسپورت با مشخصات درگاه راه دور SSE Zero-Trust همخوانی دارد.'
+        : 'انحراف پیکربندی در لایه Transport: حالت محلی stdio یا ترنسپورت ضمنی فعال است، در حالی که پروفایل هدف نیازمند SSE راه دور با هدر احراز هویت mTLS/OAuth است.',
+      remediationPatch: `"transport": "sse", "url": "https://mcp-gateway.internal/sse", "headers": { "Authorization": "Bearer \${MCP_OAUTH_TOKEN}" }`,
+    });
+  } else if (baselineProfile === 'multi-worktree-ci') {
+    findings.push({
+      id: `${entry.id}-drift-worktree`,
+      severity: mentionsGlob ? 'ALIGNED' : 'WARNING',
+      parameterPath: 'mcpServers.*.env.WORKTREE_DB_ISOLATION',
+      expectedBaseline: 'test_db_wt_${WORKTREE_ID} + Glob-scoped .agent/rules',
+      detectedState: mentionsGlob
+        ? 'Scoped rule/path bindings detected in artifact'
+        : 'Shared default database schema across concurrent agent worktrees',
+      explanation: isEn
+        ? mentionsGlob
+          ? 'Path-scoped guardrails are present, preventing cross-worktree rule leakage.'
+          : 'Configuration drift: MCP tool environment lacks per-worktree database isolation, risking Alembic migration locks during parallel runs.'
+        : mentionsGlob
+        ? 'گاردریل‌های محدود به مسیر (Glob) تعریف شده‌اند و از نشت قوانین بین Worktreeها جلوگیری می‌کنند.'
+        : 'انحراف پیکربندی: متغیر محیطی ایزولاسیون دیتابیس به ازای هر Worktree در سرور MCP تعریف نشده و خطر قفل شدن جدول در اجرای موازی وجود دارد.',
+      remediationPatch: `"env": { "DB_NAME": "test_db_wt_\${ANTIGRAVITY_WORKTREE_ID}", "PGOPTIONS": "-c default_transaction_read_only=on" }`,
+    });
+  } else {
+    findings.push({
+      id: `${entry.id}-drift-pool`,
+      severity: mentionsReadOnly ? 'ALIGNED' : 'WARNING',
+      parameterPath: 'mcpServers.*.env.PGOPTIONS',
+      expectedBaseline: '-c default_transaction_read_only=on -c statement_timeout=2500',
+      detectedState: mentionsReadOnly
+        ? 'Read-only pool / SELECT-only constraint referenced'
+        : 'Unrestricted read-write connection pool or missing statement_timeout',
+      explanation: isEn
+        ? mentionsReadOnly
+          ? 'Database telemetry tool enforces read-only transaction safety.'
+          : 'Configuration drift: MCP server configuration does not explicitly enforce default_transaction_read_only=on, exposing local tables to accidental mutation.'
+        : mentionsReadOnly
+        ? 'ابزار تله‌متری دیتابیس محدودیت تراکنش فقط-خواندنی (Read-Only) را رعایت می‌کند.'
+        : 'انحراف پیکربندی: در تنظیمات سرور MCP پارامتر default_transaction_read_only=on قید نشده و احتمال تغییر ناخواسته داده‌ها وجود دارد.',
+      remediationPatch: `"env": { "DB_POOL_MODE": "read_only", "PGOPTIONS": "-c default_transaction_read_only=on -c statement_timeout=2500" }`,
+    });
+  }
+
+  // Finding 2: Context Rot & Token Footprint Drift
+  findings.push({
+    id: `${entry.id}-drift-rot`,
+    severity: isStale ? 'CRITICAL' : 'ALIGNED',
+    parameterPath: `${entry.keyPath}#stalenessPercent`,
+    expectedBaseline: 'stalenessPercent < 35% · Token footprint < 600 tokens',
+    detectedState: `stalenessPercent = ${entry.stalenessPercent}% · ${entry.tokenCount} tokens`,
+    explanation: isEn
+      ? isStale
+        ? `Critical Context Rot (${entry.stalenessPercent}%): This artifact contains outdated snapshot state that conflicts with live MCP tool schemas and pollutes the agent prompt window.`
+        : `Context freshness is healthy (${entry.stalenessPercent}% rot, ${entry.tokenCount} tokens), keeping MCP schema resolution deterministic.`
+      : isStale
+      ? `پوسیدگی بحرانی زمینه (${entry.stalenessPercent}% Context Rot): این سند شامل وضعیت‌های منقضی‌شده است که با اسکیماهای زنده ابزار MCP تضاد داشته و پنجره پرامپت ایجنت را مسموم می‌کند.`
+      : `طراوت زمینه در وضعیت سالم (${entry.stalenessPercent}% پوسیدگی، ${entry.tokenCount} توکن) قرار دارد و فراخوانی ابزارهای MCP را دقیق نگه می‌دارد.`,
+    remediationPatch: `Prune stale AST/vendor dumps and resync ${entry.keyPath} with active mcp_config.json schema v2.1.`,
+  });
+
+  // Finding 3: Rule Activation & Schema Pinning
+  findings.push({
+    id: `${entry.id}-drift-schema-pin`,
+    severity: entry.category === 'mcp-schema' && !isStale ? 'ALIGNED' : 'WARNING',
+    parameterPath: '.agent/rules/mcp-schema-pin.md',
+    expectedBaseline: 'activation: glob (mcp_config.json, src/mcp/**/*.py)',
+    detectedState:
+      entry.category === 'mcp-schema'
+        ? `Pinned in ${entry.keyPath} (${entry.tokenCount} tokens)`
+        : `Cross-referenced from ${entry.category} (${entry.keyPath})`,
+    explanation: isEn
+      ? 'Pinning FastMCP tool input schemas via Glob activation ensures the agent only loads MCP tool definitions when editing or invoking server endpoints.'
+      : 'سنجاق کردن اسکیمای ورودی ابزارهای FastMCP با حالت فعال‌سازی Glob تضمین می‌کند که تعاریف ابزار تنها هنگام کار با سرویس‌های مربوطه در پنجره زمینه بارگذاری شوند.',
+    remediationPatch: `---\nactivation: glob\nglob: "mcp_config.json,src/mcp/**/*.py"\n---`,
+  });
+
+  const profileLabelEn =
+    baselineProfile === 'sse-remote-zero-trust'
+      ? 'Remote SSE Zero-Trust Cluster'
+      : baselineProfile === 'multi-worktree-ci'
+      ? 'Multi-Worktree Isolated CI'
+      : 'Local stdio Read-Only FastMCP';
+
+  const profileLabelFa =
+    baselineProfile === 'sse-remote-zero-trust'
+      ? 'کلاستر راه دور SSE Zero-Trust'
+      : baselineProfile === 'multi-worktree-ci'
+      ? 'پایپ‌لاین ایزوله Multi-Worktree CI'
+      : 'سرور محلی stdio با استخر Read-Only';
+
+  const contextAwarenessSummary = isEn
+    ? `Context Awareness Analysis for "${entry.titleEn}" (${entry.keyPath}): This ${entry.tokenCount}-token ${entry.category} artifact governs how the Antigravity agent resolves workspace state and MCP tool boundaries. Audited against the ${profileLabelEn} baseline, ${
+        isStale
+          ? `high Context Rot (${entry.stalenessPercent}%) introduces schema drift that can cause the agent to invoke outdated MCP parameters.`
+          : `context freshness (${entry.stalenessPercent}% rot) keeps token overhead bounded while highlighting ${
+              findings.filter((f) => f.severity !== 'ALIGNED').length
+            } MCP configuration alignment opportunities.`
+      }`
+    : `تحلیل آگاهی زمینه (Context Awareness) برای «${entry.titleFa}» (${entry.keyPath}): این سند فنی با وزن ${entry.tokenCount} توکن در دسته ${entry.category} نحوه تفسیر وضعیت فضای کاری و مرزهای ابزار MCP توسط ایجنت Antigravity را تعیین می‌کند. در ممیزی مقابل پروفایل مرجع «${profileLabelFa}»، ${
+        isStale
+          ? `نرخ بالای پوسیدگی زمینه (${entry.stalenessPercent}% Context Rot) باعث انحراف اسکیما شده و ممکن است ایجنت را به فراخوانی پارامترهای منقضی‌شده MCP سوق دهد.`
+          : `طراوت مناسب سند (${entry.stalenessPercent}% پوسیدگی) مصرف توکن را بهینه نگه داشته و ${
+              findings.filter((f) => f.severity !== 'ALIGNED').length
+            } نقطه کلیدی برای همگام‌سازی دقیق‌تر پیکربندی MCP را مشخص می‌کند.`
+      }`;
+
+  const architecturalIntent = isEn
+    ? `Ensure ${entry.keyPath} remains synchronized with mcp_config.json and .agent/rules so long-form architectural documentation never drifts from live FastMCP tool contracts.`
+    : `حفظ همگام‌سازی مستمر ${entry.keyPath} با فایل mcp_config.json و قوانین .agent/rules تا مستندات فنی طولانی هرگز از قراردادهای زنده سرور FastMCP منحرف نشوند.`;
+
+  const recommendedMcpSnippet = JSON.stringify(
+    {
+      mcpServers: {
+        antigravity_context_guard: {
+          command: baselineProfile === 'sse-remote-zero-trust' ? undefined : 'uv',
+          args:
+            baselineProfile === 'sse-remote-zero-trust'
+              ? undefined
+              : ['run', 'fastmcp', 'run', 'src/mcp/context_guard_server.py'],
+          transport: baselineProfile === 'sse-remote-zero-trust' ? 'sse' : 'stdio',
+          url:
+            baselineProfile === 'sse-remote-zero-trust'
+              ? 'https://mcp-gateway.internal/sse'
+              : undefined,
+          env: {
+            SynchronizedArtifact: entry.keyPath,
+            DB_POOL_MODE: 'read_only',
+            PGOPTIONS: '-c default_transaction_read_only=on -c statement_timeout=2500',
+            WORKTREE_ISOLATION:
+              baselineProfile === 'multi-worktree-ci' ? 'enabled' : 'standard',
+          },
+        },
+      },
+    },
+    null,
+    2
+  );
+
+  return {
+    entryId: entry.id,
+    keyPath: entry.keyPath,
+    baselineProfile,
+    language,
+    contextAwarenessSummary,
+    architecturalIntent,
+    driftRiskScore,
+    driftSeverity,
+    driftFindings: findings,
+    recommendedMcpSnippet,
+    modelUsed: 'gemini-3.8-flash',
+    generatedAtIso: nowIso,
+    source: 'ai-curated',
+  };
+}
+
+export function normalizeAiKbContextAwarenessResponse(
+  raw: unknown,
+  fallback: KnowledgeBaseContextAwarenessSummary
+): KnowledgeBaseContextAwarenessSummary {
+  if (!raw || typeof raw !== 'object') {
+    return fallback;
+  }
+
+  const obj = raw as Record<string, unknown>;
+  const contextAwarenessSummary =
+    typeof obj.contextAwarenessSummary === 'string' &&
+    obj.contextAwarenessSummary.trim().length > 12
+      ? obj.contextAwarenessSummary.trim()
+      : fallback.contextAwarenessSummary;
+
+  const architecturalIntent =
+    typeof obj.architecturalIntent === 'string' &&
+    obj.architecturalIntent.trim().length > 8
+      ? obj.architecturalIntent.trim()
+      : fallback.architecturalIntent;
+
+  const rawScore = Number(obj.driftRiskScore);
+  const driftRiskScore = Number.isFinite(rawScore)
+    ? Math.max(0, Math.min(100, Math.round(rawScore)))
+    : fallback.driftRiskScore;
+
+  const validSeverities = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const;
+  const driftSeverity = validSeverities.includes(
+    obj.driftSeverity as (typeof validSeverities)[number]
+  )
+    ? (obj.driftSeverity as (typeof validSeverities)[number])
+    : fallback.driftSeverity;
+
+  const rawFindings = Array.isArray(obj.driftFindings) ? obj.driftFindings : [];
+  const normalizedFindings: McpConfigurationDriftFinding[] = rawFindings
+    .map((f, idx) => {
+      if (!f || typeof f !== 'object') return null;
+      const fObj = f as Record<string, unknown>;
+      const fbFinding = fallback.driftFindings[idx] || fallback.driftFindings[0];
+      const validFindingSev = ['CRITICAL', 'WARNING', 'ALIGNED'] as const;
+      const severity = validFindingSev.includes(
+        fObj.severity as (typeof validFindingSev)[number]
+      )
+        ? (fObj.severity as (typeof validFindingSev)[number])
+        : fbFinding?.severity || 'WARNING';
+
+      const parameterPath =
+        typeof fObj.parameterPath === 'string' && fObj.parameterPath.trim()
+          ? fObj.parameterPath.trim()
+          : fbFinding?.parameterPath || 'mcpServers.*.env';
+      const expectedBaseline =
+        typeof fObj.expectedBaseline === 'string' && fObj.expectedBaseline.trim()
+          ? fObj.expectedBaseline.trim()
+          : fbFinding?.expectedBaseline || 'Read-only enforced';
+      const detectedState =
+        typeof fObj.detectedState === 'string' && fObj.detectedState.trim()
+          ? fObj.detectedState.trim()
+          : fbFinding?.detectedState || 'Unverified state';
+      const explanation =
+        typeof fObj.explanation === 'string' && fObj.explanation.trim().length > 5
+          ? fObj.explanation.trim()
+          : fbFinding?.explanation || '';
+      const remediationPatch =
+        typeof fObj.remediationPatch === 'string' && fObj.remediationPatch.trim()
+          ? fObj.remediationPatch.trim()
+          : fbFinding?.remediationPatch || '';
+
+      if (!explanation) return null;
+      return {
+        id: `${fallback.entryId}-ai-drift-${idx + 1}`,
+        severity,
+        parameterPath,
+        expectedBaseline,
+        detectedState,
+        explanation,
+        remediationPatch,
+      };
+    })
+    .filter((x): x is McpConfigurationDriftFinding => x !== null);
+
+  const recommendedMcpSnippet =
+    typeof obj.recommendedMcpSnippet === 'string' &&
+    obj.recommendedMcpSnippet.trim().length > 10
+      ? obj.recommendedMcpSnippet.trim()
+      : fallback.recommendedMcpSnippet;
+
+  return {
+    ...fallback,
+    contextAwarenessSummary,
+    architecturalIntent,
+    driftRiskScore,
+    driftSeverity,
+    driftFindings:
+      normalizedFindings.length >= 2 ? normalizedFindings.slice(0, 4) : fallback.driftFindings,
+    recommendedMcpSnippet,
+    modelUsed:
+      typeof obj.modelUsed === 'string' && obj.modelUsed.trim()
+        ? obj.modelUsed.trim()
+        : 'gemini-3.8-flash',
+    generatedAtIso: new Date().toISOString(),
+    source: obj.source === 'ai-curated' ? 'ai-curated' : 'ai-live',
+  };
+}
+
+// ============================================================================
+// ARCHITECT'S DAILY MISSION (SIDEBAR RANDOM TECHNICAL TASK WIDGET)
+// ============================================================================
+
+export type DailyMissionTargetSection =
+  | 'guardrails'
+  | 'mcp'
+  | 'simulator'
+  | 'knowledge-base'
+  | 'scenarios'
+  | 'curriculum';
+
+export interface ArchitectDailyMissionTask {
+  id: string;
+  code: string;
+  titleEn: string;
+  titleFa: string;
+  descEn: string;
+  descFa: string;
+  targetArtifact: string;
+  targetSection: DailyMissionTargetSection;
+  xpReward: number;
+  categoryBadge: string;
+}
+
+export const ARCHITECT_DAILY_MISSIONS_POOL: ReadonlyArray<ArchitectDailyMissionTask> =
+  [
+    {
+      id: 'mission-refactor-rule',
+      code: 'ADM-01',
+      titleEn: 'Refactor a .agent/rules Guardrail to Glob Mode',
+      titleFa: 'بازآرایی یک قانون (Refactor a rule) در .agent/rules به حالت Glob',
+      descEn:
+        'Convert an Always-On database rule into a scoped Glob activation rule (alembic/versions/*.py) to reduce context overhead.',
+      descFa:
+        'تبدیل یک قانون سراسری دیتابیس به حالت فعال‌سازی هدفمند Glob (مسیر alembic/versions/*.py) جهت کاهش بار پنجره زمینه.',
+      targetArtifact: '.agent/rules/db-migrations.md',
+      targetSection: 'guardrails',
+      xpReward: 150,
+      categoryBadge: 'Refactor a Rule',
+    },
+    {
+      id: 'mission-audit-plan',
+      code: 'ADM-02',
+      titleEn: 'Attach PR-Style Inline Review on implementation_plan.md',
+      titleFa: 'ثبت کامنت ممیزی PR-Style روی implementation_plan.md',
+      descEn:
+        'Inspect a pending agent implementation plan in Mission Control and attach an inline architectural constraint before code execution.',
+      descFa:
+        'بررسی طرح پیاده‌سازی ایجنت در Mission Control و الصاق محدودیت معماری به‌صورت کامنت خطی پیش از اجرای کد.',
+      targetArtifact: 'implementation_plan.md',
+      targetSection: 'simulator',
+      xpReward: 175,
+      categoryBadge: 'Plan Review',
+    },
+    {
+      id: 'mission-fastmcp-readonly',
+      code: 'ADM-03',
+      titleEn: 'Harden FastMCP Server Pool to Read-Only Mode',
+      titleFa: 'ایمن‌سازی استخر سرور FastMCP در حالت Read-Only',
+      descEn:
+        'Audit mcp_config.json to enforce default_transaction_read_only=on and prevent autonomous DDL/DML mutations.',
+      descFa:
+        'ممیزی فایل mcp_config.json برای اعمال پارامتر default_transaction_read_only=on و جلوگیری از تغییرات ناخواسته دیتابیس.',
+      targetArtifact: 'mcp_config.json',
+      targetSection: 'mcp',
+      xpReward: 180,
+      categoryBadge: 'FastMCP Guard',
+    },
+    {
+      id: 'mission-prune-context-rot',
+      code: 'ADM-04',
+      titleEn: 'Prune Stale AST Snapshot in Knowledge Base',
+      titleFa: 'هرس اسنپ‌شات منسوخ AST برای مهار Context Rot',
+      descEn:
+        'Archive a high-staleness (>65% rot) artifact in .agent/knowledge-base/ and distill its core architectural invariants.',
+      descFa:
+        'آرشیو سند دارای فرسودگی بالای ۶۵٪ در مسیر .agent/knowledge-base/ و تقطیر قواعد کلیدی معماری آن.',
+      targetArtifact: '.agent/knowledge-base/core-invariants.md',
+      targetSection: 'knowledge-base',
+      xpReward: 160,
+      categoryBadge: 'Context Hygiene',
+    },
+    {
+      id: 'mission-turbo-workflow',
+      code: 'ADM-05',
+      titleEn: 'Automate Verification Step with // turbo Directive',
+      titleFa: 'خودکارسازی گام صحت‌سنجی با دایرکتیو // turbo',
+      descEn:
+        'Add a non-destructive unit test runner step annotated with // turbo inside .agent/workflows/verify.md.',
+      descFa:
+        'افزودن گام اجرای خودکار تست‌های واحد با دایرکتیو // turbo درون پایپ‌لاین .agent/workflows/verify.md.',
+      targetArtifact: '.agent/workflows/verify.md',
+      targetSection: 'guardrails',
+      xpReward: 140,
+      categoryBadge: 'Turbo Workflow',
+    },
+    {
+      id: 'mission-worktree-isolation',
+      code: 'ADM-06',
+      titleEn: 'Resolve Parallel Git Worktree Merge Strategy',
+      titleFa: 'تنظیم استراتژی ادغام Git Worktreeهای موازی',
+      descEn:
+        'Evaluate a multi-agent scenario in the Scenario Lab to isolate parallel feature branches without index.lock collisions.',
+      descFa:
+        'ارزیابی سناریوی چندایجنتی در آزمایشگاه سناریو برای ایزوله‌سازی شاخه‌های موازی بدون تداخل فایل index.lock.',
+      targetArtifact: 'walkthrough.md',
+      targetSection: 'scenarios',
+      xpReward: 200,
+      categoryBadge: 'Worktree Ops',
+    },
+  ];
+
+export function selectArchitectDailyMission(params?: {
+  seedOrIndex?: number | string;
+  excludeMissionId?: string;
+}): ArchitectDailyMissionTask {
+  const pool = ARCHITECT_DAILY_MISSIONS_POOL;
+  const excludeId = params?.excludeMissionId;
+  const candidatePool =
+    excludeId && pool.length > 1
+      ? pool.filter((m) => m.id !== excludeId)
+      : pool;
+
+  if (typeof params?.seedOrIndex === 'number' && Number.isFinite(params.seedOrIndex)) {
+    const normalizedIdx =
+      ((Math.floor(params.seedOrIndex) % candidatePool.length) +
+        candidatePool.length) %
+      candidatePool.length;
+    return candidatePool[normalizedIdx];
+  }
+
+  if (typeof params?.seedOrIndex === 'string' && params.seedOrIndex.trim().length > 0) {
+    const str = params.seedOrIndex.trim();
+    let hash = 2166136261;
+    for (let i = 0; i < str.length; i++) {
+      hash ^= str.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    const idx = (hash >>> 0) % candidatePool.length;
+    return candidatePool[idx];
+  }
+
+  const randomIdx = Math.floor(Math.random() * candidatePool.length);
+  return candidatePool[randomIdx] || pool[0];
+}
+
+export function completeArchitectDailyMission(params: {
+  mission: ArchitectDailyMissionTask;
+  completedMissionIds: ReadonlyArray<string>;
+  currentBonusXp: number;
+}): {
+  updatedCompletedIds: string[];
+  updatedBonusXp: number;
+  xpEarned: number;
+  alreadyCompleted: boolean;
+} {
+  const { mission, completedMissionIds, currentBonusXp } = params;
+  const safeCurrentXp = Math.max(0, Math.floor(currentBonusXp));
+  if (completedMissionIds.includes(mission.id)) {
+    return {
+      updatedCompletedIds: [...completedMissionIds],
+      updatedBonusXp: safeCurrentXp,
+      xpEarned: 0,
+      alreadyCompleted: true,
+    };
+  }
+
+  const reward = Math.max(0, Math.floor(mission.xpReward));
+  return {
+    updatedCompletedIds: [...completedMissionIds, mission.id],
+    updatedBonusXp: safeCurrentXp + reward,
+    xpEarned: reward,
+    alreadyCompleted: false,
+  };
+}
+
+// ============================================================================
+// MODULE KNOWLEDGE CHECK (BOTTOM-SCROLL AI QUIZ MODAL)
+// ============================================================================
+
+export interface ModuleKnowledgeCheckQuestion {
+  id: string;
+  principleBadge: string;
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+  xpReward: number;
+}
+
+export interface ModuleKnowledgeCheckQuizPayload {
+  moduleId: string;
+  moduleNumber: number;
+  language: 'fa' | 'en';
+  quizTitle: string;
+  quizSubtitle: string;
+  questions: ModuleKnowledgeCheckQuestion[];
+  totalPossibleXp: number;
+  modelUsed: string;
+  generatedAtIso: string;
+  source: 'ai-live' | 'ai-curated';
+}
+
+export interface ModuleKnowledgeCheckEvaluationResult {
+  correctCount: number;
+  totalQuestions: number;
+  scorePercent: number;
+  earnedXp: number;
+  passed: boolean;
+  resultsByQuestionId: Record<
+    string,
+    {
+      selectedIndex: number;
+      correctIndex: number;
+      isCorrect: boolean;
+      xpEarned: number;
+    }
+  >;
+}
+
+export function buildModuleKnowledgeCheckPrompt(params: {
+  module: ModuleQuickOverviewInput;
+  language: 'fa' | 'en';
+}): string {
+  const { module, language } = params;
+  const isEn = language === 'en';
+
+  const takeawaysText = module.keyTakeaways
+    .map(
+      (kt, idx) =>
+        `${idx + 1}. [${kt.metricOrBadge}] ${
+          isEn ? kt.titleEn || kt.titleFa : kt.titleFa || kt.titleEn
+        }: ${isEn ? kt.descEn || kt.descFa : kt.descFa || kt.descEn}`
+    )
+    .join('\n');
+
+  const bulletTerms = (module.subSections || [])
+    .flatMap((s) => s.bulletPoints || [])
+    .map((b) => `- ${b.termEn}: ${isEn ? b.descEn || b.descFa : b.descFa || b.descEn}`)
+    .slice(0, 6)
+    .join('\n');
+
+  const langRule = isEn
+    ? 'Write quizTitle, quizSubtitle, questions, options, and explanations in clear, authoritative English.'
+    : 'Write quizTitle, quizSubtitle, questions, options, and explanations in fluent Persian (RTL) while keeping technical terms, file paths (.agent/rules/, task.md, implementation_plan.md, walkthrough.md, mcp_config.json), and principleBadge in English.';
+
+  return [
+    `Generate a short 3-question 'Knowledge Check' multiple-choice quiz testing a Systems Architect on the core engineering principles of Module 0${module.number}: "${module.titleEn}" (${module.titleFa}).`,
+    `Module Summary: ${isEn ? module.summaryEn || module.summaryFa : module.summaryFa}`,
+    `Core Engineering Takeaways:\n${takeawaysText}`,
+    bulletTerms ? `Key Architectural Primitives:\n${bulletTerms}` : '',
+    `Language Directive: ${langRule}`,
+    `Each question must have exactly 4 options, a valid correctIndex (0 to 3), an architectural explanation, a principleBadge, and xpReward (75).`,
+  ]
+    .filter(Boolean)
+    .join('\n\n');
+}
+
+export function buildDeterministicModuleKnowledgeCheck(params: {
+  module: ModuleQuickOverviewInput;
+  language: 'fa' | 'en';
+  generatedAtIso?: string;
+}): ModuleKnowledgeCheckQuizPayload {
+  const { module, language } = params;
+  const isEn = language === 'en';
+  const nowIso = params.generatedAtIso || new Date().toISOString();
+
+  const kt0 = module.keyTakeaways[0];
+  const kt1 = module.keyTakeaways[1] || module.keyTakeaways[0];
+  const allBullets = (module.subSections || []).flatMap(
+    (s) => s.bulletPoints || []
+  );
+  const bp0 = allBullets[0];
+
+  const badge0 = kt0?.metricOrBadge || `MOD-0${module.number}.A`;
+  const title0 = isEn
+    ? kt0?.titleEn || kt0?.titleFa || module.titleEn
+    : kt0?.titleFa || kt0?.titleEn || module.titleFa;
+  const desc0 = isEn
+    ? kt0?.descEn || kt0?.descFa || module.summaryEn || module.summaryFa
+    : kt0?.descFa || kt0?.descEn || module.summaryFa;
+
+  const badge1 = kt1?.metricOrBadge || `MOD-0${module.number}.B`;
+  const title1 = isEn
+    ? kt1?.titleEn || kt1?.titleFa || 'Artifact Governance'
+    : kt1?.titleFa || kt1?.titleEn || 'حاکمیت آرتیفکت‌ها';
+  const desc1 = isEn
+    ? kt1?.descEn || kt1?.descFa || module.summaryEn || module.summaryFa
+    : kt1?.descFa || kt1?.descEn || module.summaryFa;
+
+  const badge2 = bp0?.termEn || `MOD-0${module.number}.C`;
+  const desc2 = isEn
+    ? bp0?.descEn ||
+      bp0?.descFa ||
+      'Enforce deterministic verification gates before committing multi-file agent diffs.'
+    : bp0?.descFa ||
+      bp0?.descEn ||
+      'اعمال دروازه‌های صحت‌سنجی قطعی پیش از ثبت تغییرات چندفایلی ایجنت.';
+
+  const questions: ModuleKnowledgeCheckQuestion[] = [
+    {
+      id: `${module.id}-kc-q1`,
+      principleBadge: badge0,
+      question: isEn
+        ? `Which architectural requirement best represents the "${title0}" (${badge0}) principle in Module 0${module.number}?`
+        : `کدام الزام معماری، اصل مهندسی «${title0}» (${badge0}) در فصل ۰${module.number} را به دقیق‌ترین شکل پیاده‌سازی می‌کند؟`,
+      options: isEn
+        ? [
+            desc0,
+            'Bypassing Planning Mode and writing unverified diffs directly into production branches without LSP indexing.',
+            'Storing all project rules in a single monolithic 80k-token prompt file loaded on every keystroke.',
+            'Disabling structured artifacts (task.md and implementation_plan.md) during multi-file refactoring.',
+          ]
+        : [
+            desc0,
+            'دور زدن حالت Planning Mode و اعمال مستقیم تغییرات بدون ایندکس گراف وابستگی LSP روی شاخه اصلی.',
+            'نگهداری تمامی قوانین پروژه در یک پرامپت متورم ۸۰ هزار توکنی بدون تفکیک حوزه.',
+            'غیرفعال کردن آرتیفکت‌های ساختاریافته (task.md و implementation_plan.md) در بازآرایی‌های چندفایلی.',
+          ],
+      correctIndex: 0,
+      explanation: isEn
+        ? `Core Principle (${badge0}): ${desc0}`
+        : `اصل محوری (${badge0}): ${desc0}`,
+      xpReward: 75,
+    },
+    {
+      id: `${module.id}-kc-q2`,
+      principleBadge: badge1,
+      question: isEn
+        ? `When operationalizing "${title1}" (${badge1}), how should a Principal Architect prevent regressions and Context Rot?`
+        : `هنگام پیاده‌سازی مکانیزم «${title1}» (${badge1})، معمار ارشد چگونه باید از بروز خطا و Context Rot جلوگیری کند؟`,
+      options: isEn
+        ? [
+            'Allow background agents unrestricted write access to production databases without read-only pools.',
+            desc1,
+            'Run all parallel feature agents inside a single shared working tree without Git Worktree isolation.',
+            'Skip walkthrough.md verification and rely solely on ungrounded LLM console summaries.',
+          ]
+        : [
+            'اعطای دسترسی نوشتن بدون محدودیت به ایجنت‌های پس‌زمینه روی دیتابیس عملیاتی بدون استخر Read-Only.',
+            desc1,
+            'اجرای همزمان تمام ایجنت‌های موازی روی یک دایرکتوری واحد بدون ایزولاسیون Git Worktree.',
+            'حذف مرحله صحت‌سنجی در walkthrough.md و اکتفا به پاسخ متنی مدل بدون تست.',
+          ],
+      correctIndex: 1,
+      explanation: isEn
+        ? `Verified Guardrail (${badge1}): ${desc1}`
+        : `گاردریل تاییدشده (${badge1}): ${desc1}`,
+      xpReward: 75,
+    },
+    {
+      id: `${module.id}-kc-q3`,
+      principleBadge: badge2,
+      question: isEn
+        ? `In the context of Module 0${module.number}, what is the primary engineering role of "${badge2}"?`
+        : `در چارچوب مهندسی فصل ۰${module.number}، نقش کلیدی مکانیزم «${badge2}» چیست؟`,
+      options: isEn
+        ? [
+            'Replacing automated unit tests with manual copy-paste chat loops.',
+            'Executing destructive shell commands without terminal policy review.',
+            desc2,
+            'Duplicating vendor lockfiles into the active prompt window on every turn.',
+          ]
+        : [
+            'جایگزینی تست‌های خودکار واحد با کپی-پیست دستی کدها در پنجره چت.',
+            'اجرای دستورات مخرب شل بدون عبور از فیلتر سیاست‌های امنیتی ترمینال.',
+            desc2,
+            'کپی کردن فایل‌های قفل وابستگی حجیم در پنجره پرامپت در هر نوبت گفتگو.',
+          ],
+      correctIndex: 2,
+      explanation: isEn
+        ? `Technical Specification (${badge2}): ${desc2}`
+        : `مشخصات فنی (${badge2}): ${desc2}`,
+      xpReward: 75,
+    },
+  ];
+
+  const totalPossibleXp = questions.reduce((sum, q) => sum + q.xpReward, 0);
+
+  return {
+    moduleId: module.id,
+    moduleNumber: module.number,
+    language,
+    quizTitle: isEn
+      ? `Module 0${module.number} Knowledge Check · Core Engineering Principles`
+      : `سنجش دانش فصل ۰${module.number} (Knowledge Check) · اصول مهندسی هسته`,
+    quizSubtitle: isEn
+      ? `You reached the end of "${module.titleEn}". Verify your architectural mastery with this short AI-generated quiz.`
+      : `شما به پایان مطالعه «${module.titleFa}» رسیدید. تسلط مهندسی خود بر مفاهیم کلیدی این فصل را با این آزمون کوتاه هوش مصنوعی بسنجید.`,
+    questions,
+    totalPossibleXp,
+    modelUsed: 'gemini-3.8-flash',
+    generatedAtIso: nowIso,
+    source: 'ai-curated',
+  };
+}
+
+export function normalizeAiModuleKnowledgeCheckResponse(
+  raw: unknown,
+  fallback: ModuleKnowledgeCheckQuizPayload
+): ModuleKnowledgeCheckQuizPayload {
+  if (!raw || typeof raw !== 'object') {
+    return fallback;
+  }
+
+  const candidate = raw as Record<string, unknown>;
+  const quizTitle =
+    typeof candidate.quizTitle === 'string' &&
+    candidate.quizTitle.trim().length > 5
+      ? candidate.quizTitle.trim()
+      : fallback.quizTitle;
+
+  const quizSubtitle =
+    typeof candidate.quizSubtitle === 'string' &&
+    candidate.quizSubtitle.trim().length > 8
+      ? candidate.quizSubtitle.trim()
+      : fallback.quizSubtitle;
+
+  const rawQuestions = Array.isArray(candidate.questions)
+    ? candidate.questions
+    : [];
+
+  const normalizedQuestions: ModuleKnowledgeCheckQuestion[] = rawQuestions
+    .map((item, idx) => {
+      if (!item || typeof item !== 'object') return null;
+      const qObj = item as Record<string, unknown>;
+      const fbQ =
+        fallback.questions[idx % fallback.questions.length] ||
+        fallback.questions[0];
+
+      const questionText =
+        typeof qObj.question === 'string' && qObj.question.trim().length > 6
+          ? qObj.question.trim()
+          : fbQ.question;
+
+      const rawOpts = Array.isArray(qObj.options)
+        ? qObj.options
+            .filter((o): o is string => typeof o === 'string' && o.trim().length > 0)
+            .map((o) => o.trim())
+        : [];
+
+      const options =
+        rawOpts.length === 4 ? rawOpts : fbQ.options;
+
+      const rawCorrect = Number(qObj.correctIndex);
+      const correctIndex =
+        Number.isInteger(rawCorrect) &&
+        rawCorrect >= 0 &&
+        rawCorrect < options.length
+          ? rawCorrect
+          : fbQ.correctIndex;
+
+      const explanation =
+        typeof qObj.explanation === 'string' &&
+        qObj.explanation.trim().length > 5
+          ? qObj.explanation.trim()
+          : fbQ.explanation;
+
+      const principleBadge =
+        typeof qObj.principleBadge === 'string' &&
+        qObj.principleBadge.trim().length > 1
+          ? qObj.principleBadge.trim()
+          : fbQ.principleBadge;
+
+      const rawXp = Number(qObj.xpReward);
+      const xpReward =
+        Number.isFinite(rawXp) && rawXp >= 25 && rawXp <= 300
+          ? Math.round(rawXp)
+          : fbQ.xpReward;
+
+      return {
+        id: `${fallback.moduleId}-kc-ai-q${idx + 1}`,
+        principleBadge,
+        question: questionText,
+        options,
+        correctIndex,
+        explanation,
+        xpReward,
+      };
+    })
+    .filter((q): q is ModuleKnowledgeCheckQuestion => q !== null);
+
+  const finalQuestions =
+    normalizedQuestions.length >= 2
+      ? normalizedQuestions.slice(0, 4)
+      : fallback.questions;
+
+  const totalPossibleXp = finalQuestions.reduce(
+    (sum, q) => sum + q.xpReward,
+    0
+  );
+
+  return {
+    ...fallback,
+    quizTitle,
+    quizSubtitle,
+    questions: finalQuestions,
+    totalPossibleXp,
+    modelUsed:
+      typeof candidate.modelUsed === 'string' && candidate.modelUsed.trim()
+        ? candidate.modelUsed.trim()
+        : fallback.modelUsed,
+    generatedAtIso: new Date().toISOString(),
+    source: candidate.source === 'ai-live' ? 'ai-live' : fallback.source,
+  };
+}
+
+export function evaluateModuleKnowledgeCheckSubmission(params: {
+  quiz: ModuleKnowledgeCheckQuizPayload;
+  selectedAnswers: Record<string, number>;
+}): ModuleKnowledgeCheckEvaluationResult {
+  const { quiz, selectedAnswers } = params;
+  const totalQuestions = quiz.questions.length;
+  let correctCount = 0;
+  let earnedXp = 0;
+  const resultsByQuestionId: ModuleKnowledgeCheckEvaluationResult['resultsByQuestionId'] =
+    {};
+
+  for (const q of quiz.questions) {
+    const selectedIndex =
+      typeof selectedAnswers[q.id] === 'number' ? selectedAnswers[q.id] : -1;
+    const isCorrect = selectedIndex === q.correctIndex;
+    const xpEarned = isCorrect ? q.xpReward : 0;
+    if (isCorrect) {
+      correctCount += 1;
+      earnedXp += xpEarned;
+    }
+    resultsByQuestionId[q.id] = {
+      selectedIndex,
+      correctIndex: q.correctIndex,
+      isCorrect,
+      xpEarned,
+    };
+  }
+
+  const scorePercent =
+    totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
+  const passed = scorePercent >= 66;
+
+  return {
+    correctCount,
+    totalQuestions,
+    scorePercent,
+    earnedXp,
+    passed,
+    resultsByQuestionId,
+  };
+}
+
+// ============================================================================
+// ACADEMY KNOWLEDGE CHECK LEADERBOARD (TOP 5 STUDENTS & CHALLENGE OTHERS)
+// ============================================================================
+
+export const KNOWLEDGE_CHECK_SCORES_STORAGE_KEY =
+  'ag_module_knowledge_check_scores_v1';
+
+export interface KnowledgeCheckModuleScoreRecord {
+  moduleId: string;
+  moduleNumber: number;
+  correctCount: number;
+  totalQuestions: number;
+  scorePercent: number;
+  earnedXp: number;
+  completedAtIso: string;
+}
+
+export interface KnowledgeCheckLeaderboardStudent {
+  studentId: string;
+  rank: number;
+  displayNameEn: string;
+  displayNameFa: string;
+  anonymizedHandle: string;
+  isCurrentUser: boolean;
+  cumulativeScoreXp: number;
+  averageAccuracyPercent: number;
+  quizzesCompletedCount: number;
+  totalCorrectAnswers: number;
+  totalQuestionsAttempted: number;
+  topSpecialtyBadge: string;
+}
+
+export interface KnowledgeCheckTop5LeaderboardPayload {
+  top5Students: KnowledgeCheckLeaderboardStudent[];
+  currentUserEntry: KnowledgeCheckLeaderboardStudent;
+  cohortAverageXp: number;
+}
+
+export interface KnowledgeCheckChallengeSharePayload {
+  challengeCode: string;
+  shareTitle: string;
+  shareText: string;
+  clipboardSummary: string;
+}
+
+export function recordModuleKnowledgeCheckScore(params: {
+  existingScores: Record<string, KnowledgeCheckModuleScoreRecord>;
+  moduleId: string;
+  moduleNumber: number;
+  evaluation: ModuleKnowledgeCheckEvaluationResult;
+  completedAtIso?: string;
+}): Record<string, KnowledgeCheckModuleScoreRecord> {
+  const { existingScores, moduleId, moduleNumber, evaluation } = params;
+  const nowIso = params.completedAtIso || new Date().toISOString();
+  const prev = existingScores[moduleId];
+
+  const nextRecord: KnowledgeCheckModuleScoreRecord = {
+    moduleId,
+    moduleNumber,
+    correctCount: prev
+      ? Math.max(prev.correctCount, evaluation.correctCount)
+      : evaluation.correctCount,
+    totalQuestions: Math.max(1, evaluation.totalQuestions),
+    scorePercent: prev
+      ? Math.max(prev.scorePercent, evaluation.scorePercent)
+      : evaluation.scorePercent,
+    earnedXp: prev
+      ? Math.max(prev.earnedXp, evaluation.earnedXp)
+      : evaluation.earnedXp,
+    completedAtIso: nowIso,
+  };
+
+  return {
+    ...existingScores,
+    [moduleId]: nextRecord,
+  };
+}
+
+const PEER_KNOWLEDGE_CHECK_CANDIDATES: ReadonlyArray<{
+  studentId: string;
+  displayNameEn: string;
+  displayNameFa: string;
+  cumulativeScoreXp: number;
+  averageAccuracyPercent: number;
+  quizzesCompletedCount: number;
+  totalCorrectAnswers: number;
+  totalQuestionsAttempted: number;
+  topSpecialtyBadge: string;
+}> = [
+  {
+    studentId: 'kc-student-aria-rostami',
+    displayNameEn: 'Aria Rostami',
+    displayNameFa: 'آریا رستمی',
+    cumulativeScoreXp: 1725,
+    averageAccuracyPercent: 96,
+    quizzesCompletedCount: 8,
+    totalCorrectAnswers: 23,
+    totalQuestionsAttempted: 24,
+    topSpecialtyBadge: 'MCP Zero-Trust Master',
+  },
+  {
+    studentId: 'kc-student-nika-farahani',
+    displayNameEn: 'Nika Farahani',
+    displayNameFa: 'نیکا فراهانی',
+    cumulativeScoreXp: 1575,
+    averageAccuracyPercent: 92,
+    quizzesCompletedCount: 7,
+    totalCorrectAnswers: 21,
+    totalQuestionsAttempted: 21,
+    topSpecialtyBadge: 'Git Worktree Specialist',
+  },
+  {
+    studentId: 'kc-student-kian-mehrabi',
+    displayNameEn: 'Kian Mehrabi',
+    displayNameFa: 'کیان مهرابی',
+    cumulativeScoreXp: 1350,
+    averageAccuracyPercent: 89,
+    quizzesCompletedCount: 6,
+    totalCorrectAnswers: 18,
+    totalQuestionsAttempted: 18,
+    topSpecialtyBadge: 'LSP Supercomplete Pro',
+  },
+  {
+    studentId: 'kc-student-tara-kaviani',
+    displayNameEn: 'Tara Kaviani',
+    displayNameFa: 'تارا کاویانی',
+    cumulativeScoreXp: 1125,
+    averageAccuracyPercent: 83,
+    quizzesCompletedCount: 5,
+    totalCorrectAnswers: 15,
+    totalQuestionsAttempted: 15,
+    topSpecialtyBadge: 'Context Rot Auditor',
+  },
+  {
+    studentId: 'kc-student-sohrab-rad',
+    displayNameEn: 'Sohrab Rad',
+    displayNameFa: 'سهراب راد',
+    cumulativeScoreXp: 975,
+    averageAccuracyPercent: 78,
+    quizzesCompletedCount: 5,
+    totalCorrectAnswers: 13,
+    totalQuestionsAttempted: 15,
+    topSpecialtyBadge: 'Planning Mode Architect',
+  },
+];
+
+function formatKnowledgeCheckHandle(name: string, seedId: string): string {
+  let hash = 2166136261;
+  const combined = `${name}:${seedId}`;
+  for (let i = 0; i < combined.length; i++) {
+    hash ^= combined.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  const hex = (hash >>> 0).toString(16).toUpperCase().padStart(8, '0').slice(0, 4);
+  const parts = name.trim().split(/\s+/);
+  const initials =
+    parts.length >= 2
+      ? `${parts[0][0].toUpperCase()}.${parts[1][0].toUpperCase()}***`
+      : `${(parts[0]?.[0] || 'A').toUpperCase()}***`;
+  return `kc#${hex} · ${initials}`;
+}
+
+export function buildKnowledgeCheckTop5Leaderboard(params?: {
+  userModuleScores?: Record<string, KnowledgeCheckModuleScoreRecord>;
+  userSeedId?: string;
+  baselineUserXp?: number;
+  baselineQuizzesCount?: number;
+}): KnowledgeCheckTop5LeaderboardPayload {
+  const scoresMap = params?.userModuleScores || {};
+  const records = Object.values(scoresMap);
+  const userSeed = params?.userSeedId || 'local-principal-architect-kc';
+
+  const recordedXp = records.reduce((sum, r) => sum + (r.earnedXp || 0), 0);
+  const recordedQuizzes = records.length;
+  const recordedCorrect = records.reduce(
+    (sum, r) => sum + (r.correctCount || 0),
+    0
+  );
+  const recordedTotalQ = records.reduce(
+    (sum, r) => sum + (r.totalQuestions || 0),
+    0
+  );
+
+  // Baseline ensures the user starts inside the competitive cohort (#4 with 1,200 XP across 5 module checks)
+  // and climbs up to #1 as they complete more Knowledge Check quizzes.
+  const baselineXp =
+    typeof params?.baselineUserXp === 'number' ? params.baselineUserXp : 1200;
+  const baselineQuizzes =
+    typeof params?.baselineQuizzesCount === 'number'
+      ? params.baselineQuizzesCount
+      : 5;
+  const baselineCorrect = Math.round(baselineXp / 75);
+  const baselineQuestions = baselineQuizzes * 3;
+
+  const cumulativeScoreXp = baselineXp + recordedXp;
+  const quizzesCompletedCount = Math.min(8, baselineQuizzes + recordedQuizzes);
+  const totalCorrectAnswers = baselineCorrect + recordedCorrect;
+  const totalQuestionsAttempted = Math.max(
+    1,
+    baselineQuestions + recordedTotalQ
+  );
+  const averageAccuracyPercent = Math.min(
+    100,
+    Math.round((totalCorrectAnswers / totalQuestionsAttempted) * 100)
+  );
+
+  const userCandidate: Omit<KnowledgeCheckLeaderboardStudent, 'rank'> = {
+    studentId: userSeed,
+    displayNameEn: 'You (Active Student)',
+    displayNameFa: 'شما (معمار فعال آکادمی)',
+    anonymizedHandle: `${formatKnowledgeCheckHandle('Active Student', userSeed)} (YOU)`,
+    isCurrentUser: true,
+    cumulativeScoreXp,
+    averageAccuracyPercent,
+    quizzesCompletedCount,
+    totalCorrectAnswers,
+    totalQuestionsAttempted,
+    topSpecialtyBadge:
+      cumulativeScoreXp >= 1650
+        ? 'Principal Quiz Grandmaster'
+        : 'Agent-First Quiz Challenger',
+  };
+
+  const peerCandidates: Array<Omit<KnowledgeCheckLeaderboardStudent, 'rank'>> =
+    PEER_KNOWLEDGE_CHECK_CANDIDATES.map((peer) => ({
+      ...peer,
+      anonymizedHandle: formatKnowledgeCheckHandle(
+        peer.displayNameEn,
+        peer.studentId
+      ),
+      isCurrentUser: false,
+    }));
+
+  const allCandidates = [...peerCandidates, userCandidate].sort((a, b) => {
+    if (b.cumulativeScoreXp !== a.cumulativeScoreXp) {
+      return b.cumulativeScoreXp - a.cumulativeScoreXp;
+    }
+    if (b.averageAccuracyPercent !== a.averageAccuracyPercent) {
+      return b.averageAccuracyPercent - a.averageAccuracyPercent;
+    }
+    return b.quizzesCompletedCount - a.quizzesCompletedCount;
+  });
+
+  const rankedAll: KnowledgeCheckLeaderboardStudent[] = allCandidates.map(
+    (entry, idx) => ({
+      ...entry,
+      rank: idx + 1,
+    })
+  );
+
+  const top5Students = rankedAll.slice(0, 5);
+  const currentUserEntry =
+    rankedAll.find((s) => s.isCurrentUser) || rankedAll[0];
+
+  const cohortAverageXp = Math.round(
+    rankedAll.reduce((sum, s) => sum + s.cumulativeScoreXp, 0) /
+      Math.max(1, rankedAll.length)
+  );
+
+  return {
+    top5Students,
+    currentUserEntry,
+    cohortAverageXp,
+  };
+}
+
+export function buildKnowledgeCheckChallengeSharePayload(params: {
+  student: KnowledgeCheckLeaderboardStudent;
+  language: 'fa' | 'en';
+}): KnowledgeCheckChallengeSharePayload {
+  const { student, language } = params;
+  const isEn = language === 'en';
+  const cleanHandle = student.anonymizedHandle.replace(/\s*\(YOU\)$/i, '');
+  const challengeCode = `KC-RANK${student.rank}-${student.cumulativeScoreXp}XP`;
+
+  const shareTitle = isEn
+    ? `Google Antigravity Knowledge Check Challenge · Rank #${student.rank}`
+    : `چالش لیدربورد سنجش دانش Google Antigravity · رتبه #${student.rank}`;
+
+  const shareText = isEn
+    ? `I just reached Rank #${student.rank} (${cleanHandle}) on the Academy Knowledge Check Leaderboard with ${student.cumulativeScoreXp} XP and ${student.averageAccuracyPercent}% accuracy across ${student.quizzesCompletedCount}/8 Module Knowledge Checks! Can you beat my score? Challenge Code: ${challengeCode}`
+    : `من در لیدربورد آزمون‌های سنجش دانش (Knowledge Check) آکادمی Google Antigravity با کسب ${student.cumulativeScoreXp} XP و دقت ${student.averageAccuracyPercent}% در ${student.quizzesCompletedCount}/8 فصل به رتبه #${student.rank} (${cleanHandle}) رسیدم! آیا می‌توانید رکورد مرا بزنید؟ کد چالش: ${challengeCode}`;
+
+  return {
+    challengeCode,
+    shareTitle,
+    shareText,
+    clipboardSummary: `${shareTitle}\n${shareText}`,
+  };
+}
 

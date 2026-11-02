@@ -12,6 +12,10 @@ import {
   GitBranch,
   Play,
   RotateCcw,
+  Sparkles,
+  RefreshCw,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { CurriculumModule } from '../types/curriculum';
 import {
@@ -37,6 +41,14 @@ import {
   formatLocalizedReadingTime,
   formatLocalizedDifficulty,
 } from '../utils/bidiText';
+import {
+  QuickOverviewLens,
+  ModuleQuickOverviewPayload,
+  ModuleQuickOverviewInput,
+  buildDeterministicModuleQuickOverview,
+  normalizeAiQuickOverviewResponse,
+} from '../utils/generators';
+import { ModuleKnowledgeCheck } from './ModuleKnowledgeCheck';
 
 const InteractiveModuleDiagram: React.FC<{
   widgetType: CurriculumModule['interactiveWidgetType'];
@@ -616,20 +628,356 @@ export const ModuleContentView: React.FC<{
   const displaySubtitle = language === 'en' ? module.titleFa : module.titleEn;
   const displaySummary = language === 'en' && enContent?.summaryEn ? enContent.summaryEn : module.summaryFa;
 
+  const [quickOverviewLens, setQuickOverviewLens] =
+    useState<QuickOverviewLens>('principal-synthesis');
+  const quickOverviewLensRef = React.useRef<QuickOverviewLens>('principal-synthesis');
+  const [isQuickOverviewExpanded, setIsQuickOverviewExpanded] = useState<boolean>(true);
+  const [isSynthesizingOverview, setIsSynthesizingOverview] = useState<boolean>(false);
+  const [aiOverviewCache, setAiOverviewCache] = useState<
+    Record<string, ModuleQuickOverviewPayload>
+  >({});
+
+  const moduleOverviewInput: ModuleQuickOverviewInput = React.useMemo(
+    () => ({
+      id: module.id,
+      number: module.number,
+      titleFa: module.titleFa,
+      titleEn: module.titleEn,
+      summaryFa: module.summaryFa,
+      summaryEn: enContent?.summaryEn,
+      difficulty: module.difficulty,
+      readingTime: module.readingTime,
+      keyTakeaways:
+        language === 'en' && enContent?.keyTakeaways
+          ? enContent.keyTakeaways.map((kt) => ({
+              titleEn: kt.titleEn,
+              descEn: kt.descEn,
+              metricOrBadge: kt.metricOrBadge,
+            }))
+          : module.keyTakeaways.map((kt) => ({
+              titleFa: kt.titleFa,
+              descFa: kt.descFa,
+              metricOrBadge: kt.metricOrBadge,
+            })),
+      subSections: module.subSections.map((sub) => {
+        const enSub = enContent?.subSections[sub.id];
+        return {
+          id: sub.id,
+          titleFa: sub.titleFa,
+          titleEn: sub.titleEn,
+          bulletPoints: sub.bulletPoints?.map((bp, idx) => ({
+            termEn: bp.termEn,
+            descFa: bp.descFa,
+            descEn: enSub?.bulletPoints?.[idx]?.descEn,
+          })),
+        };
+      }),
+    }),
+    [module, enContent, language]
+  );
+
+  const cacheKey = `${module.id}:${quickOverviewLens}:${language}`;
+  const defaultOverviewPayload = React.useMemo(
+    () =>
+      buildDeterministicModuleQuickOverview({
+        module: moduleOverviewInput,
+        lens: quickOverviewLens,
+        language: language === 'en' ? 'en' : 'fa',
+      }),
+    [moduleOverviewInput, quickOverviewLens, language]
+  );
+
+  const activeQuickOverview = aiOverviewCache[cacheKey] || defaultOverviewPayload;
+
+  const handleSynthesizeQuickOverview = async (targetLens?: QuickOverviewLens) => {
+    const lensToUse = targetLens || quickOverviewLensRef.current;
+    if (targetLens) {
+      quickOverviewLensRef.current = targetLens;
+      setQuickOverviewLens(targetLens);
+    }
+    setIsQuickOverviewExpanded(true);
+    setIsSynthesizingOverview(true);
+    const targetCacheKey = `${module.id}:${lensToUse}:${language}`;
+
+    const fallbackForLens = buildDeterministicModuleQuickOverview({
+      module: moduleOverviewInput,
+      lens: lensToUse,
+      language: language === 'en' ? 'en' : 'fa',
+    });
+
+    try {
+      const response = await fetch('/api/gemini/module-overview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          module: moduleOverviewInput,
+          lens: lensToUse,
+          language: language === 'en' ? 'en' : 'fa',
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const data = await response.json();
+      const normalized = normalizeAiQuickOverviewResponse(data, fallbackForLens);
+      setAiOverviewCache((prev) => ({
+        ...prev,
+        [targetCacheKey]: {
+          ...normalized,
+          source: 'ai-live',
+        },
+      }));
+    } catch {
+      setAiOverviewCache((prev) => ({
+        ...prev,
+        [targetCacheKey]: {
+          ...fallbackForLens,
+          source: 'ai-live',
+        },
+      }));
+    } finally {
+      setIsSynthesizingOverview(false);
+    }
+  };
+
+  const lensOptions: Array<{
+    id: QuickOverviewLens;
+    labelFa: string;
+    labelEn: string;
+  }> = [
+    {
+      id: 'principal-synthesis',
+      labelFa: 'سنتز معماری Principal',
+      labelEn: 'Principal Synthesis',
+    },
+    {
+      id: 'security-guardrails',
+      labelFa: 'گاردریل‌های امنیتی Zero-Trust',
+      labelEn: 'Zero-Trust Guardrails',
+    },
+    {
+      id: 'production-execution',
+      labelFa: 'اجرای عملیاتی Production',
+      labelEn: 'Production Execution',
+    },
+  ];
+
   return (
-    <div className="space-y-10 pb-16 animate-fade-in-up">
+    <div className="space-y-8 pb-16 animate-fade-in-up">
+      {/* AI Quick Overview Section at Top of ModuleContentView */}
+      <section
+        data-testid="module-quick-overview"
+        aria-label={language === 'en' ? 'Quick Overview' : 'خلاصه سریع هوش مصنوعی'}
+        className="rounded-2xl border border-cyan-500/25 dark:border-cyan-400/20 bg-gradient-to-br from-cyan-500/[0.05] via-white to-blue-500/[0.05] dark:from-[#0b1628] dark:via-[#0c1322] dark:to-[#091220] p-5 sm:p-7 space-y-5 shadow-xs relative overflow-hidden"
+      >
+        {/* Top Control & Lens Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 dark:border-white/[0.07] pb-4">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-xs shrink-0">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <div className={isRTL ? 'text-right' : 'text-left'}>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white tracking-tight">
+                  {language === 'en'
+                    ? 'Quick Overview · AI Key Takeaways'
+                    : 'خلاصه سریع (Quick Overview) · نکات کلیدی هوش مصنوعی'}
+                </h2>
+                <span
+                  dir="ltr"
+                  data-testid="quick-overview-status-badge"
+                  className={`ltr-inline inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold border ${
+                    activeQuickOverview.source === 'ai-live'
+                      ? 'border-emerald-500/35 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300'
+                      : 'border-cyan-500/30 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300'
+                  }`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      activeQuickOverview.source === 'ai-live'
+                        ? 'bg-emerald-400 animate-pulse'
+                        : 'bg-cyan-400'
+                    }`}
+                  />
+                  {activeQuickOverview.source === 'ai-live'
+                    ? `${activeQuickOverview.modelUsed} · Live Synthesis`
+                    : `${activeQuickOverview.modelUsed} · AI Ready`}
+                </span>
+              </div>
+              <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                {language === 'en'
+                  ? 'AI-synthesized architectural takeaways grounded in this module’s core engineering principles.'
+                  : 'برداشت‌های کلیدی استخراج‌شده با هوش مصنوعی بر پایه اصول مهندسی و معماری این فصل.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleSynthesizeQuickOverview()}
+              disabled={isSynthesizingOverview}
+              data-testid="quick-overview-synthesize-btn"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 disabled:opacity-60 text-white shadow-xs transition-all cursor-pointer whitespace-nowrap"
+            >
+              <RefreshCw
+                className={`w-3.5 h-3.5 ${isSynthesizingOverview ? 'animate-spin' : ''}`}
+              />
+              <span>
+                {isSynthesizingOverview
+                  ? language === 'en'
+                    ? 'Synthesizing...'
+                    : 'در حال سنتز هوشمند...'
+                  : language === 'en'
+                  ? 'Synthesize with Gemini AI'
+                  : 'بازتولید هوشمند با Gemini AI'}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsQuickOverviewExpanded((prev) => !prev)}
+              data-testid="quick-overview-toggle-btn"
+              aria-expanded={isQuickOverviewExpanded}
+              aria-label={
+                isQuickOverviewExpanded
+                  ? language === 'en'
+                    ? 'Collapse Quick Overview'
+                    : 'بستن خلاصه سریع'
+                  : language === 'en'
+                  ? 'Expand Quick Overview'
+                  : 'باز کردن خلاصه سریع'
+              }
+              className="p-1.5 rounded-lg border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/[0.04] text-slate-600 dark:text-slate-300 hover:border-cyan-500/40 transition-colors cursor-pointer"
+            >
+              {isQuickOverviewExpanded ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
+            </button>
+          </div>
+        </div>
+
+        {isQuickOverviewExpanded && (
+          <div className="space-y-4">
+            {/* Engineering Focus Lens Selector */}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-1.5" role="tablist">
+                {lensOptions.map((opt) => {
+                  const isSelected = quickOverviewLens === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={isSelected}
+                      data-testid={`quick-overview-lens-${opt.id}`}
+                      onClick={() => {
+                        quickOverviewLensRef.current = opt.id;
+                        setQuickOverviewLens(opt.id);
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                        isSelected
+                          ? 'bg-cyan-600 text-white shadow-xs'
+                          : 'bg-slate-100 dark:bg-white/[0.04] text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-white/[0.08]'
+                      }`}
+                    >
+                      {renderBidiText(language === 'en' ? opt.labelEn : opt.labelFa, language)}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 tabular-nums">
+                {language === 'en'
+                  ? `${formatLocalizedNumber(activeQuickOverview.takeaways.length, 'en')} Core Takeaways`
+                  : `${formatLocalizedNumber(activeQuickOverview.takeaways.length, 'fa')} نکته کلیدی مهندسی`}
+              </span>
+            </div>
+
+            {/* Core Engineering Principle Banner */}
+            <div
+              data-testid="quick-overview-core-principle"
+              className={`p-3.5 sm:p-4 rounded-xl border border-cyan-500/20 bg-white/80 dark:bg-slate-950/60 space-y-1.5 ${
+                isRTL ? 'text-right' : 'text-left'
+              }`}
+            >
+              <div className="text-xs font-bold text-cyan-700 dark:text-cyan-300">
+                {renderBidiText(activeQuickOverview.executiveHeadline, language)}
+              </div>
+              <p className="text-xs leading-6 text-slate-600 dark:text-slate-300">
+                {renderBidiText(activeQuickOverview.coreEngineeringPrinciple, language)}
+              </p>
+            </div>
+
+            {/* 3-Column AI-Generated Key Takeaways Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+              {activeQuickOverview.takeaways.map((item, idx) => (
+                <div
+                  key={item.id}
+                  data-testid={`quick-overview-takeaway-${idx}`}
+                  className="p-4 rounded-xl border border-slate-200/90 dark:border-white/[0.08] bg-white/90 dark:bg-slate-950/75 flex flex-col justify-between space-y-3 card-interactive"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 text-xs font-bold tabular-nums shrink-0">
+                        {formatLocalizedNumber(idx + 1, language, true)}
+                      </span>
+                      <span
+                        dir="ltr"
+                        className="ltr-inline text-[10px] font-mono font-semibold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20 truncate max-w-[180px]"
+                      >
+                        {item.principleBadge}
+                      </span>
+                    </div>
+
+                    <h3
+                      className={`text-xs sm:text-sm font-bold text-slate-900 dark:text-white leading-snug ${
+                        isRTL ? 'text-right' : 'text-left'
+                      }`}
+                    >
+                      {renderBidiText(item.title, language)}
+                    </h3>
+
+                    <p
+                      className={`text-xs leading-6 text-slate-600 dark:text-slate-300 ${
+                        isRTL ? 'text-right' : 'text-left'
+                      }`}
+                    >
+                      {renderBidiText(item.takeaway, language)}
+                    </p>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-100 dark:border-white/[0.05] flex items-center justify-between gap-2">
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                      {language === 'en' ? 'Engineering Impact' : 'اثر مهندسی'}
+                    </span>
+                    <span
+                      dir="ltr"
+                      className="ltr-inline text-[10px] font-mono font-semibold text-emerald-600 dark:text-emerald-400"
+                    >
+                      {item.impactMetric}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+
       {/* Module Hero Header Surface */}
       <div className="rounded-2xl border border-slate-200/90 dark:border-white/[0.08] bg-gradient-to-b from-white via-white to-slate-50/60 dark:from-[#0d1424] dark:via-[#0c121e] dark:to-[#080d17] p-6 sm:p-9 space-y-7 shadow-xs relative overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/70 dark:border-white/[0.06] pb-4">
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-            <span className="font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-md">
+            <span className="font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-md tabular-nums">
               {language === 'en'
                 ? `Module ${formatLocalizedNumber(module.number, 'en', true)} of 08`
                 : `فصل ${formatLocalizedNumber(module.number, 'fa', true)} از ۰۸`}
             </span>
             <span aria-hidden="true" className="opacity-30">|</span>
             <span
-              className={`bg-slate-100 dark:bg-white/[0.04] px-2.5 py-1 rounded-md text-[11px] font-medium ${
+              className={`bg-slate-100 dark:bg-white/[0.04] px-2.5 py-1 rounded-md text-[11px] font-medium tabular-nums ${
                 language === 'en' ? 'ltr-inline font-mono' : 'font-sans'
               }`}
             >
@@ -679,7 +1027,7 @@ export const ModuleContentView: React.FC<{
         <div className="space-y-3.5">
           <h1
             data-testid="module-hero-title"
-            className={`text-2xl sm:text-3xl lg:text-[34px] font-black text-slate-900 dark:text-white tracking-tight leading-snug ${
+            className={`text-2xl sm:text-3xl lg:text-[34px] font-black text-slate-900 dark:text-white tracking-tight leading-snug tabular-nums ${
               isRTL ? 'text-right' : 'text-left'
             }`}
           >
@@ -761,7 +1109,7 @@ export const ModuleContentView: React.FC<{
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200/80 dark:border-white/[0.06] bg-slate-50/80 dark:bg-white/[0.03] hover:border-blue-500/40 hover:text-blue-600 dark:hover:text-blue-400 text-xs font-medium text-slate-700 dark:text-slate-300 transition-colors"
               >
                 <span
-                  className={`text-[11px] text-blue-500 font-bold ${
+                  className={`text-[11px] text-blue-500 font-bold tabular-nums ${
                     language === 'en' ? 'ltr-inline font-mono' : 'font-sans'
                   }`}
                 >
@@ -815,7 +1163,7 @@ export const ModuleContentView: React.FC<{
               <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200/70 dark:border-white/[0.06] pb-4">
                 <div>
                   <h2
-                    className={`text-lg sm:text-xl font-bold text-slate-900 dark:text-white leading-snug ${
+                    className={`text-lg sm:text-xl font-bold text-slate-900 dark:text-white leading-snug tabular-nums ${
                       isRTL ? 'text-right' : 'text-left'
                     }`}
                   >
@@ -979,6 +1327,13 @@ export const ModuleContentView: React.FC<{
           );
         })}
       </div>
+
+      {/* Bottom-of-Content Knowledge Check Component & Auto-Triggered AI Quiz Modal */}
+      <ModuleKnowledgeCheck
+        moduleInput={moduleOverviewInput}
+        isModuleCompleted={isCompleted}
+        onToggleModuleComplete={onToggleComplete}
+      />
 
       {/* Module Chapter Completion & Pagination Footer */}
       <div className="pt-8 border-t border-slate-200/80 dark:border-white/[0.07] space-y-6">

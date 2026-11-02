@@ -1557,6 +1557,13 @@ test('Font Loading & Zero-CLS Optimization: index.html preloads WOFF2 font files
   assert.equal(indexCss.includes("font-family: 'JetBrains Mono Fallback';"), true);
   assert.equal(indexCss.includes('ascent-override:'), true);
   assert.equal(indexCss.includes('descent-override:'), true);
+  assert.equal(indexCss.includes('@theme'), true);
+  assert.equal(indexCss.includes('font-variant-numeric: tabular-nums'), true);
+  assert.equal(indexCss.includes('font-feature-settings: "tnum" 1'), true);
+  assert.equal(indexCss.includes('--tracking-ui:'), true);
+  assert.equal(indexCss.includes('--tracking-heading:'), true);
+  assert.equal(indexCss.includes('--tracking-numeric: 0em'), true);
+  assert.equal(indexCss.includes('[dir="rtl"] .tabular-nums'), true);
 });
 
 test('Bidi Typography, Number Localization & RTL/LTR Isolation: normalizes Persian digits and isolates LTR technical parentheticals', async () => {
@@ -1605,5 +1612,719 @@ test('Bidi Typography, Number Localization & RTL/LTR Isolation: normalizes Persi
   const listNodes = renderBidiText('Supercomplete, Tab-to-Jump, Cmd/Ctrl + I', 'fa');
   const listSerialized = JSON.stringify(listNodes);
   assert.equal(listSerialized.includes('"children":"Supercomplete, Tab-to-Jump, Cmd/Ctrl + I"'), true);
+});
+
+test('Breadcrumb Tooltips: buildBreadcrumbDescriptorWithTooltips generates full hierarchical paths and module/workspace descriptions in FA and EN', async () => {
+  const { buildBreadcrumbDescriptorWithTooltips } = await import('./generators');
+
+  const sampleModule = {
+    number: 1,
+    titleFa: 'معماری هسته و فلسفه Agent-First',
+    titleEn: 'Core Architecture: Editor View vs. Agent Manager',
+    summaryFa: 'گذار بنیادین از کدنویسی خط‌به‌خط سنکرون به ارکستریشن ناهمگام چندایجنتی.',
+    summaryEn: 'Fundamental shift from synchronous coding to asynchronous multi-agent orchestration.',
+    readingTime: '18 min read',
+    difficulty: 'Principal Foundation',
+  };
+
+  // 1. Curriculum in Persian
+  const faCurriculum = buildBreadcrumbDescriptorWithTooltips({
+    activeSection: 'curriculum',
+    language: 'fa',
+    currentModule: sampleModule,
+    formattedModNumber: '۰۱',
+  });
+  assert.equal(faCurriculum.group, 'سرفصل‌های آموزشی');
+  assert.equal(faCurriculum.subgroup, 'گام اول · معماری هسته و اجرا');
+  assert.equal(faCurriculum.item, 'فصل ۰۱: معماری هسته و فلسفه Agent-First');
+  assert.equal(
+    faCurriculum.fullPath,
+    'سرفصل‌های آموزشی / گام اول · معماری هسته و اجرا / فصل ۰۱: معماری هسته و فلسفه Agent-First'
+  );
+  assert.equal(faCurriculum.itemTooltip.description, sampleModule.summaryFa);
+  assert.equal(faCurriculum.itemTooltip.badge, 'MOD-01');
+  assert.equal(faCurriculum.itemTooltip.meta, 'Principal Foundation · 18 min read');
+
+  // 2. Curriculum in English
+  const enCurriculum = buildBreadcrumbDescriptorWithTooltips({
+    activeSection: 'curriculum',
+    language: 'en',
+    currentModule: sampleModule,
+    formattedModNumber: '01',
+  });
+  assert.equal(enCurriculum.group, 'Curriculum');
+  assert.equal(enCurriculum.item, 'Module 01: Core Architecture: Editor View vs. Agent Manager');
+  assert.equal(enCurriculum.itemTooltip.description, sampleModule.summaryEn);
+
+  // 3. Engineering Studios (Simulator)
+  const faStudio = buildBreadcrumbDescriptorWithTooltips({
+    activeSection: 'simulator',
+    language: 'fa',
+    currentModule: sampleModule,
+    formattedModNumber: '۰۱',
+  });
+  assert.equal(faStudio.group, 'استودیوهای مهندسی زنده');
+  assert.equal(faStudio.item, 'شبیه‌ساز Mission Control');
+  assert.equal(faStudio.itemTooltip.badge, 'Live IDE');
+  assert.equal(faStudio.itemTooltip.description.includes('Editor View'), true);
+});
+
+test('Sidebar Module Path Graph: buildSidebarModulePathGraph builds curved cubic-Bezier connected path with completed, active, and pending chapter states', async () => {
+  const { buildSidebarModulePathGraph } = await import('./generators');
+
+  const sampleModules = Array.from({ length: 8 }, (_, idx) => ({
+    id: `module-${idx + 1}`,
+    number: idx + 1,
+    titleFa: `فصل ${idx + 1}`,
+    titleEn: `Chapter ${idx + 1}`,
+  }));
+
+  const graph = buildSidebarModulePathGraph({
+    modules: sampleModules,
+    completedModules: ['module-1', 'module-2'],
+    activeModuleId: 'module-3',
+    activeSection: 'curriculum',
+  });
+
+  assert.equal(graph.nodes.length, 8);
+  assert.equal(graph.segments.length, 7);
+  assert.equal(graph.fullTrackPathD.startsWith('M 28 24 C '), true);
+
+  // Verify states
+  assert.equal(graph.nodes[0].status, 'completed');
+  assert.equal(graph.nodes[1].status, 'completed');
+  assert.equal(graph.nodes[2].status, 'active');
+  assert.equal(graph.nodes[3].status, 'pending');
+  assert.equal(graph.nodes[7].status, 'pending');
+
+  // Verify counts
+  assert.deepEqual(graph.counts, {
+    completed: 2,
+    active: 1,
+    pending: 5,
+    total: 8,
+  });
+
+  // Verify curved SVG path segments use cubic Bezier 'C' commands
+  for (const seg of graph.segments) {
+    assert.equal(seg.pathD.startsWith('M '), true);
+    assert.equal(seg.pathD.includes(' C '), true);
+  }
+
+  // Segment 1->2 is between two completed nodes => completed
+  assert.equal(graph.segments[0].status, 'completed');
+  // Segment 2->3 connects completed module-2 to active module-3 => active
+  assert.equal(graph.segments[1].status, 'active');
+  // Segment 3->4 connects active module-3 to pending module-4 => active
+  assert.equal(graph.segments[2].status, 'active');
+  // Segment 4->5 connects pending module-4 to pending module-5 => pending
+  assert.equal(graph.segments[3].status, 'pending');
+});
+
+test('Module Quick Overview: buildModuleQuickOverviewPrompt, buildDeterministicModuleQuickOverview, and normalizeAiQuickOverviewResponse synthesize core engineering takeaways across lenses and languages', async () => {
+  const {
+    buildModuleQuickOverviewPrompt,
+    buildDeterministicModuleQuickOverview,
+    normalizeAiQuickOverviewResponse,
+  } = await import('./generators');
+
+  const sampleMod = {
+    id: 'module-1',
+    number: 1,
+    titleFa: 'معماری هسته و فلسفه Agent-First',
+    titleEn: 'Core Architecture: Editor View vs. Agent Manager',
+    summaryFa: 'گذار بنیادین از کدنویسی خط‌به‌خط سنکرون به ارکستریشن ناهمگام چندایجنتی.',
+    summaryEn: 'Fundamental shift from synchronous coding to asynchronous multi-agent orchestration.',
+    difficulty: 'Principal Foundation',
+    readingTime: '18 min read',
+    keyTakeaways: [
+      {
+        titleFa: 'تفکیک محیط کاربری دوگانه',
+        descFa: 'جدا کردن محیط ویرایش جراحی کد از مرکز فرماندهی ایجنت‌های موازی.',
+        titleEn: 'Dual Workspace Separation',
+        descEn: 'Separating surgical synchronous editing from asynchronous Mission Control.',
+        metricOrBadge: 'Editor View + Mission Control',
+      },
+      {
+        titleFa: 'موتور پیش‌بینی Supercomplete',
+        descFa: 'پیش‌بینی تغییرات چندخطی و چندفایلی بر اساس گراف وابستگی LSP.',
+        titleEn: 'Supercomplete Engine',
+        descEn: 'Predicting multi-line and cross-file diffs via LSP dependency graphs.',
+        metricOrBadge: 'LSP + Diff-History Aware',
+      },
+    ],
+    subSections: [
+      {
+        id: 'm1-s1',
+        titleFa: '۱.۱ پارادایم شیفت',
+        titleEn: '1.1 Paradigm Shift',
+        bulletPoints: [
+          {
+            termEn: 'Tab-to-Jump',
+            descFa: 'پرش هوشمند بین فایل‌های وابسته.',
+            descEn: 'Intelligent cursor jump across dependent files.',
+          },
+        ],
+      },
+    ],
+  };
+
+  // 1. Prompt builder includes module title, lens focus, and takeaways
+  const promptFa = buildModuleQuickOverviewPrompt({
+    module: sampleMod,
+    lens: 'security-guardrails',
+    language: 'fa',
+  });
+  assert.equal(promptFa.includes('Core Architecture: Editor View vs. Agent Manager'), true);
+  assert.equal(promptFa.includes('Zero-Trust Security'), true);
+  assert.equal(promptFa.includes('Editor View + Mission Control'), true);
+
+  // 2. Deterministic synthesis produces 3 takeaways in Persian and English
+  const faOverview = buildDeterministicModuleQuickOverview({
+    module: sampleMod,
+    lens: 'principal-synthesis',
+    language: 'fa',
+  });
+  assert.equal(faOverview.moduleId, 'module-1');
+  assert.equal(faOverview.takeaways.length, 3);
+  assert.equal(faOverview.takeaways[0].principleBadge, 'Editor View + Mission Control');
+  assert.equal(faOverview.coreEngineeringPrinciple.includes('Editor View + Mission Control'), true);
+
+  const enGuardrails = buildDeterministicModuleQuickOverview({
+    module: sampleMod,
+    lens: 'security-guardrails',
+    language: 'en',
+  });
+  assert.equal(enGuardrails.language, 'en');
+  assert.equal(enGuardrails.takeaways.length, 3);
+  assert.equal(enGuardrails.takeaways[0].title.includes('Policy Enforcement'), true);
+
+  // 3. Normalizer validates AI response and falls back safely on malformed input
+  const normalizedLive = normalizeAiQuickOverviewResponse(
+    {
+      executiveHeadline: 'Custom AI Executive Headline for Module 01',
+      coreEngineeringPrinciple: 'Custom AI Core Engineering Principle for Agent-First IDE',
+      takeaways: [
+        {
+          principleBadge: 'LSP Graph',
+          title: 'AI Takeaway 1',
+          takeaway: 'Actionable engineering takeaway 1 from Gemini.',
+          impactMetric: '10x Velocity',
+        },
+        {
+          principleBadge: 'Mission Control',
+          title: 'AI Takeaway 2',
+          takeaway: 'Actionable engineering takeaway 2 from Gemini.',
+          impactMetric: 'Zero Blocking',
+        },
+      ],
+      modelUsed: 'gemini-3.8-flash',
+      source: 'ai-live',
+    },
+    enGuardrails
+  );
+  assert.equal(normalizedLive.source, 'ai-live');
+  assert.equal(normalizedLive.executiveHeadline, 'Custom AI Executive Headline for Module 01');
+  assert.equal(normalizedLive.takeaways.length, 2);
+  assert.equal(normalizedLive.takeaways[0].principleBadge, 'LSP Graph');
+
+  const fallbackResult = normalizeAiQuickOverviewResponse(null, faOverview);
+  assert.equal(fallbackResult.executiveHeadline, faOverview.executiveHeadline);
+});
+
+test('Knowledge Base Context Awareness & MCP Drift Auditor: buildKbContextAwarenessPrompt, buildDeterministicKbContextAwareness, and normalizeAiKbContextAwarenessResponse detect MCP configuration drifts across profiles and languages', async () => {
+  const {
+    buildInitialKnowledgeBaseEntries,
+    buildKbContextAwarenessPrompt,
+    buildDeterministicKbContextAwareness,
+    normalizeAiKbContextAwarenessResponse,
+  } = await import('./generators');
+
+  const seededEntries = buildInitialKnowledgeBaseEntries(null, null);
+  const mcpEntry =
+    seededEntries.find((e) => e.category === 'mcp-schema') || seededEntries[0];
+  const staleEntry =
+    seededEntries.find((e) => e.stalenessPercent >= 65) || seededEntries[1];
+
+  // 1. Prompt builder includes entry keyPath, baseline profile, and content snippet
+  const prompt = buildKbContextAwarenessPrompt({
+    entry: mcpEntry,
+    baselineProfile: 'sse-remote-zero-trust',
+    language: 'fa',
+  });
+  assert.equal(prompt.includes(mcpEntry.keyPath), true);
+  assert.equal(prompt.includes('sse-remote-zero-trust'), true);
+
+  // 2. Deterministic audit detects SSE transport drift when entry uses local stdio
+  const sseAuditFa = buildDeterministicKbContextAwareness({
+    entry: mcpEntry,
+    baselineProfile: 'sse-remote-zero-trust',
+    language: 'fa',
+  });
+  assert.equal(sseAuditFa.entryId, mcpEntry.id);
+  assert.equal(sseAuditFa.driftFindings.length, 3);
+  assert.equal(
+    sseAuditFa.driftFindings[0].parameterPath,
+    'mcpServers.postgres_telemetry.transport'
+  );
+  assert.equal(sseAuditFa.recommendedMcpSnippet.includes('"transport": "sse"'), true);
+
+  // 3. Stale entry produces CRITICAL Finding #2 on Context Rot staleness
+  const staleAuditEn = buildDeterministicKbContextAwareness({
+    entry: staleEntry,
+    baselineProfile: 'multi-worktree-ci',
+    language: 'en',
+  });
+  assert.equal(staleAuditEn.language, 'en');
+  assert.equal(staleAuditEn.driftRiskScore >= 50, true);
+  assert.equal(staleAuditEn.driftFindings[1].severity, 'CRITICAL');
+
+  // 4. Normalizer validates AI response and falls back safely on malformed input
+  const normalizedLive = normalizeAiKbContextAwarenessResponse(
+    {
+      contextAwarenessSummary: 'Live Gemini Context Awareness summary for MCP setup.',
+      architecturalIntent: 'Maintain strict read-only pool and schema alignment.',
+      driftRiskScore: 68,
+      driftSeverity: 'HIGH',
+      driftFindings: [
+        {
+          severity: 'WARNING',
+          parameterPath: 'mcpServers.postgres.transport',
+          expectedBaseline: 'sse',
+          detectedState: 'stdio',
+          explanation: 'Transport drift between local stdio and remote SSE gateway.',
+          remediationPatch: '"transport": "sse"',
+        },
+        {
+          severity: 'CRITICAL',
+          parameterPath: '.agent/knowledge-base/rot',
+          expectedBaseline: '< 35%',
+          detectedState: '82%',
+          explanation: 'Stale vendor AST dump pollutes MCP tool resolution.',
+          remediationPatch: 'Prune stale entry',
+        },
+      ],
+      recommendedMcpSnippet: '{"mcpServers": {"guard": {"transport": "sse"}}}',
+      modelUsed: 'gemini-3.8-flash',
+      source: 'ai-live',
+    },
+    staleAuditEn
+  );
+  assert.equal(normalizedLive.source, 'ai-live');
+  assert.equal(normalizedLive.driftRiskScore, 68);
+  assert.equal(normalizedLive.driftSeverity, 'HIGH');
+  assert.equal(normalizedLive.driftFindings.length, 2);
+
+  const fallbackNorm = normalizeAiKbContextAwarenessResponse(undefined, sseAuditFa);
+  assert.equal(fallbackNorm.contextAwarenessSummary, sseAuditFa.contextAwarenessSummary);
+});
+
+test('Academy Leaderboard & AI Weekly Challenges: anonymizes student handles, ranks architects by cumulative XP, and normalizes AI weekly challenges', async () => {
+  const {
+    anonymizeArchitectHandle,
+    buildAcademyLeaderboardStandings,
+    buildWeeklyLeaderboardChallengePrompt,
+    buildDeterministicWeeklyLeaderboardChallenges,
+    normalizeAiWeeklyLeaderboardChallengesResponse,
+  } = await import('./achievements');
+
+  // 1. Privacy-preserving handle anonymization never leaks raw full names or email addresses
+  const handleStandard = anonymizeArchitectHandle(
+    'Kourosh Rostami',
+    'peer-arch-01',
+    false
+  );
+  assert.equal(handleStandard.startsWith('arch#'), true);
+  assert.equal(handleStandard.includes('K.R***'), true);
+  assert.equal(handleStandard.includes('Kourosh'), false);
+  assert.equal(handleStandard.includes('Rostami'), false);
+
+  const handleFromEmail = anonymizeArchitectHandle(
+    'aria.farhadi@example.com',
+    'user-99',
+    false
+  );
+  assert.equal(handleFromEmail.includes('@example.com'), false);
+  assert.equal(handleFromEmail.includes('A.F***'), true);
+
+  const handleStrict = anonymizeArchitectHandle(
+    'Kourosh Rostami',
+    'peer-arch-01',
+    true
+  );
+  assert.equal(handleStrict.startsWith('zk-node#'), true);
+  assert.equal(handleStrict.includes('K.R'), false);
+
+  // 2. Cumulative XP standings sort descending and update current user rank dynamically
+  const midStandings = buildAcademyLeaderboardStandings({
+    currentArchitectName: 'مهندس ارشد (Principal Engineer)',
+    currentArchitectId: 'current-session-architect',
+    currentUserCumulativeXp: 2850,
+    currentUserCompletedModules: 5,
+    currentUserStreakDays: 10,
+    currentUserChallengesSolved: 1,
+    currentUserWeeklyBonusXp: 250,
+    strictPrivacyMode: false,
+  });
+
+  assert.equal(midStandings.entries.length, 8); // 7 seeded peers + current user
+  // Verify descending cumulative XP order
+  for (let i = 1; i < midStandings.entries.length; i++) {
+    assert.equal(
+      midStandings.entries[i - 1].cumulativeXp >=
+        midStandings.entries[i].cumulativeXp,
+      true
+    );
+  }
+  // At 2850 XP, user is ranked #5 (behind 4480, 3960, 3520, 3080)
+  assert.equal(midStandings.currentUserEntry.rank, 5);
+  assert.equal(midStandings.currentUserEntry.isCurrentUser, true);
+  assert.equal(midStandings.xpToNextLeaderboardSpot, 3080 - 2850 + 10);
+
+  // Boosting user cumulative XP to 4800 elevates user to #1 on the podium
+  const topStandings = buildAcademyLeaderboardStandings({
+    currentArchitectName: 'مهندس ارشد (Principal Engineer)',
+    currentArchitectId: 'current-session-architect',
+    currentUserCumulativeXp: 4800,
+    currentUserCompletedModules: 8,
+    currentUserStreakDays: 18,
+    strictPrivacyMode: true,
+  });
+  assert.equal(topStandings.currentUserEntry.rank, 1);
+  assert.equal(topStandings.topThreePodium[0].isCurrentUser, true);
+  assert.equal(topStandings.xpToNextLeaderboardSpot, 0);
+  assert.equal(
+    topStandings.entries.every((e) => e.displayHandle.startsWith('zk-node#')),
+    true
+  );
+
+  // 3. AI Weekly Ranking Challenges prompt, deterministic tracks, and normalization
+  const promptFa = buildWeeklyLeaderboardChallengePrompt({
+    track: 'fastmcp-security',
+    language: 'fa',
+    currentRankNameEn: 'Architect',
+    completedModulesCount: 6,
+  });
+  assert.equal(promptFa.includes('fastmcp-security'), true);
+  assert.equal(promptFa.includes('mcp_config.json'), true);
+
+  const fastmcpSuiteFa = buildDeterministicWeeklyLeaderboardChallenges({
+    track: 'fastmcp-security',
+    language: 'fa',
+  });
+  assert.equal(fastmcpSuiteFa.challenges.length, 3);
+  assert.equal(fastmcpSuiteFa.challenges[0].targetArtifactOrPath, 'mcp_config.json');
+
+  const normalizedAiSuite = normalizeAiWeeklyLeaderboardChallengesResponse(
+    {
+      weekCode: '2026-W45',
+      themeHeadline: 'Custom AI Weekly Sprint Headline',
+      aiDirectiveSummary: 'Custom AI Weekly Directive Summary for Leaderboard.',
+      challenges: [
+        {
+          id: 'ai-c1',
+          code: 'WRC-45-01',
+          title: 'Audit FastMCP Read-Only Pool',
+          scenarioBrief: 'Ensure read-only pool in mcp_config.json.',
+          verificationCriterion: 'Verify default_transaction_read_only=on.',
+          targetArtifactOrPath: 'mcp_config.json',
+          difficulty: 'ARCHITECT',
+          xpReward: 400,
+        },
+        {
+          id: 'ai-c2',
+          code: 'WRC-45-02',
+          title: 'Isolate Worktree Branches',
+          scenarioBrief: 'Prevent index.lock contention across 3 agents.',
+          verificationCriterion: 'Zero merge conflicts in Mission Control.',
+          targetArtifactOrPath: '.agent/workflows/worktree.md',
+          difficulty: 'PRINCIPAL',
+          xpReward: 500,
+        },
+      ],
+      source: 'ai-live',
+    },
+    fastmcpSuiteFa
+  );
+  assert.equal(normalizedAiSuite.source, 'ai-live');
+  assert.equal(normalizedAiSuite.weekCode, '2026-W45');
+  assert.equal(normalizedAiSuite.challenges.length, 2);
+  assert.equal(normalizedAiSuite.challenges[0].xpReward, 400);
+});
+
+test("Architect's Daily Mission: selectArchitectDailyMission and completeArchitectDailyMission select random technical tasks and award bonus XP without duplicate claims", async () => {
+  const {
+    ARCHITECT_DAILY_MISSIONS_POOL,
+    selectArchitectDailyMission,
+    completeArchitectDailyMission,
+  } = await import('./generators');
+
+  assert.equal(ARCHITECT_DAILY_MISSIONS_POOL.length >= 6, true);
+
+  // 1. Seeded index 0 selects the 'Refactor a rule' mission
+  const firstMission = selectArchitectDailyMission({ seedOrIndex: 0 });
+  assert.equal(firstMission.id, 'mission-refactor-rule');
+  assert.equal(firstMission.categoryBadge, 'Refactor a Rule');
+  assert.equal(firstMission.xpReward, 150);
+
+  // 2. Random selection with excludeMissionId never returns the excluded mission
+  for (let i = 0; i < 12; i++) {
+    const rerolled = selectArchitectDailyMission({
+      excludeMissionId: firstMission.id,
+    });
+    assert.notEqual(rerolled.id, firstMission.id);
+  }
+
+  // 3. Completing the mission awards extra XP and prevents duplicate claiming
+  const claim1 = completeArchitectDailyMission({
+    mission: firstMission,
+    completedMissionIds: [],
+    currentBonusXp: 0,
+  });
+  assert.equal(claim1.alreadyCompleted, false);
+  assert.equal(claim1.xpEarned, 150);
+  assert.equal(claim1.updatedBonusXp, 150);
+  assert.deepEqual(claim1.updatedCompletedIds, ['mission-refactor-rule']);
+
+  const duplicateClaim = completeArchitectDailyMission({
+    mission: firstMission,
+    completedMissionIds: claim1.updatedCompletedIds,
+    currentBonusXp: claim1.updatedBonusXp,
+  });
+  assert.equal(duplicateClaim.alreadyCompleted, true);
+  assert.equal(duplicateClaim.xpEarned, 0);
+  assert.equal(duplicateClaim.updatedBonusXp, 150);
+});
+
+test('Module Knowledge Check: buildModuleKnowledgeCheckPrompt, buildDeterministicModuleKnowledgeCheck, normalizeAiModuleKnowledgeCheckResponse, and evaluateModuleKnowledgeCheckSubmission generate and grade quizzes accurately', async () => {
+  const {
+    buildModuleKnowledgeCheckPrompt,
+    buildDeterministicModuleKnowledgeCheck,
+    normalizeAiModuleKnowledgeCheckResponse,
+    evaluateModuleKnowledgeCheckSubmission,
+  } = await import('./generators');
+
+  const sampleMod = {
+    id: 'module-1',
+    number: 1,
+    titleFa: 'معماری هسته و فلسفه Agent-First',
+    titleEn: 'Core Architecture: Editor View vs. Agent Manager',
+    summaryFa: 'گذار بنیادین از کدنویسی خط‌به‌خط سنکرون به ارکستریشن ناهمگام چندایجنتی.',
+    summaryEn: 'Fundamental shift from synchronous coding to asynchronous multi-agent orchestration.',
+    difficulty: 'Principal Foundation',
+    readingTime: '18 min read',
+    keyTakeaways: [
+      {
+        titleFa: 'تفکیک محیط کاربری دوگانه',
+        descFa: 'جدا کردن محیط ویرایش جراحی کد از مرکز فرماندهی ایجنت‌های موازی.',
+        titleEn: 'Dual Workspace Separation',
+        descEn: 'Separating surgical synchronous editing from asynchronous Mission Control.',
+        metricOrBadge: 'Editor View + Mission Control',
+      },
+      {
+        titleFa: 'موتور پیش‌بینی Supercomplete',
+        descFa: 'پیش‌بینی تغییرات چندخطی و چندفایلی بر اساس گراف وابستگی LSP.',
+        titleEn: 'Supercomplete Engine',
+        descEn: 'Predicting multi-line and cross-file diffs via LSP dependency graphs.',
+        metricOrBadge: 'LSP + Diff-History Aware',
+      },
+    ],
+    subSections: [
+      {
+        id: 'm1-s1',
+        titleFa: '۱.۱ پارادایم شیفت',
+        titleEn: '1.1 Paradigm Shift',
+        bulletPoints: [
+          {
+            termEn: 'Tab-to-Jump',
+            descFa: 'پرش هوشمند بین فایل‌های وابسته.',
+            descEn: 'Intelligent cursor jump across dependent files.',
+          },
+        ],
+      },
+    ],
+  };
+
+  // 1. Prompt includes module title and engineering badges
+  const promptFa = buildModuleKnowledgeCheckPrompt({
+    module: sampleMod,
+    language: 'fa',
+  });
+  assert.equal(promptFa.includes('Core Architecture: Editor View vs. Agent Manager'), true);
+  assert.equal(promptFa.includes('Editor View + Mission Control'), true);
+  assert.equal(promptFa.includes('Tab-to-Jump'), true);
+
+  // 2. Deterministic quiz produces 3 questions with 4 options each
+  const quizFa = buildDeterministicModuleKnowledgeCheck({
+    module: sampleMod,
+    language: 'fa',
+  });
+  assert.equal(quizFa.questions.length, 3);
+  assert.equal(quizFa.totalPossibleXp, 225);
+  assert.equal(quizFa.questions[0].options.length, 4);
+  assert.equal(quizFa.questions[0].correctIndex, 0);
+  assert.equal(quizFa.questions[1].correctIndex, 1);
+  assert.equal(quizFa.questions[2].correctIndex, 2);
+
+  // 3. Normalization preserves valid AI questions and falls back safely
+  const normalizedLive = normalizeAiModuleKnowledgeCheckResponse(
+    {
+      quizTitle: 'Custom AI Knowledge Check Title',
+      quizSubtitle: 'Custom AI Knowledge Check Subtitle',
+      questions: [
+        {
+          principleBadge: 'LSP Graph',
+          question: 'How does Supercomplete predict cross-file diffs?',
+          options: ['Option A', 'Option B', 'Option C', 'Option D'],
+          correctIndex: 2,
+          explanation: 'Uses LSP AST dependency graph.',
+          xpReward: 100,
+        },
+        {
+          principleBadge: 'Mission Control',
+          question: 'Where do parallel background agents execute?',
+          options: ['Choice 1', 'Choice 2', 'Choice 3', 'Choice 4'],
+          correctIndex: 1,
+          explanation: 'In isolated Git Worktrees managed via Agent Manager.',
+          xpReward: 100,
+        },
+      ],
+      source: 'ai-live',
+    },
+    quizFa
+  );
+  assert.equal(normalizedLive.source, 'ai-live');
+  assert.equal(normalizedLive.questions.length, 2);
+  assert.equal(normalizedLive.totalPossibleXp, 200);
+
+  // 4. Evaluation grades answers accurately
+  const perfectEval = evaluateModuleKnowledgeCheckSubmission({
+    quiz: quizFa,
+    selectedAnswers: {
+      [quizFa.questions[0].id]: 0,
+      [quizFa.questions[1].id]: 1,
+      [quizFa.questions[2].id]: 2,
+    },
+  });
+  assert.equal(perfectEval.correctCount, 3);
+  assert.equal(perfectEval.scorePercent, 100);
+  assert.equal(perfectEval.earnedXp, 225);
+  assert.equal(perfectEval.passed, true);
+
+  const failedEval = evaluateModuleKnowledgeCheckSubmission({
+    quiz: quizFa,
+    selectedAnswers: {
+      [quizFa.questions[0].id]: 0,
+      [quizFa.questions[1].id]: 3,
+      [quizFa.questions[2].id]: 0,
+    },
+  });
+  assert.equal(failedEval.correctCount, 1);
+  assert.equal(failedEval.scorePercent, 33);
+  assert.equal(failedEval.earnedXp, 75);
+  assert.equal(failedEval.passed, false);
+});
+
+test('Academy Knowledge Check Leaderboard: recordModuleKnowledgeCheckScore, buildKnowledgeCheckTop5Leaderboard, and buildKnowledgeCheckChallengeSharePayload rank top 5 students and format rank share cards accurately', async () => {
+  const {
+    recordModuleKnowledgeCheckScore,
+    buildKnowledgeCheckTop5Leaderboard,
+    buildKnowledgeCheckChallengeSharePayload,
+  } = await import('./generators');
+
+  // 1. Default leaderboard returns top 5 students sorted descending by cumulativeScoreXp
+  const defaultBoard = buildKnowledgeCheckTop5Leaderboard();
+  assert.equal(defaultBoard.top5Students.length, 5);
+  for (let i = 0; i < defaultBoard.top5Students.length - 1; i++) {
+    assert.equal(
+      defaultBoard.top5Students[i].cumulativeScoreXp >=
+        defaultBoard.top5Students[i + 1].cumulativeScoreXp,
+      true
+    );
+    assert.equal(defaultBoard.top5Students[i].rank, i + 1);
+  }
+  assert.equal(defaultBoard.currentUserEntry.isCurrentUser, true);
+  assert.equal(defaultBoard.currentUserEntry.rank, 4);
+  assert.equal(defaultBoard.currentUserEntry.cumulativeScoreXp, 1200);
+
+  // 2. Recording module quiz scores keeps the highest score per module and advances rank to #1
+  let scores = recordModuleKnowledgeCheckScore({
+    existingScores: {},
+    moduleId: 'module-1',
+    moduleNumber: 1,
+    evaluation: {
+      correctCount: 3,
+      totalQuestions: 3,
+      scorePercent: 100,
+      earnedXp: 225,
+      passed: true,
+      resultsByQuestionId: {},
+    },
+  });
+  // Lower re-take on same module does not overwrite higher score
+  scores = recordModuleKnowledgeCheckScore({
+    existingScores: scores,
+    moduleId: 'module-1',
+    moduleNumber: 1,
+    evaluation: {
+      correctCount: 1,
+      totalQuestions: 3,
+      scorePercent: 33,
+      earnedXp: 75,
+      passed: false,
+      resultsByQuestionId: {},
+    },
+  });
+  assert.equal(scores['module-1'].earnedXp, 225);
+
+  scores = recordModuleKnowledgeCheckScore({
+    existingScores: scores,
+    moduleId: 'module-2',
+    moduleNumber: 2,
+    evaluation: {
+      correctCount: 3,
+      totalQuestions: 3,
+      scorePercent: 100,
+      earnedXp: 225,
+      passed: true,
+      resultsByQuestionId: {},
+    },
+  });
+  scores = recordModuleKnowledgeCheckScore({
+    existingScores: scores,
+    moduleId: 'module-3',
+    moduleNumber: 3,
+    evaluation: {
+      correctCount: 3,
+      totalQuestions: 3,
+      scorePercent: 100,
+      earnedXp: 225,
+      passed: true,
+      resultsByQuestionId: {},
+    },
+  });
+
+  const boostedBoard = buildKnowledgeCheckTop5Leaderboard({
+    userModuleScores: scores,
+  });
+  assert.equal(boostedBoard.currentUserEntry.cumulativeScoreXp, 1875);
+  assert.equal(boostedBoard.currentUserEntry.rank, 1);
+  assert.equal(boostedBoard.top5Students[0].isCurrentUser, true);
+
+  // 3. Challenge Others share payload generates rank, XP, and challenge code in FA and EN
+  const shareFa = buildKnowledgeCheckChallengeSharePayload({
+    student: boostedBoard.currentUserEntry,
+    language: 'fa',
+  });
+  assert.equal(shareFa.challengeCode, 'KC-RANK1-1875XP');
+  assert.equal(shareFa.shareText.includes('1875 XP'), true);
+  assert.equal(shareFa.shareText.includes('#1'), true);
+
+  const shareEn = buildKnowledgeCheckChallengeSharePayload({
+    student: boostedBoard.currentUserEntry,
+    language: 'en',
+  });
+  assert.equal(shareEn.challengeCode, 'KC-RANK1-1875XP');
+  assert.equal(shareEn.shareTitle.includes('Rank #1'), true);
 });
 

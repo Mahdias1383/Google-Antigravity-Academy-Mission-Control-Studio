@@ -2110,6 +2110,54 @@ export function searchKnowledgeBaseFullText(params: {
   };
 }
 
+export interface QuickStudyModeStateTransition {
+  isStudyMode: boolean;
+  sidebarOpen: boolean;
+  activeSection: string;
+}
+
+export function computeQuickStudyModeTransition(
+  currentStudyMode: boolean,
+  currentSection: string
+): QuickStudyModeStateTransition {
+  if (!currentStudyMode) {
+    return {
+      isStudyMode: true,
+      sidebarOpen: false,
+      activeSection: 'curriculum',
+    };
+  }
+  return {
+    isStudyMode: false,
+    sidebarOpen: true,
+    activeSection: currentSection,
+  };
+}
+
+export function computeReadingEstimateForModule(moduleNumber: number): {
+  estimatedMinutes: number;
+  labelFa: string;
+  labelEn: string;
+} {
+  const estimates: Record<number, number> = {
+    1: 10,
+    2: 12,
+    3: 15,
+    4: 14,
+    5: 16,
+    6: 15,
+    7: 18,
+    8: 14,
+  };
+  const mins = estimates[moduleNumber] || 12;
+  return {
+    estimatedMinutes: mins,
+    labelFa: `${mins} دقیقه مطالعه متمرکز`,
+    labelEn: `${mins} min deep read`,
+  };
+}
+
+
 
 
 

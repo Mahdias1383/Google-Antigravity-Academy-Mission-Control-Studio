@@ -25,6 +25,8 @@ import {
   buildKnowledgeBaseYearlyCalendarHeatmap,
   recordKnowledgeBaseDailyUsageAction,
   searchKnowledgeBaseFullText,
+  computeQuickStudyModeTransition,
+  computeReadingEstimateForModule,
 } from './generators';
 import {
   CURATED_KNOWLEDGE_QUIZ_BANK,
@@ -1493,6 +1495,30 @@ test('3D Cyber-Defense Game Engine: state transitions, 3 enemy archetypes with w
   assert.ok(afterPulse.score >= 150);
   assert.equal(afterPulse.events.some((ev) => ev.type === 'wave_cleared'), true);
 });
+
+test('Quick Study Mode: state transitions collapse sidebars and switch to curriculum reading with reading time estimates', () => {
+  // 1. Activating study mode collapses sidebar and forces curriculum view
+  const activated = computeQuickStudyModeTransition(false, 'simulator');
+  assert.equal(activated.isStudyMode, true);
+  assert.equal(activated.sidebarOpen, false);
+  assert.equal(activated.activeSection, 'curriculum');
+
+  // 2. Exiting study mode restores standard mode
+  const exited = computeQuickStudyModeTransition(true, 'curriculum');
+  assert.equal(exited.isStudyMode, false);
+  assert.equal(exited.sidebarOpen, true);
+  assert.equal(exited.activeSection, 'curriculum');
+
+  // 3. Module reading time estimates
+  const m1Estimate = computeReadingEstimateForModule(1);
+  assert.equal(m1Estimate.estimatedMinutes, 10);
+  assert.ok(m1Estimate.labelFa.includes('دقیقه'));
+  assert.ok(m1Estimate.labelEn.includes('min'));
+
+  const m5Estimate = computeReadingEstimateForModule(5);
+  assert.equal(m5Estimate.estimatedMinutes, 16);
+});
+
 
 
 

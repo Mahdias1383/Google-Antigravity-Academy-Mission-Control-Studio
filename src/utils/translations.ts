@@ -23,6 +23,9 @@ export interface TranslationDictionary {
   themeDark: string;
   langSwitchLabel: string;
   langSwitchBadge: string;
+  quickStudyMode: string;
+  exitStudyMode: string;
+  distractionFreeNotice: string;
 
   // Sidebar
   sidebarTitle: string;
@@ -120,6 +123,9 @@ export const APP_TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
     themeDark: 'حالت تیره',
     langSwitchLabel: 'تغییر زبان به انگلیسی',
     langSwitchBadge: 'EN',
+    quickStudyMode: 'مطالعه سریع',
+    exitStudyMode: 'خروج از مطالعه متمرکز',
+    distractionFreeNotice: 'حالت مطالعه متمرکز و بدون حواس‌پرتی',
 
     sidebarTitle: 'سرفصل‌های آموزشی',
     sidebarSubtitle: '۸ فصل جامع مهندسی Agent-First',
@@ -209,6 +215,9 @@ export const APP_TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
     themeDark: 'Dark Mode',
     langSwitchLabel: 'Change Language',
     langSwitchBadge: 'فارسی',
+    quickStudyMode: 'Quick Study Mode',
+    exitStudyMode: 'Exit Quick Study Mode',
+    distractionFreeNotice: 'Distraction-Free Focused Reading Mode',
 
     sidebarTitle: 'Curriculum Outline',
     sidebarSubtitle: '8 Comprehensive Modules for Agent-First Mastery',

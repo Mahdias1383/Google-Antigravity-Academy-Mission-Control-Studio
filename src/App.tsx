@@ -25,6 +25,9 @@ import {
   ChevronDown,
   ChevronUp,
   ChevronRight,
+  ChevronLeft,
+  Glasses,
+  Minimize2,
   LayoutGrid,
   Menu,
   Layers,
@@ -46,6 +49,7 @@ import {
   ResolvedRecentSessionDescriptor,
   buildMissionMilestoneNotification,
   MissionMilestonePayload,
+  computeReadingEstimateForModule,
 } from './utils/generators';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { ModuleContentView } from './components/ModuleContentView';
@@ -97,16 +101,52 @@ function MainWorkspace() {
   const [searchModalOpen, setSearchModalOpen] = useState<boolean>(false);
   const [pdfPayload, setPdfPayload] = useState<PrintableDocumentPayload | null>(null);
 
-  // Comprehensive Sidebar Groups Collapse State (Default: all expanded)
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
-  const toggleGroupCollapse = (key: string) => {
-    setCollapsedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
+  // Comprehensive Sidebar Groups State (Default: all closed per user request)
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+  const toggleGroup = (key: string) => {
+    setOpenGroups((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+  const expandAllGroups = () => {
+    setOpenGroups({
+      curriculum: true,
+      studios: true,
+      knowledge: true,
+      mastery: true,
+      system: true,
+    });
+  };
+  const collapseAllGroups = () => {
+    setOpenGroups({});
+  };
+
+  // Quick Study Mode State (Distraction-free reading view)
+  const [isStudyMode, setIsStudyMode] = useState<boolean>(false);
+  const toggleQuickStudyMode = () => {
+    if (!isStudyMode) {
+      setIsStudyMode(true);
+      setSidebarOpen(false);
+      collapseAllGroups();
+      setActiveSection('curriculum');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      setIsStudyMode(false);
+    }
   };
 
   const handleNavigate = (section: ActiveWorkspaceSection, moduleId?: string) => {
     setActiveSection(section);
     if (moduleId) {
       setActiveModuleId(moduleId);
+    }
+    // Auto-expand the active section's group so user sees where they are
+    if (section === 'curriculum') {
+      setOpenGroups((prev) => ({ ...prev, curriculum: true }));
+    } else if (['simulator', 'guardrails', 'mcp', 'scenarios'].includes(section)) {
+      setOpenGroups((prev) => ({ ...prev, studios: true }));
+    } else if (['knowledge-base', 'ai-architect', 'cheatsheets'].includes(section)) {
+      setOpenGroups((prev) => ({ ...prev, knowledge: true }));
+    } else if (section === 'achievements') {
+      setOpenGroups((prev) => ({ ...prev, mastery: true }));
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (typeof window !== 'undefined' && window.innerWidth < 768) {
@@ -332,10 +372,13 @@ function MainWorkspace() {
         e.preventDefault();
         setSidebarOpen((prev) => !prev);
       }
+      if (e.key === 'Escape' && isStudyMode) {
+        setIsStudyMode(false);
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [isStudyMode]);
 
   const handleToggleModuleComplete = (modId: string) => {
     const isAlreadyCompleted = completedModules.includes(modId);
@@ -547,444 +590,649 @@ function MainWorkspace() {
           </div>
         </div>
 
+        {/* Navigation Groups Header & Quick Master Toggles */}
+        <div className="flex items-center justify-between px-1 pt-1 text-[11px] font-bold text-slate-500 dark:text-slate-400">
+          <span className="uppercase tracking-wider">
+            {language === 'en' ? 'Workspaces & Modules' : 'سرفصل‌ها و استودیوها'}
+          </span>
+          <div className="flex items-center gap-1.5 font-mono text-[10px]">
+            <button
+              type="button"
+              onClick={expandAllGroups}
+              className="px-1.5 py-0.5 rounded hover:bg-slate-200/60 dark:hover:bg-white/[0.08] hover:text-slate-800 dark:hover:text-white transition-colors cursor-pointer"
+              title={language === 'en' ? 'Expand All Groups' : 'باز کردن همه بخش‌ها'}
+            >
+              {language === 'en' ? 'Expand All' : 'باز کردن همه'}
+            </button>
+            <span className="text-slate-300 dark:text-slate-700">·</span>
+            <button
+              type="button"
+              onClick={collapseAllGroups}
+              className="px-1.5 py-0.5 rounded hover:bg-slate-200/60 dark:hover:bg-white/[0.08] hover:text-slate-800 dark:hover:text-white transition-colors cursor-pointer"
+              title={language === 'en' ? 'Collapse All Groups' : 'بستن همه بخش‌ها'}
+            >
+              {language === 'en' ? 'Collapse All' : 'بستن همه'}
+            </button>
+          </div>
+        </div>
+
         {/* ============================================================ */}
         {/* GROUP 1: سرفصل‌های آموزشی آکادمی (Academy Curriculum - 8 Chapters) */}
         {/* ============================================================ */}
-        <div className="rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-white/80 dark:bg-white/[0.02] shadow-2xs overflow-hidden transition-colors">
-          <button
-            type="button"
-            onClick={() => toggleGroupCollapse('curriculum')}
-            className="w-full px-3 py-2.5 flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-100/70 dark:hover:bg-white/[0.03] transition-colors cursor-pointer group"
-          >
-            <div className="flex items-center gap-2">
-              <span className="p-1 rounded-lg bg-blue-500/10 text-blue-500 ring-1 ring-blue-500/20 group-hover:bg-blue-500/20 transition-colors">
-                <BookOpen className="w-3.5 h-3.5" />
-              </span>
-              <span>{language === 'en' ? 'Academy Curriculum' : 'سرفصل‌های آموزشی آکادمی'}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span dir="ltr" className="ltr-inline text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
-                8 Ch
-              </span>
-              {collapsedGroups['curriculum'] ? (
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 transition-transform" />
-              ) : (
-                <ChevronUp className="w-3.5 h-3.5 text-slate-400 transition-transform" />
-              )}
-            </div>
-          </button>
+        {(() => {
+          const isOpen = !!openGroups['curriculum'];
+          const isGroupActive = activeSection === 'curriculum';
+          return (
+            <div
+              className={`rounded-2xl border transition-all duration-300 overflow-hidden shadow-2xs ${
+                isOpen
+                  ? 'border-blue-500/40 dark:border-blue-500/30 bg-blue-500/[0.03] dark:bg-blue-950/15 ring-1 ring-blue-500/20'
+                  : 'border-slate-200/80 dark:border-white/[0.07] bg-white/80 dark:bg-white/[0.02] hover:border-slate-300 dark:hover:border-white/[0.12]'
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => toggleGroup('curriculum')}
+                className="w-full px-3 py-2.5 flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-blue-500/[0.04] transition-colors cursor-pointer group"
+                aria-expanded={isOpen}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className={`p-1 rounded-lg transition-colors ring-1 ${
+                      isOpen
+                        ? 'bg-blue-600 text-white ring-blue-600 shadow-xs shadow-blue-500/30'
+                        : 'bg-blue-500/10 text-blue-500 ring-blue-500/20 group-hover:bg-blue-500/20'
+                    }`}
+                  >
+                    <BookOpen className="w-3.5 h-3.5" />
+                  </span>
+                  <span className="truncate">{language === 'en' ? 'Academy Curriculum' : 'سرفصل‌های آموزشی آکادمی'}</span>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {!isOpen && isGroupActive && (
+                    <span
+                      dir="ltr"
+                      className="ltr-inline flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                      0{currentModule.number}
+                    </span>
+                  )}
+                  <span
+                    dir="ltr"
+                    className="ltr-inline text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                  >
+                    8 Ch
+                  </span>
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-300 ease-out ${
+                      isOpen ? 'rotate-180 text-blue-500 dark:text-blue-400' : ''
+                    }`}
+                  />
+                </div>
+              </button>
 
-          {!collapsedGroups['curriculum'] && (
-            <div className="p-2 pt-0 space-y-3.5 border-t border-slate-200/60 dark:border-white/[0.04]">
-              {[
-                {
-                  phaseTitle: language === 'en' ? 'Phase 1 · Core Architecture' : 'گام اول · معماری هسته و اجرا',
-                  modules: ALL_CURRICULUM_MODULES.slice(0, 3),
-                },
-                {
-                  phaseTitle: language === 'en' ? 'Phase 2 · Context & Automation' : 'گام دوم · قوانین و اتوماسیون',
-                  modules: ALL_CURRICULUM_MODULES.slice(3, 6),
-                },
-                {
-                  phaseTitle: language === 'en' ? 'Phase 3 · Scale & Multi-Agent' : 'گام سوم · مقیاس‌پذیری و MCP',
-                  modules: ALL_CURRICULUM_MODULES.slice(6, 8),
-                },
-              ].map((group) => (
-                <div key={group.phaseTitle} className="space-y-1 pt-2">
-                  <div className="px-2 text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500/70" />
-                    <span>{group.phaseTitle}</span>
+              <div
+                className={`grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                  isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0 pointer-events-none'
+                }`}
+              >
+                <div className="overflow-hidden">
+                  <div className="p-2 pt-0 space-y-3.5 border-t border-slate-200/60 dark:border-white/[0.04]">
+                    {[
+                      {
+                        phaseTitle: language === 'en' ? 'Phase 1 · Core Architecture' : 'گام اول · معماری هسته و اجرا',
+                        modules: ALL_CURRICULUM_MODULES.slice(0, 3),
+                      },
+                      {
+                        phaseTitle: language === 'en' ? 'Phase 2 · Context & Automation' : 'گام دوم · قوانین و اتوماسیون',
+                        modules: ALL_CURRICULUM_MODULES.slice(3, 6),
+                      },
+                      {
+                        phaseTitle: language === 'en' ? 'Phase 3 · Scale & Multi-Agent' : 'گام سوم · مقیاس‌پذیری و MCP',
+                        modules: ALL_CURRICULUM_MODULES.slice(6, 8),
+                      },
+                    ].map((group) => (
+                      <div key={group.phaseTitle} className="space-y-1 pt-2">
+                        <div className="px-2 text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500/70" />
+                          <span>{group.phaseTitle}</span>
+                        </div>
+                        <div className="border-s-2 border-blue-500/20 dark:border-blue-500/15 ms-2.5 ps-2.5 space-y-1">
+                          {group.modules.map((mod) => {
+                            const isCurrent = activeSection === 'curriculum' && activeModuleId === mod.id;
+                            const isDone = completedModules.includes(mod.id);
+                            const primaryTitle = language === 'en' ? mod.titleEn : mod.titleFa;
+
+                            return (
+                              <button
+                                key={mod.id}
+                                type="button"
+                                onClick={() => handleNavigate('curriculum', mod.id)}
+                                className={`w-full ${
+                                  isRTL ? 'text-right' : 'text-left'
+                                } px-2.5 py-2 rounded-xl transition-all flex items-start gap-2.5 cursor-pointer group ${
+                                  isCurrent
+                                    ? 'bg-gradient-to-r from-blue-600/15 via-blue-500/10 to-transparent text-blue-600 dark:text-blue-300 font-bold border border-blue-500/30 shadow-2xs'
+                                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-white/[0.04] hover:text-slate-900 dark:hover:text-slate-200 border border-transparent'
+                                }`}
+                              >
+                                <span
+                                  dir="ltr"
+                                  className={`ltr-inline w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-mono font-bold shrink-0 mt-0.5 ${
+                                    isCurrent
+                                      ? 'bg-blue-600 text-white shadow-xs shadow-blue-500/30'
+                                      : 'bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 border border-slate-200/80 dark:border-white/[0.08] group-hover:border-blue-500/30 group-hover:text-blue-500'
+                                  }`}
+                                >
+                                  0{mod.number}
+                                </span>
+                                <span className="text-xs leading-snug line-clamp-2 text-start flex-1 font-medium group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+                                  {primaryTitle}
+                                </span>
+                                {isDone ? (
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5 drop-shadow-xs" />
+                                ) : (
+                                  <Circle className="w-3.5 h-3.5 text-slate-300 dark:text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5" />
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="border-s-2 border-blue-500/20 dark:border-blue-500/15 ms-2.5 ps-2.5 space-y-1">
-                    {group.modules.map((mod) => {
-                      const isCurrent = activeSection === 'curriculum' && activeModuleId === mod.id;
-                      const isDone = completedModules.includes(mod.id);
-                      const primaryTitle = language === 'en' ? mod.titleEn : mod.titleFa;
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
+        {/* ============================================================ */}
+        {/* GROUP 2: استودیوهای مهندسی زنده (Interactive Engineering Studios) */}
+        {/* ============================================================ */}
+        {(() => {
+          const isOpen = !!openGroups['studios'];
+          const isGroupActive = ['simulator', 'guardrails', 'mcp', 'scenarios'].includes(activeSection);
+          return (
+            <div
+              className={`rounded-2xl border transition-all duration-300 overflow-hidden shadow-2xs ${
+                isOpen
+                  ? 'border-emerald-500/40 dark:border-emerald-500/30 bg-emerald-500/[0.03] dark:bg-emerald-950/15 ring-1 ring-emerald-500/20'
+                  : 'border-slate-200/80 dark:border-white/[0.07] bg-white/80 dark:bg-white/[0.02] hover:border-slate-300 dark:hover:border-white/[0.12]'
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => toggleGroup('studios')}
+                className="w-full px-3 py-2.5 flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-emerald-500/[0.04] transition-colors cursor-pointer group"
+                aria-expanded={isOpen}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className={`p-1 rounded-lg transition-colors ring-1 ${
+                      isOpen
+                        ? 'bg-emerald-600 text-white ring-emerald-600 shadow-xs shadow-emerald-500/30'
+                        : 'bg-emerald-500/10 text-emerald-500 ring-emerald-500/20 group-hover:bg-emerald-500/20'
+                    }`}
+                  >
+                    <Terminal className="w-3.5 h-3.5" />
+                  </span>
+                  <span className="truncate">{language === 'en' ? 'Live Engineering Studios' : 'استودیوهای مهندسی زنده'}</span>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {!isOpen && isGroupActive && (
+                    <span
+                      dir="ltr"
+                      className="ltr-inline flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Live
+                    </span>
+                  )}
+                  <span
+                    dir="ltr"
+                    className="ltr-inline text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                  >
+                    4 St
+                  </span>
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-300 ease-out ${
+                      isOpen ? 'rotate-180 text-emerald-500 dark:text-emerald-400' : ''
+                    }`}
+                  />
+                </div>
+              </button>
+
+              <div
+                className={`grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                  isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0 pointer-events-none'
+                }`}
+              >
+                <div className="overflow-hidden">
+                  <div className="p-2 pt-1.5 space-y-1.5 border-t border-slate-200/60 dark:border-white/[0.04]">
+                    {[
+                      {
+                        id: 'simulator' as const,
+                        title: language === 'en' ? 'Mission Control Simulator' : 'شبیه‌ساز Mission Control',
+                        desc: language === 'en' ? 'Dual-surface Editor & Agent Manager' : 'محیط دوگانه کدنویسی و مدیریت ایجنت‌ها',
+                        tag: 'Live IDE',
+                        icon: Terminal,
+                        colorClass: 'text-blue-500 bg-blue-500/10 ring-blue-500/25',
+                      },
+                      {
+                        id: 'guardrails' as const,
+                        title: language === 'en' ? 'Rule & Workflow Studio' : 'مهندسی Rule و Workflow',
+                        desc: language === 'en' ? '.agent/rules/*.md & // turbo directives' : 'طراحی قوانین ۴ حالته و اتوماسیون توربو',
+                        tag: 'Turbo Rules',
+                        icon: Shield,
+                        colorClass: 'text-violet-500 bg-violet-500/10 ring-violet-500/25',
+                      },
+                      {
+                        id: 'mcp' as const,
+                        title: language === 'en' ? 'FastMCP Visual Studio' : 'استودیو بصری FastMCP',
+                        desc: language === 'en' ? 'mcp_config.json & Python MCP servers' : 'پیکربندی سرورهای پایتون و پروتکل MCP',
+                        tag: 'MCP Hub',
+                        icon: Cpu,
+                        colorClass: 'text-emerald-500 bg-emerald-500/10 ring-emerald-500/25',
+                      },
+                      {
+                        id: 'scenarios' as const,
+                        title: language === 'en' ? 'Architecture Scenario Lab' : 'آزمایشگاه سناریوهای معماری',
+                        desc: language === 'en' ? '8 real-world production engineering decisions' : '۸ چالش تصمیم‌گیری معمار سیستم',
+                        tag: '8 Labs',
+                        icon: Compass,
+                        colorClass: 'text-amber-500 bg-amber-500/10 ring-amber-500/25',
+                        testId: 'nav-tab-scenarios',
+                      },
+                    ].map((st) => {
+                      const IconComp = st.icon;
+                      const isCurrent = activeSection === st.id;
                       return (
                         <button
-                          key={mod.id}
+                          key={st.id}
                           type="button"
-                          onClick={() => handleNavigate('curriculum', mod.id)}
+                          data-testid={'testId' in st ? st.testId : undefined}
+                          onClick={() => handleNavigate(st.id)}
                           className={`w-full ${
                             isRTL ? 'text-right' : 'text-left'
-                          } px-2.5 py-2 rounded-xl transition-all flex items-start gap-2.5 cursor-pointer group ${
+                          } p-2 rounded-xl transition-all flex items-start gap-2.5 cursor-pointer ${
                             isCurrent
-                              ? 'bg-gradient-to-r from-blue-600/15 via-blue-500/10 to-transparent text-blue-600 dark:text-blue-300 font-bold border border-blue-500/30 shadow-2xs'
-                              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-white/[0.04] hover:text-slate-900 dark:hover:text-slate-200 border border-transparent'
+                              ? 'bg-emerald-600/10 dark:bg-emerald-500/[0.14] text-emerald-600 dark:text-emerald-300 font-bold border border-emerald-500/35 shadow-xs'
+                              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.04] hover:text-slate-900 dark:hover:text-slate-200 border border-transparent'
                           }`}
                         >
-                          <span
-                            dir="ltr"
-                            className={`ltr-inline w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-mono font-bold shrink-0 mt-0.5 ${
-                              isCurrent
-                                ? 'bg-blue-600 text-white shadow-xs shadow-blue-500/30'
-                                : 'bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 border border-slate-200/80 dark:border-white/[0.08] group-hover:border-blue-500/30 group-hover:text-blue-500'
-                            }`}
-                          >
-                            0{mod.number}
+                          <span className={`p-1.5 rounded-lg shrink-0 mt-0.5 ring-1 ${st.colorClass}`}>
+                            <IconComp className="w-3.5 h-3.5" />
                           </span>
-                          <span className="text-xs leading-snug line-clamp-2 text-start flex-1 font-medium group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
-                            {primaryTitle}
+                          <span className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="text-xs font-bold truncate">{st.title}</span>
+                              <span dir="ltr" className="ltr-inline text-[9px] font-mono px-1.5 py-0.2 rounded bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 shrink-0">
+                                {st.tag}
+                              </span>
+                            </div>
+                            <span className="block text-[10px] text-slate-500 dark:text-slate-400 leading-3.5 mt-0.5 truncate font-mono">
+                              {st.desc}
+                            </span>
                           </span>
-                          {isDone ? (
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5 drop-shadow-xs" />
-                          ) : (
-                            <Circle className="w-3.5 h-3.5 text-slate-300 dark:text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5" />
-                          )}
                         </button>
                       );
                     })}
                   </div>
                 </div>
-              ))}
+              </div>
             </div>
-          )}
-        </div>
-
-        {/* ============================================================ */}
-        {/* GROUP 2: استودیوهای مهندسی زنده (Interactive Engineering Studios) */}
-        {/* ============================================================ */}
-        <div className="rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-white/80 dark:bg-white/[0.02] shadow-2xs overflow-hidden transition-colors">
-          <button
-            type="button"
-            onClick={() => toggleGroupCollapse('studios')}
-            className="w-full px-3 py-2.5 flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-100/70 dark:hover:bg-white/[0.03] transition-colors cursor-pointer group"
-          >
-            <div className="flex items-center gap-2">
-              <span className="p-1 rounded-lg bg-emerald-500/10 text-emerald-500 ring-1 ring-emerald-500/20 group-hover:bg-emerald-500/20 transition-colors">
-                <Terminal className="w-3.5 h-3.5" />
-              </span>
-              <span>{language === 'en' ? 'Live Engineering Studios' : 'استودیوهای مهندسی زنده'}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span dir="ltr" className="ltr-inline text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                4 St
-              </span>
-              {collapsedGroups['studios'] ? (
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 transition-transform" />
-              ) : (
-                <ChevronUp className="w-3.5 h-3.5 text-slate-400 transition-transform" />
-              )}
-            </div>
-          </button>
-
-          {!collapsedGroups['studios'] && (
-            <div className="p-2 pt-1.5 space-y-1.5 border-t border-slate-200/60 dark:border-white/[0.04]">
-              {[
-                {
-                  id: 'simulator' as const,
-                  title: language === 'en' ? 'Mission Control Simulator' : 'شبیه‌ساز Mission Control',
-                  desc: language === 'en' ? 'Dual-surface Editor & Agent Manager' : 'محیط دوگانه کدنویسی و مدیریت ایجنت‌ها',
-                  tag: 'Live IDE',
-                  icon: Terminal,
-                  colorClass: 'text-blue-500 bg-blue-500/10 ring-blue-500/25',
-                },
-                {
-                  id: 'guardrails' as const,
-                  title: language === 'en' ? 'Rule & Workflow Studio' : 'مهندسی Rule و Workflow',
-                  desc: language === 'en' ? '.agent/rules/*.md & // turbo directives' : 'طراحی قوانین ۴ حالته و اتوماسیون توربو',
-                  tag: 'Turbo Rules',
-                  icon: Shield,
-                  colorClass: 'text-violet-500 bg-violet-500/10 ring-violet-500/25',
-                },
-                {
-                  id: 'mcp' as const,
-                  title: language === 'en' ? 'FastMCP Visual Studio' : 'استودیو بصری FastMCP',
-                  desc: language === 'en' ? 'mcp_config.json & Python MCP servers' : 'پیکربندی سرورهای پایتون و پروتکل MCP',
-                  tag: 'MCP Hub',
-                  icon: Cpu,
-                  colorClass: 'text-emerald-500 bg-emerald-500/10 ring-emerald-500/25',
-                },
-                {
-                  id: 'scenarios' as const,
-                  title: language === 'en' ? 'Architecture Scenario Lab' : 'آزمایشگاه سناریوهای معماری',
-                  desc: language === 'en' ? '8 real-world production engineering decisions' : '۸ چالش تصمیم‌گیری معمار سیستم',
-                  tag: '8 Labs',
-                  icon: Compass,
-                  colorClass: 'text-amber-500 bg-amber-500/10 ring-amber-500/25',
-                  testId: 'nav-tab-scenarios',
-                },
-              ].map((st) => {
-                const IconComp = st.icon;
-                const isCurrent = activeSection === st.id;
-                return (
-                  <button
-                    key={st.id}
-                    type="button"
-                    data-testid={'testId' in st ? st.testId : undefined}
-                    onClick={() => handleNavigate(st.id)}
-                    className={`w-full ${
-                      isRTL ? 'text-right' : 'text-left'
-                    } p-2 rounded-xl transition-all flex items-start gap-2.5 cursor-pointer ${
-                      isCurrent
-                        ? 'bg-emerald-600/10 dark:bg-emerald-500/[0.14] text-emerald-600 dark:text-emerald-300 font-bold border border-emerald-500/35 shadow-xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.04] hover:text-slate-900 dark:hover:text-slate-200 border border-transparent'
-                    }`}
-                  >
-                    <span className={`p-1.5 rounded-lg shrink-0 mt-0.5 ring-1 ${st.colorClass}`}>
-                      <IconComp className="w-3.5 h-3.5" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="text-xs font-bold truncate">{st.title}</span>
-                        <span dir="ltr" className="ltr-inline text-[9px] font-mono px-1.5 py-0.2 rounded bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 shrink-0">
-                          {st.tag}
-                        </span>
-                      </div>
-                      <span className="block text-[10px] text-slate-500 dark:text-slate-400 leading-3.5 mt-0.5 truncate font-mono">
-                        {st.desc}
-                      </span>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
+          );
+        })()}
 
         {/* ============================================================ */}
         {/* GROUP 3: پایگاه دانش و هوش مصنوعی (Knowledge & AI Intelligence) */}
         {/* ============================================================ */}
-        <div className="rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-white/80 dark:bg-white/[0.02] shadow-2xs overflow-hidden transition-colors">
-          <button
-            type="button"
-            onClick={() => toggleGroupCollapse('knowledge')}
-            className="w-full px-3 py-2.5 flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-100/70 dark:hover:bg-white/[0.03] transition-colors cursor-pointer group"
-          >
-            <div className="flex items-center gap-2">
-              <span className="p-1 rounded-lg bg-indigo-500/10 text-indigo-500 ring-1 ring-indigo-500/20 group-hover:bg-indigo-500/20 transition-colors">
-                <Database className="w-3.5 h-3.5" />
-              </span>
-              <span>{language === 'en' ? 'Knowledge & AI Intelligence' : 'پایگاه دانش و هوش مصنوعی'}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span dir="ltr" className="ltr-inline text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-                3 Tools
-              </span>
-              {collapsedGroups['knowledge'] ? (
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 transition-transform" />
-              ) : (
-                <ChevronUp className="w-3.5 h-3.5 text-slate-400 transition-transform" />
-              )}
-            </div>
-          </button>
-
-          {!collapsedGroups['knowledge'] && (
-            <div className="p-2 pt-1.5 space-y-1.5 border-t border-slate-200/60 dark:border-white/[0.04]">
-              {[
-                {
-                  id: 'knowledge-base' as const,
-                  title: language === 'en' ? 'Knowledge Base & Context Rot' : 'پایگاه دانش و مهار Context Rot',
-                  desc: language === 'en' ? 'Memory pruning, D3 heatmaps & telemetry' : 'مدیریت حافظه پایدار و هیت‌مپ سالانه',
-                  tag: 'Memory',
-                  icon: Database,
-                  testId: 'nav-tab-knowledge-base',
-                  colorClass: 'text-indigo-500 bg-indigo-500/10 ring-indigo-500/25',
-                },
-                {
-                  id: 'ai-architect' as const,
-                  title: language === 'en' ? 'AI Architect & Live Docs' : 'دستیار هوشمند و کاوشگر مستندات',
-                  desc: language === 'en' ? 'Official grounding & interactive quizzes' : 'جستجوی مستندات رسمی و آزمون‌ها',
-                  tag: 'Grounding',
-                  icon: Sparkles,
-                  testId: 'nav-tab-ai-architect',
-                  colorClass: 'text-violet-500 bg-violet-500/10 ring-violet-500/25',
-                },
-                {
-                  id: 'cheatsheets' as const,
-                  title: language === 'en' ? 'Reference Cheat Sheets & PDF' : 'مرکز چیت‌شیت‌ها و خروجی PDF',
-                  desc: language === 'en' ? 'Shortcuts, CLI matrices & clean exports' : 'جداول شورتکات‌ها، دستورات و PDF',
-                  tag: 'Tables & PDF',
-                  icon: FileSpreadsheet,
-                  colorClass: 'text-rose-500 bg-rose-500/10 ring-rose-500/25',
-                },
-              ].map((tool) => {
-                const IconComp = tool.icon;
-                const isCurrent = activeSection === tool.id;
-                return (
-                  <button
-                    key={tool.id}
-                    type="button"
-                    data-testid={'testId' in tool ? tool.testId : undefined}
-                    onClick={() => handleNavigate(tool.id)}
-                    className={`w-full ${
-                      isRTL ? 'text-right' : 'text-left'
-                    } p-2 rounded-xl transition-all flex items-start gap-2.5 cursor-pointer ${
-                      isCurrent
-                        ? 'bg-indigo-600/10 dark:bg-indigo-500/[0.14] text-indigo-600 dark:text-indigo-300 font-bold border border-indigo-500/35 shadow-xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.04] hover:text-slate-900 dark:hover:text-slate-200 border border-transparent'
+        {(() => {
+          const isOpen = !!openGroups['knowledge'];
+          const isGroupActive = ['knowledge-base', 'ai-architect', 'cheatsheets'].includes(activeSection);
+          return (
+            <div
+              className={`rounded-2xl border transition-all duration-300 overflow-hidden shadow-2xs ${
+                isOpen
+                  ? 'border-indigo-500/40 dark:border-indigo-500/30 bg-indigo-500/[0.03] dark:bg-indigo-950/15 ring-1 ring-indigo-500/20'
+                  : 'border-slate-200/80 dark:border-white/[0.07] bg-white/80 dark:bg-white/[0.02] hover:border-slate-300 dark:hover:border-white/[0.12]'
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => toggleGroup('knowledge')}
+                className="w-full px-3 py-2.5 flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-indigo-500/[0.04] transition-colors cursor-pointer group"
+                aria-expanded={isOpen}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className={`p-1 rounded-lg transition-colors ring-1 ${
+                      isOpen
+                        ? 'bg-indigo-600 text-white ring-indigo-600 shadow-xs shadow-indigo-500/30'
+                        : 'bg-indigo-500/10 text-indigo-500 ring-indigo-500/20 group-hover:bg-indigo-500/20'
                     }`}
                   >
-                    <span className={`p-1.5 rounded-lg shrink-0 mt-0.5 ring-1 ${tool.colorClass}`}>
-                      <IconComp className="w-3.5 h-3.5" />
+                    <Database className="w-3.5 h-3.5" />
+                  </span>
+                  <span className="truncate">{language === 'en' ? 'Knowledge & AI Intelligence' : 'پایگاه دانش و هوش مصنوعی'}</span>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {!isOpen && isGroupActive && (
+                    <span
+                      dir="ltr"
+                      className="ltr-inline flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                      Active
                     </span>
-                    <span className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="text-xs font-bold truncate">{tool.title}</span>
-                        <span dir="ltr" className="ltr-inline text-[9px] font-mono px-1.5 py-0.2 rounded bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 shrink-0">
-                          {tool.tag}
-                        </span>
-                      </div>
-                      <span className="block text-[10px] text-slate-500 dark:text-slate-400 leading-3.5 mt-0.5 truncate font-mono">
-                        {tool.desc}
-                      </span>
-                    </span>
-                  </button>
-                );
-              })}
+                  )}
+                  <span
+                    dir="ltr"
+                    className="ltr-inline text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"
+                  >
+                    3 Tools
+                  </span>
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-300 ease-out ${
+                      isOpen ? 'rotate-180 text-indigo-500 dark:text-indigo-400' : ''
+                    }`}
+                  />
+                </div>
+              </button>
+
+              <div
+                className={`grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                  isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0 pointer-events-none'
+                }`}
+              >
+                <div className="overflow-hidden">
+                  <div className="p-2 pt-1.5 space-y-1.5 border-t border-slate-200/60 dark:border-white/[0.04]">
+                    {[
+                      {
+                        id: 'knowledge-base' as const,
+                        title: language === 'en' ? 'Knowledge Base & Context Rot' : 'پایگاه دانش و مهار Context Rot',
+                        desc: language === 'en' ? 'Memory pruning, D3 heatmaps & telemetry' : 'مدیریت حافظه پایدار و هیت‌مپ سالانه',
+                        tag: 'Memory',
+                        icon: Database,
+                        testId: 'nav-tab-knowledge-base',
+                        colorClass: 'text-indigo-500 bg-indigo-500/10 ring-indigo-500/25',
+                      },
+                      {
+                        id: 'ai-architect' as const,
+                        title: language === 'en' ? 'AI Architect & Live Docs' : 'دستیار هوشمند و کاوشگر مستندات',
+                        desc: language === 'en' ? 'Official grounding & interactive quizzes' : 'جستجوی مستندات رسمی و آزمون‌ها',
+                        tag: 'Grounding',
+                        icon: Sparkles,
+                        testId: 'nav-tab-ai-architect',
+                        colorClass: 'text-violet-500 bg-violet-500/10 ring-violet-500/25',
+                      },
+                      {
+                        id: 'cheatsheets' as const,
+                        title: language === 'en' ? 'Reference Cheat Sheets & PDF' : 'مرکز چیت‌شیت‌ها و خروجی PDF',
+                        desc: language === 'en' ? 'Shortcuts, CLI matrices & clean exports' : 'جداول شورتکات‌ها، دستورات و PDF',
+                        tag: 'Tables & PDF',
+                        icon: FileSpreadsheet,
+                        colorClass: 'text-rose-500 bg-rose-500/10 ring-rose-500/25',
+                      },
+                    ].map((tool) => {
+                      const IconComp = tool.icon;
+                      const isCurrent = activeSection === tool.id;
+                      return (
+                        <button
+                          key={tool.id}
+                          type="button"
+                          data-testid={'testId' in tool ? tool.testId : undefined}
+                          onClick={() => handleNavigate(tool.id)}
+                          className={`w-full ${
+                            isRTL ? 'text-right' : 'text-left'
+                          } p-2 rounded-xl transition-all flex items-start gap-2.5 cursor-pointer ${
+                            isCurrent
+                              ? 'bg-indigo-600/10 dark:bg-indigo-500/[0.14] text-indigo-600 dark:text-indigo-300 font-bold border border-indigo-500/35 shadow-xs'
+                              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.04] hover:text-slate-900 dark:hover:text-slate-200 border border-transparent'
+                          }`}
+                        >
+                          <span className={`p-1.5 rounded-lg shrink-0 mt-0.5 ring-1 ${tool.colorClass}`}>
+                            <IconComp className="w-3.5 h-3.5" />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="text-xs font-bold truncate">{tool.title}</span>
+                              <span dir="ltr" className="ltr-inline text-[9px] font-mono px-1.5 py-0.2 rounded bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 shrink-0">
+                                {tool.tag}
+                              </span>
+                            </div>
+                            <span className="block text-[10px] text-slate-500 dark:text-slate-400 leading-3.5 mt-0.5 truncate font-mono">
+                              {tool.desc}
+                            </span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
             </div>
-          )}
-        </div>
+          );
+        })()}
 
         {/* ============================================================ */}
         {/* GROUP 4: ارزیابی، کارنامه و میدان نبرد (Mastery & Simulation) */}
         {/* ============================================================ */}
-        <div className="rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-white/80 dark:bg-white/[0.02] shadow-2xs overflow-hidden transition-colors">
-          <button
-            type="button"
-            onClick={() => toggleGroupCollapse('mastery')}
-            className="w-full px-3 py-2.5 flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-100/70 dark:hover:bg-white/[0.03] transition-colors cursor-pointer group"
-          >
-            <div className="flex items-center gap-2">
-              <span className="p-1 rounded-lg bg-amber-500/10 text-amber-500 ring-1 ring-amber-500/20 group-hover:bg-amber-500/20 transition-colors">
-                <Award className="w-3.5 h-3.5" />
-              </span>
-              <span>{language === 'en' ? 'Mastery & Gaming' : 'کارنامه، رتبه و شبیه‌ساز'}</span>
-            </div>
-            {collapsedGroups['mastery'] ? (
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 transition-transform" />
-            ) : (
-              <ChevronUp className="w-3.5 h-3.5 text-slate-400 transition-transform" />
-            )}
-          </button>
-
-          {!collapsedGroups['mastery'] && (
-            <div className="p-2 pt-1.5 space-y-1.5 border-t border-slate-200/60 dark:border-white/[0.04]">
-              {/* Mastery & Certificate */}
+        {(() => {
+          const isOpen = !!openGroups['mastery'];
+          const isGroupActive = activeSection === 'achievements';
+          return (
+            <div
+              className={`rounded-2xl border transition-all duration-300 overflow-hidden shadow-2xs ${
+                isOpen
+                  ? 'border-amber-500/40 dark:border-amber-500/30 bg-amber-500/[0.03] dark:bg-amber-950/15 ring-1 ring-amber-500/20'
+                  : 'border-slate-200/80 dark:border-white/[0.07] bg-white/80 dark:bg-white/[0.02] hover:border-slate-300 dark:hover:border-white/[0.12]'
+              }`}
+            >
               <button
                 type="button"
-                data-testid="nav-tab-achievements"
-                onClick={() => handleNavigate('achievements')}
-                className={`w-full ${
-                  isRTL ? 'text-right' : 'text-left'
-                } p-2 rounded-xl transition-all flex items-start gap-2.5 cursor-pointer ${
-                  activeSection === 'achievements'
-                    ? 'bg-amber-600/10 dark:bg-amber-500/[0.14] text-amber-600 dark:text-amber-300 font-bold border border-amber-500/35 shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.04] hover:text-slate-900 dark:hover:text-slate-200 border border-transparent'
+                onClick={() => toggleGroup('mastery')}
+                className="w-full px-3 py-2.5 flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-amber-500/[0.04] transition-colors cursor-pointer group"
+                aria-expanded={isOpen}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className={`p-1 rounded-lg transition-colors ring-1 ${
+                      isOpen
+                        ? 'bg-amber-600 text-white ring-amber-600 shadow-xs shadow-amber-500/30'
+                        : 'bg-amber-500/10 text-amber-500 ring-amber-500/20 group-hover:bg-amber-500/20'
+                    }`}
+                  >
+                    <Award className="w-3.5 h-3.5" />
+                  </span>
+                  <span className="truncate">{language === 'en' ? 'Mastery & Gaming' : 'کارنامه، رتبه و شبیه‌ساز'}</span>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {!isOpen && isGroupActive && (
+                    <span
+                      dir="ltr"
+                      className="ltr-inline flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                      Active
+                    </span>
+                  )}
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-300 ease-out ${
+                      isOpen ? 'rotate-180 text-amber-500 dark:text-amber-400' : ''
+                    }`}
+                  />
+                </div>
+              </button>
+
+              <div
+                className={`grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                  isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0 pointer-events-none'
                 }`}
               >
-                <span className="p-1.5 rounded-lg shrink-0 mt-0.5 text-amber-500 bg-amber-500/10 ring-1 ring-amber-500/25">
-                  <Award className="w-3.5 h-3.5" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-xs font-bold truncate">
-                      {language === 'en' ? 'Mastery & Certification' : 'کارنامه مهارت و صدور گواهینامه'}
-                    </span>
-                    <span dir="ltr" className="ltr-inline text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0 font-bold">
-                      Cert
-                    </span>
-                  </div>
-                  <span className="block text-[10px] text-slate-500 dark:text-slate-400 leading-3.5 mt-0.5 truncate font-mono">
-                    {language === 'en' ? 'Trophy case, rank standing & printable cert' : 'رتبه مهندسی (Architect)، نشان‌ها و ابر'}
-                  </span>
-                </span>
-              </button>
+                <div className="overflow-hidden">
+                  <div className="p-2 pt-1.5 space-y-1.5 border-t border-slate-200/60 dark:border-white/[0.04]">
+                    {/* Mastery & Certificate */}
+                    <button
+                      type="button"
+                      data-testid="nav-tab-achievements"
+                      onClick={() => handleNavigate('achievements')}
+                      className={`w-full ${
+                        isRTL ? 'text-right' : 'text-left'
+                      } p-2 rounded-xl transition-all flex items-start gap-2.5 cursor-pointer ${
+                        activeSection === 'achievements'
+                          ? 'bg-amber-600/10 dark:bg-amber-500/[0.14] text-amber-600 dark:text-amber-300 font-bold border border-amber-500/35 shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.04] hover:text-slate-900 dark:hover:text-slate-200 border border-transparent'
+                      }`}
+                    >
+                      <span className="p-1.5 rounded-lg shrink-0 mt-0.5 text-amber-500 bg-amber-500/10 ring-1 ring-amber-500/25">
+                        <Award className="w-3.5 h-3.5" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="text-xs font-bold truncate">
+                            {language === 'en' ? 'Mastery & Certification' : 'کارنامه مهارت و صدور گواهینامه'}
+                          </span>
+                          <span dir="ltr" className="ltr-inline text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0 font-bold">
+                            Cert
+                          </span>
+                        </div>
+                        <span className="block text-[10px] text-slate-500 dark:text-slate-400 leading-3.5 mt-0.5 truncate font-mono">
+                          {language === 'en' ? 'Trophy case, rank standing & printable cert' : 'رتبه مهندسی (Architect)، نشان‌ها و ابر'}
+                        </span>
+                      </span>
+                    </button>
 
-              {/* 3D Cyber Arena */}
-              <button
-                type="button"
-                data-testid="nav-tab-game-3d"
-                onClick={() => handleNavigate('game-3d')}
-                className="w-full p-2.5 rounded-xl border border-amber-500/35 bg-gradient-to-r from-amber-500/[0.1] via-amber-500/[0.05] to-transparent hover:from-amber-500/[0.18] transition-all flex items-start gap-2.5 text-xs font-bold text-amber-800 dark:text-amber-300 cursor-pointer shadow-xs group"
-              >
-                <span className="p-1.5 rounded-lg shrink-0 mt-0.5 bg-amber-500/20 text-amber-500 ring-1 ring-amber-500/35 group-hover:scale-105 transition-transform">
-                  <Gamepad2 className="w-3.5 h-3.5" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-xs font-bold truncate">
-                      {language === 'en' ? '3D Cyber Arena' : 'میدان سه‌بعدی شبیه‌سازی'}
-                    </span>
-                    <span dir="ltr" className="ltr-inline text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold shrink-0">
-                      WebGL
-                    </span>
+                    {/* 3D Cyber Arena */}
+                    <button
+                      type="button"
+                      data-testid="nav-tab-game-3d"
+                      onClick={() => handleNavigate('game-3d')}
+                      className="w-full p-2.5 rounded-xl border border-amber-500/35 bg-gradient-to-r from-amber-500/[0.1] via-amber-500/[0.05] to-transparent hover:from-amber-500/[0.18] transition-all flex items-start gap-2.5 text-xs font-bold text-amber-800 dark:text-amber-300 cursor-pointer shadow-xs group"
+                    >
+                      <span className="p-1.5 rounded-lg shrink-0 mt-0.5 bg-amber-500/20 text-amber-500 ring-1 ring-amber-500/35 group-hover:scale-105 transition-transform">
+                        <Gamepad2 className="w-3.5 h-3.5" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="text-xs font-bold truncate">
+                            {language === 'en' ? '3D Cyber Arena' : 'میدان سه‌بعدی شبیه‌سازی'}
+                          </span>
+                          <span dir="ltr" className="ltr-inline text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold shrink-0">
+                            WebGL
+                          </span>
+                        </div>
+                        <span className="block text-[10px] text-amber-700/90 dark:text-amber-400/90 leading-3.5 mt-0.5 truncate font-mono">
+                          {language === 'en' ? 'Interactive WebGL agentic defense simulator' : 'شبیه‌ساز گیم دفاع سایبری ایجنت‌محور'}
+                        </span>
+                      </span>
+                    </button>
                   </div>
-                  <span className="block text-[10px] text-amber-700/90 dark:text-amber-400/90 leading-3.5 mt-0.5 truncate font-mono">
-                    {language === 'en' ? 'Interactive WebGL agentic defense simulator' : 'شبیه‌ساز گیم دفاع سایبری ایجنت‌محور'}
-                  </span>
-                </span>
-              </button>
+                </div>
+              </div>
             </div>
-          )}
-        </div>
+          );
+        })()}
 
         {/* ============================================================ */}
         {/* GROUP 5: ابزارهای سیستمی و مدیریت (System & Operations) */}
         {/* ============================================================ */}
-        <div className="rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-white/80 dark:bg-white/[0.02] shadow-2xs overflow-hidden transition-colors">
-          <button
-            type="button"
-            onClick={() => toggleGroupCollapse('system')}
-            className="w-full px-3 py-2.5 flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-100/70 dark:hover:bg-white/[0.03] transition-colors cursor-pointer group"
-          >
-            <div className="flex items-center gap-2">
-              <span className="p-1 rounded-lg bg-cyan-500/10 text-cyan-500 ring-1 ring-cyan-500/20 group-hover:bg-cyan-500/20 transition-colors">
-                <Activity className="w-3.5 h-3.5" />
-              </span>
-              <span>{language === 'en' ? 'System & Telemetry' : 'ابزارهای سیستمی و پایش'}</span>
-            </div>
-            {collapsedGroups['system'] ? (
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 transition-transform" />
-            ) : (
-              <ChevronUp className="w-3.5 h-3.5 text-slate-400 transition-transform" />
-            )}
-          </button>
-
-          {!collapsedGroups['system'] && (
-            <div className="p-2 pt-1.5 space-y-1.5 border-t border-slate-200/60 dark:border-white/[0.04]">
-              {/* Activity Logger */}
+        {(() => {
+          const isOpen = !!openGroups['system'];
+          return (
+            <div
+              className={`rounded-2xl border transition-all duration-300 overflow-hidden shadow-2xs ${
+                isOpen
+                  ? 'border-cyan-500/40 dark:border-cyan-500/30 bg-cyan-500/[0.03] dark:bg-cyan-950/15 ring-1 ring-cyan-500/20'
+                  : 'border-slate-200/80 dark:border-white/[0.07] bg-white/80 dark:bg-white/[0.02] hover:border-slate-300 dark:hover:border-white/[0.12]'
+              }`}
+            >
               <button
                 type="button"
-                onClick={() => {
-                  setActivityModalOpen(true);
-                  if (isMobile) setSidebarOpen(false);
-                }}
-                data-testid="open-activity-logger-btn"
-                className="w-full p-2 rounded-xl border border-slate-200/80 dark:border-white/[0.06] bg-slate-50 dark:bg-[#0c121e] hover:border-cyan-500/40 hover:bg-white dark:hover:bg-white/[0.04] transition-all flex items-center justify-between text-xs text-slate-700 dark:text-slate-300 cursor-pointer shadow-2xs"
+                onClick={() => toggleGroup('system')}
+                className="w-full px-3 py-2.5 flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-cyan-500/[0.04] transition-colors cursor-pointer group"
+                aria-expanded={isOpen}
               >
-                <div className="flex items-center gap-2">
-                  <Activity className="w-3.5 h-3.5 text-cyan-500 shrink-0" />
-                  <span className="font-medium">{language === 'en' ? 'Navigation History' : 'تاریخچه ناوبری'}</span>
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className={`p-1 rounded-lg transition-colors ring-1 ${
+                      isOpen
+                        ? 'bg-cyan-600 text-white ring-cyan-600 shadow-xs shadow-cyan-500/30'
+                        : 'bg-cyan-500/10 text-cyan-500 ring-cyan-500/20 group-hover:bg-cyan-500/20'
+                    }`}
+                  >
+                    <Activity className="w-3.5 h-3.5" />
+                  </span>
+                  <span className="truncate">{language === 'en' ? 'System & Telemetry' : 'ابزارهای سیستمی و پایش'}</span>
                 </div>
-                <span
-                  dir="ltr"
-                  data-testid="activity-logger-badge-count"
-                  className="ltr-inline text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 tabular-nums border border-cyan-500/20"
-                >
-                  {activityLogs.length}
-                </span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span
+                    dir="ltr"
+                    className="ltr-inline text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400"
+                  >
+                    {activityLogs.length}
+                  </span>
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-300 ease-out ${
+                      isOpen ? 'rotate-180 text-cyan-500 dark:text-cyan-400' : ''
+                    }`}
+                  />
+                </div>
               </button>
 
-              {/* Resume Session */}
-              {detectedSession && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setResumeModalOpen(true);
-                    if (isMobile) setSidebarOpen(false);
-                  }}
-                  data-testid="open-resume-modal-btn"
-                  className="w-full p-2 rounded-xl border border-slate-200/80 dark:border-white/[0.06] bg-slate-50 dark:bg-[#0c121e] hover:border-blue-500/40 hover:bg-white dark:hover:bg-white/[0.04] transition-all flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer shadow-2xs"
-                >
-                  <History className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                  <span className="font-medium">{t('resumeSession')}</span>
-                </button>
-              )}
+              <div
+                className={`grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                  isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0 pointer-events-none'
+                }`}
+              >
+                <div className="overflow-hidden">
+                  <div className="p-2 pt-1.5 space-y-1.5 border-t border-slate-200/60 dark:border-white/[0.04]">
+                    {/* Activity Logger */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActivityModalOpen(true);
+                        if (isMobile) setSidebarOpen(false);
+                      }}
+                      data-testid="open-activity-logger-btn"
+                      className="w-full p-2 rounded-xl border border-slate-200/80 dark:border-white/[0.06] bg-slate-50 dark:bg-[#0c121e] hover:border-cyan-500/40 hover:bg-white dark:hover:bg-white/[0.04] transition-all flex items-center justify-between text-xs text-slate-700 dark:text-slate-300 cursor-pointer shadow-2xs"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Activity className="w-3.5 h-3.5 text-cyan-500 shrink-0" />
+                        <span className="font-medium">{language === 'en' ? 'Navigation History' : 'تاریخچه ناوبری'}</span>
+                      </div>
+                      <span
+                        dir="ltr"
+                        data-testid="activity-logger-badge-count"
+                        className="ltr-inline text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 tabular-nums border border-cyan-500/20"
+                      >
+                        {activityLogs.length}
+                      </span>
+                    </button>
+
+                    {/* Resume Session */}
+                    {detectedSession && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setResumeModalOpen(true);
+                          if (isMobile) setSidebarOpen(false);
+                        }}
+                        data-testid="open-resume-modal-btn"
+                        className="w-full p-2 rounded-xl border border-slate-200/80 dark:border-white/[0.06] bg-slate-50 dark:bg-[#0c121e] hover:border-blue-500/40 hover:bg-white dark:hover:bg-white/[0.04] transition-all flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer shadow-2xs"
+                      >
+                        <History className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                        <span className="font-medium">{t('resumeSession')}</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
-          )}
-        </div>
+          );
+        })()}
       </div>
 
       {/* Sidebar Footer & User Standing */}
@@ -1130,6 +1378,37 @@ function MainWorkspace() {
               />
             </div>
 
+            {/* Quick Study Mode Button (Distraction-free toggle) */}
+            <button
+              type="button"
+              data-testid="quick-study-mode-btn"
+              onClick={toggleQuickStudyMode}
+              className={`h-8 px-2.5 sm:px-3 rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer text-xs font-semibold shrink-0 ${
+                isStudyMode
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-400 shadow-md shadow-blue-500/25 ring-2 ring-blue-500/30'
+                  : 'border-slate-200/90 dark:border-white/[0.08] bg-slate-100/75 dark:bg-[#0c121e] text-slate-700 dark:text-slate-300 hover:border-blue-500/40 hover:bg-white dark:hover:bg-white/[0.06]'
+              }`}
+              title={isStudyMode ? t('exitStudyMode') : t('quickStudyMode')}
+              aria-pressed={isStudyMode}
+            >
+              {isStudyMode ? (
+                <Minimize2 className="w-3.5 h-3.5 text-white shrink-0 animate-pulse" />
+              ) : (
+                <Glasses className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400 shrink-0" />
+              )}
+              <span className="hidden sm:inline whitespace-nowrap">
+                {isStudyMode ? t('exitStudyMode') : t('quickStudyMode')}
+              </span>
+              {isStudyMode && (
+                <kbd
+                  dir="ltr"
+                  className="ltr-inline hidden md:inline-block px-1 py-0.2 text-[9px] font-mono font-semibold bg-white/20 text-white rounded shrink-0"
+                >
+                  Esc
+                </kbd>
+              )}
+            </button>
+
             {/* Rank / XP Pill */}
             <div
               dir="ltr"
@@ -1222,7 +1501,95 @@ function MainWorkspace() {
             </button>
           </div>
 
-          <div className="px-4 sm:px-8 lg:px-12 py-8 max-w-5xl mx-auto w-full flex-1">
+          <div className={`px-4 sm:px-8 lg:px-12 py-8 ${isStudyMode ? 'max-w-4xl' : 'max-w-5xl'} mx-auto w-full flex-1 transition-all duration-300`}>
+            {/* Zen Distraction-Free Reading HUD */}
+            {isStudyMode && activeSection === 'curriculum' && (
+              <div
+                data-testid="zen-reading-hud"
+                className="sticky top-2 z-30 mb-6 p-3 rounded-2xl border border-blue-500/30 dark:border-blue-500/25 bg-white/95 dark:bg-[#0a0f1d]/95 backdrop-blur-md shadow-lg shadow-blue-500/5 flex flex-wrap items-center justify-between gap-3 animate-fade-in"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="relative flex h-2.5 w-2.5 shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-600" />
+                  </span>
+                  <div className="flex flex-col min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                        {language === 'en'
+                          ? `Module 0${currentModule.number}: ${currentModule.titleEn}`
+                          : `فصل ۰${currentModule.number}: ${currentModule.titleFa}`}
+                      </span>
+                      <span
+                        dir="ltr"
+                        className="ltr-inline hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-500/20"
+                      >
+                        {language === 'en'
+                          ? computeReadingEstimateForModule(currentModule.number).labelEn
+                          : computeReadingEstimateForModule(currentModule.number).labelFa}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 hidden md:inline">
+                      {t('distractionFreeNotice')}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {/* Prev Module */}
+                  <button
+                    type="button"
+                    disabled={currentModule.number <= 1}
+                    onClick={() => {
+                      const prev = ALL_CURRICULUM_MODULES.find((m) => m.number === currentModule.number - 1);
+                      if (prev) {
+                        setActiveModuleId(prev.id);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }
+                    }}
+                    className="p-1.5 rounded-lg border border-slate-200/80 dark:border-white/[0.08] hover:bg-slate-100 dark:hover:bg-white/[0.08] disabled:opacity-30 disabled:cursor-not-allowed text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                    title={language === 'en' ? 'Previous Chapter' : 'فصل قبلی'}
+                  >
+                    {isRTL ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                  </button>
+
+                  {/* Next Module */}
+                  <button
+                    type="button"
+                    disabled={currentModule.number >= ALL_CURRICULUM_MODULES.length}
+                    onClick={() => {
+                      const next = ALL_CURRICULUM_MODULES.find((m) => m.number === currentModule.number + 1);
+                      if (next) {
+                        setActiveModuleId(next.id);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }
+                    }}
+                    className="p-1.5 rounded-lg border border-slate-200/80 dark:border-white/[0.08] hover:bg-slate-100 dark:hover:bg-white/[0.08] disabled:opacity-30 disabled:cursor-not-allowed text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                    title={language === 'en' ? 'Next Chapter' : 'فصل بعدی'}
+                  >
+                    {isRTL ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  </button>
+
+                  {/* Exit Study Mode */}
+                  <button
+                    type="button"
+                    data-testid="exit-study-mode-hud-btn"
+                    onClick={() => setIsStudyMode(false)}
+                    className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/[0.08] hover:bg-slate-200 dark:hover:bg-white/[0.14] text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <Minimize2 className="w-3.5 h-3.5 text-blue-500" />
+                    <span>{t('exitStudyMode')}</span>
+                    <kbd
+                      dir="ltr"
+                      className="ltr-inline hidden sm:inline-block px-1 py-0.2 text-[9px] font-mono font-semibold bg-white dark:bg-[#090d16] border border-slate-200 dark:border-white/[0.1] rounded text-slate-500 dark:text-slate-400"
+                    >
+                      Esc
+                    </kbd>
+                  </button>
+                </div>
+              </div>
+            )}
+
             {activeSection === 'curriculum' && (
               <ModuleContentView
                 module={currentModule}
@@ -1293,11 +1660,12 @@ function MainWorkspace() {
             )}
           </div>
 
-          {/* Global Architectural Footer */}
-          <footer
-            data-testid="global-architectural-footer"
-            className="mt-12 border-t border-slate-200/80 dark:border-white/[0.07] bg-white dark:bg-[#0b101b]"
-          >
+          {/* Global Architectural Footer (Distraction-free suppression in Quick Study Mode) */}
+          {!isStudyMode ? (
+            <footer
+              data-testid="global-architectural-footer"
+              className="mt-12 border-t border-slate-200/80 dark:border-white/[0.07] bg-white dark:bg-[#0b101b]"
+            >
             <div className="max-w-5xl mx-auto px-4 sm:px-8 lg:px-12 py-10 space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8">
                 {/* Column 1: Brand Identity & Academy Progress */}
@@ -1463,6 +1831,18 @@ function MainWorkspace() {
               </div>
             </div>
           </footer>
+        ) : (
+          <div className="py-8 text-center text-xs text-slate-400 dark:text-slate-500 font-mono border-t border-slate-200/40 dark:border-white/[0.04]">
+            <span>{t('distractionFreeNotice')} · </span>
+            <button
+              type="button"
+              onClick={() => setIsStudyMode(false)}
+              className="text-blue-500 hover:underline cursor-pointer font-semibold"
+            >
+              {t('exitStudyMode')} (Esc)
+            </button>
+          </div>
+        )}
         </main>
       </div>
 

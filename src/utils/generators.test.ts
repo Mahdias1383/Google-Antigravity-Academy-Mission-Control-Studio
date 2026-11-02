@@ -1519,7 +1519,91 @@ test('Quick Study Mode: state transitions collapse sidebars and switch to curric
   assert.equal(m5Estimate.estimatedMinutes, 16);
 });
 
+test('Font Loading & Zero-CLS Optimization: index.html preloads WOFF2 font files and index.css enforces font-display: swap with metric-adjusted fallbacks', async () => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
 
+  // 1. Verify index.html preloads Vazirmatn and JetBrains Mono WOFF2 files
+  const indexHtmlPath = path.resolve(process.cwd(), 'index.html');
+  const indexHtml = fs.readFileSync(indexHtmlPath, 'utf-8');
+  assert.equal(indexHtml.includes('rel="preload"'), true);
+  assert.equal(indexHtml.includes('href="/fonts/vazirmatn-arabic.woff2"'), true);
+  assert.equal(indexHtml.includes('href="/fonts/vazirmatn-latin.woff2"'), true);
+  assert.equal(indexHtml.includes('href="/fonts/jetbrains-mono-latin.woff2"'), true);
+  assert.equal(indexHtml.includes('as="font"'), true);
+  assert.equal(indexHtml.includes('type="font/woff2"'), true);
 
+  // 2. Verify physical WOFF2 font files exist in public/fonts and have valid wOF2 header
+  const fontFiles = [
+    'public/fonts/vazirmatn-arabic.woff2',
+    'public/fonts/vazirmatn-latin.woff2',
+    'public/fonts/jetbrains-mono-latin.woff2',
+  ];
+  for (const relFontPath of fontFiles) {
+    const fullPath = path.resolve(process.cwd(), relFontPath);
+    assert.equal(fs.existsSync(fullPath), true, `${relFontPath} must exist`);
+    const buf = fs.readFileSync(fullPath);
+    assert.equal(buf.length > 10000, true, `${relFontPath} must be a valid non-empty WOFF2 binary`);
+    assert.equal(buf.subarray(0, 4).toString('ascii'), 'wOF2', `${relFontPath} must start with wOF2 signature`);
+  }
 
+  // 3. Verify src/index.css implements @font-face with font-display: swap and CLS fallback overrides
+  const indexCssPath = path.resolve(process.cwd(), 'src/index.css');
+  const indexCss = fs.readFileSync(indexCssPath, 'utf-8');
+  assert.equal(indexCss.includes("font-family: 'Vazirmatn';"), true);
+  assert.equal(indexCss.includes("font-family: 'JetBrains Mono';"), true);
+  assert.equal(indexCss.includes('font-display: swap;'), true);
+  assert.equal(indexCss.includes("font-family: 'Vazirmatn Fallback';"), true);
+  assert.equal(indexCss.includes("font-family: 'JetBrains Mono Fallback';"), true);
+  assert.equal(indexCss.includes('ascent-override:'), true);
+  assert.equal(indexCss.includes('descent-override:'), true);
+});
+
+test('Bidi Typography, Number Localization & RTL/LTR Isolation: normalizes Persian digits and isolates LTR technical parentheticals', async () => {
+  const {
+    toPersianDigits,
+    formatLocalizedNumber,
+    formatLocalizedReadingTime,
+    formatLocalizedDifficulty,
+    stabilizeBidiString,
+    renderBidiText,
+  } = await import('./bidiText');
+
+  // 1. Digit conversion & zero-padded module numbers
+  assert.equal(toPersianDigits(18), '۱۸');
+  assert.equal(formatLocalizedNumber(1, 'fa', false), '۱');
+  assert.equal(formatLocalizedNumber(1, 'fa', true), '۰۱');
+  assert.equal(formatLocalizedNumber(1, 'en', true), '01');
+
+  // 2. Reading time & difficulty localization
+  assert.equal(formatLocalizedReadingTime('18 min read', 'fa'), '۱۸ دقیقه مطالعه');
+  assert.equal(formatLocalizedReadingTime('18 min read', 'en'), '18 min read');
+  assert.equal(formatLocalizedDifficulty('Foundation & Architecture', 'fa'), 'مبانی و معماری پایه');
+
+  // 3. Stabilizing leading numerals in Persian headings
+  const normalizedTitle = stabilizeBidiString('1. معماری هسته و فلسفه Agent-First', 'fa');
+  assert.equal(normalizedTitle.startsWith('۱. '), true);
+
+  // 4. Bidi React nodes isolate parenthetical English phrases like (Asynchronous Agent-First Engineering) and (Task & Artifact-Centric)
+  const nodes = renderBidiText(
+    'گذار بنیادین به ارکستریشن ناهمگام چندایجنتی (Asynchronous Agent-First Engineering) و تسک مهندسی (Task & Artifact-Centric) در پلتفرم',
+    'fa'
+  );
+  assert.equal(Array.isArray(nodes), true);
+  const serialized = JSON.stringify(nodes);
+  assert.equal(serialized.includes('(Asynchronous Agent-First Engineering)'), true);
+  assert.equal(serialized.includes('(Task & Artifact-Centric)'), true);
+  assert.equal(serialized.includes('bidi-ltr-run'), true);
+
+  // 5. Mixed Persian parenthetical (با فشردن Tab) is NOT wrapped as a whole LTR parenthetical, only 'Tab' is isolated
+  const mixedNodes = renderBidiText('گام دوم (با فشردن Tab): کرسر به فایل اسکیما پریده.', 'fa');
+  const mixedSerialized = JSON.stringify(mixedNodes);
+  assert.equal(mixedSerialized.includes('(با فشردن '), true);
+  assert.equal(mixedSerialized.includes('"children":"Tab"'), true);
+
+  // 6. Comma-separated English list stays together as one LTR run
+  const listNodes = renderBidiText('Supercomplete, Tab-to-Jump, Cmd/Ctrl + I', 'fa');
+  const listSerialized = JSON.stringify(listNodes);
+  assert.equal(listSerialized.includes('"children":"Supercomplete, Tab-to-Jump, Cmd/Ctrl + I"'), true);
+});
 

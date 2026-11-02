@@ -53,6 +53,7 @@ import {
   computeReadingEstimateForModule,
 } from './utils/generators';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
+import { formatLocalizedNumber, renderBidiText } from './utils/bidiText';
 import { ModuleContentView } from './components/ModuleContentView';
 import {
   ScopedPdfExportModal,
@@ -453,7 +454,10 @@ function MainWorkspace() {
       return {
         group: language === 'en' ? 'Curriculum' : 'سرفصل‌های آموزشی',
         subgroup: phaseTitle,
-        item: language === 'en' ? `Module 0${currentModule.number}: ${currentModule.titleEn}` : `فصل ۰${currentModule.number}: ${currentModule.titleFa}`,
+        item:
+          language === 'en'
+            ? `Module ${formatLocalizedNumber(currentModule.number, 'en', true)}: ${currentModule.titleEn}`
+            : `فصل ${formatLocalizedNumber(currentModule.number, 'fa', true)}: ${currentModule.titleFa}`,
       };
     }
     if (['simulator', 'guardrails', 'mcp', 'scenarios'].includes(activeSection)) {
@@ -524,7 +528,7 @@ function MainWorkspace() {
                   PRO
                 </span>
               </div>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate font-mono">
+              <span className={`text-[10px] text-slate-500 dark:text-slate-400 truncate ${language === 'en' ? 'font-mono' : 'font-sans'}`}>
                 {language === 'en' ? 'Agent-First Architecture Workbench' : 'آکادمی و استودیوهای مهندسی ایجنت'}
               </span>
             </div>
@@ -722,17 +726,18 @@ function MainWorkspace() {
                                 }`}
                               >
                                 <span
-                                  dir="ltr"
-                                  className={`ltr-inline w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-mono font-bold shrink-0 mt-0.5 ${
+                                  className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5 ${
+                                    language === 'en' ? 'ltr-inline font-mono' : 'font-sans'
+                                  } ${
                                     isCurrent
                                       ? 'bg-blue-600 text-white shadow-xs shadow-blue-500/30'
                                       : 'bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 border border-slate-200/80 dark:border-white/[0.08] group-hover:border-blue-500/30 group-hover:text-blue-500'
                                   }`}
                                 >
-                                  0{mod.number}
+                                  {formatLocalizedNumber(mod.number, language, true)}
                                 </span>
                                 <span className="text-xs leading-snug line-clamp-2 text-start flex-1 font-medium group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
-                                  {primaryTitle}
+                                  {renderBidiText(primaryTitle, language)}
                                 </span>
                                 {isDone ? (
                                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5 drop-shadow-xs" />
@@ -876,8 +881,8 @@ function MainWorkspace() {
                                 {st.tag}
                               </span>
                             </div>
-                            <span className="block text-[10px] text-slate-500 dark:text-slate-400 leading-3.5 mt-0.5 truncate font-mono">
-                              {st.desc}
+                            <span className={`block text-[10px] text-slate-500 dark:text-slate-400 leading-4 mt-0.5 truncate ${language === 'en' ? 'font-mono' : 'font-sans'}`}>
+                              {renderBidiText(st.desc, language)}
                             </span>
                           </span>
                         </button>
@@ -1007,8 +1012,8 @@ function MainWorkspace() {
                                 {tool.tag}
                               </span>
                             </div>
-                            <span className="block text-[10px] text-slate-500 dark:text-slate-400 leading-3.5 mt-0.5 truncate font-mono">
-                              {tool.desc}
+                            <span className={`block text-[10px] text-slate-500 dark:text-slate-400 leading-4 mt-0.5 truncate ${language === 'en' ? 'font-mono' : 'font-sans'}`}>
+                              {renderBidiText(tool.desc, language)}
                             </span>
                           </span>
                         </button>
@@ -1103,8 +1108,11 @@ function MainWorkspace() {
                             Cert
                           </span>
                         </div>
-                        <span className="block text-[10px] text-slate-500 dark:text-slate-400 leading-3.5 mt-0.5 truncate font-mono">
-                          {language === 'en' ? 'Trophy case, rank standing & printable cert' : 'رتبه مهندسی (Architect)، نشان‌ها و ابر'}
+                        <span className={`block text-[10px] text-slate-500 dark:text-slate-400 leading-4 mt-0.5 truncate ${language === 'en' ? 'font-mono' : 'font-sans'}`}>
+                          {renderBidiText(
+                            language === 'en' ? 'Trophy case, rank standing & printable cert' : 'رتبه مهندسی (Architect)، نشان‌ها و ابر',
+                            language
+                          )}
                         </span>
                       </span>
                     </button>
@@ -1128,7 +1136,7 @@ function MainWorkspace() {
                             WebGL
                           </span>
                         </div>
-                        <span className="block text-[10px] text-amber-700/90 dark:text-amber-400/90 leading-3.5 mt-0.5 truncate font-mono">
+                        <span className={`block text-[10px] text-amber-700/90 dark:text-amber-400/90 leading-4 mt-0.5 truncate ${language === 'en' ? 'font-mono' : 'font-sans'}`}>
                           {language === 'en' ? 'Interactive WebGL agentic defense simulator' : 'شبیه‌ساز گیم دفاع سایبری ایجنت‌محور'}
                         </span>
                       </span>
@@ -1338,7 +1346,7 @@ function MainWorkspace() {
                 </>
               )}
               <span className="font-bold text-slate-800 dark:text-slate-100 truncate">
-                {activeBreadcrumb.item}
+                {renderBidiText(activeBreadcrumb.item, language)}
               </span>
             </nav>
           </div>
@@ -1540,13 +1548,17 @@ function MainWorkspace() {
                   <div className="flex flex-col min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                        {language === 'en'
-                          ? `Module 0${currentModule.number}: ${currentModule.titleEn}`
-                          : `فصل ۰${currentModule.number}: ${currentModule.titleFa}`}
+                        {renderBidiText(
+                          language === 'en'
+                            ? `Module ${formatLocalizedNumber(currentModule.number, 'en', true)}: ${currentModule.titleEn}`
+                            : `فصل ${formatLocalizedNumber(currentModule.number, 'fa', true)}: ${currentModule.titleFa}`,
+                          language
+                        )}
                       </span>
                       <span
-                        dir="ltr"
-                        className="ltr-inline hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-500/20"
+                        className={`hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-500/20 ${
+                          language === 'en' ? 'ltr-inline font-mono' : 'font-sans'
+                        }`}
                       >
                         {language === 'en'
                           ? computeReadingEstimateForModule(currentModule.number).labelEn

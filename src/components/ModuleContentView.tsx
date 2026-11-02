@@ -31,6 +31,12 @@ import {
   getMcpTopologyContent,
   getWorktreeIsolationContent,
 } from '../utils/interactiveDiagramContent';
+import {
+  renderBidiText,
+  formatLocalizedNumber,
+  formatLocalizedReadingTime,
+  formatLocalizedDifficulty,
+} from '../utils/bidiText';
 
 const InteractiveModuleDiagram: React.FC<{
   widgetType: CurriculumModule['interactiveWidgetType'];
@@ -72,12 +78,12 @@ const InteractiveModuleDiagram: React.FC<{
     return (
       <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 p-5 space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-4">
-          <div>
+          <div className={isRTL ? 'text-right' : 'text-left'}>
             <h3 className="text-base font-bold text-slate-900 dark:text-white">
-              {c1.title}
+              {renderBidiText(c1.title, language)}
             </h3>
             <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
-              {c1.subtitle}
+              {renderBidiText(c1.subtitle, language)}
             </p>
           </div>
           <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-200/80 dark:bg-slate-800">
@@ -90,7 +96,7 @@ const InteractiveModuleDiagram: React.FC<{
                   : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              {c1.editorTab}
+              {renderBidiText(c1.editorTab, language)}
             </button>
             <button
               type="button"
@@ -101,7 +107,7 @@ const InteractiveModuleDiagram: React.FC<{
                   : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              {c1.managerTab}
+              {renderBidiText(c1.managerTab, language)}
             </button>
           </div>
         </div>
@@ -110,7 +116,7 @@ const InteractiveModuleDiagram: React.FC<{
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                {c1.subHeader}
+                {renderBidiText(c1.subHeader, language)}
               </span>
               <div className="flex items-center gap-2">
                 <button
@@ -119,7 +125,7 @@ const InteractiveModuleDiagram: React.FC<{
                   className="px-3 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg flex items-center gap-1.5 cursor-pointer"
                 >
                   <Play className="w-3.5 h-3.5" />
-                  <span>{c1.tabBtn}</span>
+                  <span>{renderBidiText(c1.tabBtn, language)}</span>
                 </button>
                 <button
                   type="button"
@@ -138,30 +144,56 @@ const InteractiveModuleDiagram: React.FC<{
                   key={st.layer}
                   type="button"
                   onClick={() => setM1JumpStep(idx)}
-                  className={`${isRTL ? 'text-right' : 'text-left'} p-3.5 rounded-lg border transition-all cursor-pointer ${
+                  className={`flex flex-col justify-between p-4 rounded-xl border transition-all cursor-pointer ${
                     m1JumpStep === idx
-                      ? 'border-blue-500 bg-blue-500/10 dark:bg-blue-500/15'
-                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/60 opacity-75 hover:opacity-100'
+                      ? 'border-blue-500 bg-blue-500/10 dark:bg-blue-500/15 shadow-xs'
+                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/60 opacity-80 hover:opacity-100'
                   }`}
                 >
-                  <div dir="ltr" className="ltr-inline text-xs font-mono font-bold text-blue-600 dark:text-blue-400">
-                    {st.layer}
+                  {/* Full-width LTR Technical Header so all 3 cards align consistently */}
+                  <div
+                    dir="ltr"
+                    className="w-full text-left border-b border-slate-200/70 dark:border-white/[0.06] pb-2.5 mb-2.5 space-y-1"
+                  >
+                    <div className="ltr-block text-xs font-mono font-bold text-blue-600 dark:text-blue-400">
+                      {st.layer}
+                    </div>
+                    <div className="ltr-block text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                      {st.file}
+                    </div>
                   </div>
-                  <div dir="ltr" className="ltr-inline block text-[11px] font-mono text-slate-500 mt-1">
-                    {st.file}
-                  </div>
-                  <p className="text-xs text-slate-700 dark:text-slate-300 mt-2 leading-5">
-                    {st.desc}
+                  <p
+                    className={`w-full text-xs text-slate-700 dark:text-slate-300 leading-6 font-sans ${
+                      isRTL ? 'text-right' : 'text-left'
+                    }`}
+                  >
+                    {renderBidiText(st.desc, language)}
                   </p>
                 </button>
               ))}
             </div>
 
-            <div dir="ltr" className="ltr-code p-3.5 rounded-lg bg-slate-950 border border-slate-800 text-xs font-mono text-emerald-400">
-              <div className="text-slate-400 mb-1">
-                {c1.activeTargetLabel} {c1.jumpStages[m1JumpStep].file}
+            <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+              <div
+                dir={isRTL ? 'rtl' : 'ltr'}
+                className="flex flex-wrap items-center gap-2 text-xs border-b border-slate-800/80 pb-2"
+              >
+                <span className="font-sans font-semibold text-slate-300">
+                  {c1.activeTargetLabel}
+                </span>
+                <code
+                  dir="ltr"
+                  className="ltr-inline font-mono text-xs text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20"
+                >
+                  {c1.jumpStages[m1JumpStep].file}
+                </code>
               </div>
-              <pre className="overflow-x-auto"><code>{c1.jumpStages[m1JumpStep].diff}</code></pre>
+              <pre
+                dir="ltr"
+                className="ltr-code overflow-x-auto text-xs font-mono text-emerald-400 pt-0.5"
+              >
+                <code>{c1.jumpStages[m1JumpStep].diff}</code>
+              </pre>
             </div>
           </div>
         ) : (
@@ -169,7 +201,7 @@ const InteractiveModuleDiagram: React.FC<{
             {c1.agentCards.map((ag) => (
               <div
                 key={ag.id}
-                className={`p-4 rounded-lg border space-y-2 ${
+                className={`p-4 rounded-xl border space-y-2.5 ${
                   ag.variant === 'emerald'
                     ? 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/80'
                     : ag.variant === 'amber'
@@ -179,7 +211,7 @@ const InteractiveModuleDiagram: React.FC<{
               >
                 <div
                   dir="ltr"
-                  className={`ltr-inline text-xs font-mono font-semibold ${
+                  className={`ltr-block text-xs font-mono font-semibold ${
                     ag.variant === 'emerald'
                       ? 'text-emerald-500'
                       : ag.variant === 'amber'
@@ -189,11 +221,11 @@ const InteractiveModuleDiagram: React.FC<{
                 >
                   {ag.badge}
                 </div>
-                <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                  {ag.title}
+                <h4 className={`text-sm font-bold text-slate-900 dark:text-white ${isRTL ? 'text-right' : 'text-left'}`}>
+                  {renderBidiText(ag.title, language)}
                 </h4>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-5">
-                  {ag.desc}
+                <p className={`text-xs text-slate-600 dark:text-slate-400 leading-6 ${isRTL ? 'text-right' : 'text-left'}`}>
+                  {renderBidiText(ag.desc, language)}
                 </p>
               </div>
             ))}
@@ -218,12 +250,12 @@ const InteractiveModuleDiagram: React.FC<{
     return (
       <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 p-5 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
+          <div className={isRTL ? 'text-right' : 'text-left'}>
             <h3 className="text-base font-bold text-slate-900 dark:text-white">
-              {c2.title}
+              {renderBidiText(c2.title, language)}
             </h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400">
-              {c2.subtitle}
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+              {renderBidiText(c2.subtitle, language)}
             </p>
           </div>
         </div>
@@ -236,12 +268,13 @@ const InteractiveModuleDiagram: React.FC<{
                 key={t.id}
                 type="button"
                 onClick={() => cycleStatus(t.id)}
-                dir="ltr"
-                className="ltr-code w-full flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 hover:border-blue-500/50 transition-colors cursor-pointer"
+                dir={isRTL ? 'rtl' : 'ltr'}
+                className="w-full flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 hover:border-blue-500/50 transition-colors cursor-pointer"
               >
-                <div className="flex items-center gap-3 text-xs font-mono">
+                <div className="flex items-center gap-3 text-xs">
                   <span
-                    className={`px-2 py-0.5 rounded font-bold ${
+                    dir="ltr"
+                    className={`ltr-inline px-2 py-0.5 rounded font-mono font-bold shrink-0 ${
                       t.status === 'done'
                         ? 'bg-emerald-500/20 text-emerald-400'
                         : t.status === 'progress'
@@ -251,9 +284,11 @@ const InteractiveModuleDiagram: React.FC<{
                   >
                     - {badge}
                   </span>
-                  <span className="text-slate-800 dark:text-slate-200">{matchedLabel}</span>
+                  <span className={`font-sans text-slate-800 dark:text-slate-200 font-medium ${isRTL ? 'text-right' : 'text-left'}`}>
+                    {renderBidiText(matchedLabel, language)}
+                  </span>
                 </div>
-                <span className="text-[11px] font-mono text-slate-500">
+                <span className="text-[11px] font-sans font-semibold text-slate-500 dark:text-slate-400 shrink-0">
                   {c2.statusLabels[t.status]}
                 </span>
               </button>
@@ -269,8 +304,8 @@ const InteractiveModuleDiagram: React.FC<{
 
     return (
       <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 p-5 space-y-4">
-        <h3 className="text-base font-bold text-slate-900 dark:text-white">
-          {c3.title}
+        <h3 className={`text-base font-bold text-slate-900 dark:text-white ${isRTL ? 'text-right' : 'text-left'}`}>
+          {renderBidiText(c3.title, language)}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
           {c3.commands.map((item, idx) => (
@@ -289,10 +324,18 @@ const InteractiveModuleDiagram: React.FC<{
             </button>
           ))}
         </div>
-        <div dir="ltr" className="ltr-code p-4 rounded-lg bg-slate-950 border border-slate-800 text-xs font-mono space-y-1.5">
-          <div className="text-slate-400">{c3.evalHeader}</div>
-          <div className="text-emerald-400 font-bold">{c3.commands[m3SelectedCmd]?.verdict}</div>
-          <div className="text-slate-300">{c3.riskHeader} {c3.commands[m3SelectedCmd]?.risk}</div>
+        <div
+          dir={isRTL ? 'rtl' : 'ltr'}
+          className={`p-4 rounded-lg bg-slate-950 border border-slate-800 text-xs font-sans space-y-1.5 ${
+            isRTL ? 'text-right' : 'text-left'
+          }`}
+        >
+          <div className="text-slate-400">{renderBidiText(c3.evalHeader, language)}</div>
+          <div className="text-emerald-400 font-bold">{renderBidiText(c3.commands[m3SelectedCmd]?.verdict || '', language)}</div>
+          <div className="text-slate-300">
+            <span className="text-slate-400">{renderBidiText(c3.riskHeader, language)} </span>
+            <span>{renderBidiText(c3.commands[m3SelectedCmd]?.risk || '', language)}</span>
+          </div>
         </div>
       </div>
     );
@@ -304,8 +347,8 @@ const InteractiveModuleDiagram: React.FC<{
 
     return (
       <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 p-5 space-y-4">
-        <h3 className="text-base font-bold text-slate-900 dark:text-white">
-          {c4.title}
+        <h3 className={`text-base font-bold text-slate-900 dark:text-white ${isRTL ? 'text-right' : 'text-left'}`}>
+          {renderBidiText(c4.title, language)}
         </h3>
         <div className="flex flex-wrap gap-2">
           {c4.files.map((f) => (
@@ -324,15 +367,29 @@ const InteractiveModuleDiagram: React.FC<{
             </button>
           ))}
         </div>
-        <div dir="ltr" className="ltr-code p-4 rounded-lg bg-slate-950 border border-slate-800 text-xs font-mono space-y-2">
-          <div className="text-slate-400">{c4.activeRulesLabel} {current.path}:</div>
-          {current.activeRules.map((r) => (
-            <div key={r} className="text-emerald-400">
-              ✓ {r}
-            </div>
-          ))}
-          <div className="text-blue-400 pt-1 border-t border-slate-800">
-            {c4.tokenEfficiencyLabel} {current.savedTokens}
+        <div className="p-4 rounded-lg bg-slate-950 border border-slate-800 text-xs space-y-2.5">
+          <div
+            dir={isRTL ? 'rtl' : 'ltr'}
+            className="flex flex-wrap items-center gap-2 text-slate-300 font-sans border-b border-slate-800/80 pb-2"
+          >
+            <span>{c4.activeRulesLabel}</span>
+            <code dir="ltr" className="ltr-inline font-mono text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded">
+              {current.path}
+            </code>
+          </div>
+          <div dir="ltr" className="ltr-code space-y-1 font-mono">
+            {current.activeRules.map((r) => (
+              <div key={r} className="text-emerald-400">
+                ✓ {r}
+              </div>
+            ))}
+          </div>
+          <div
+            dir={isRTL ? 'rtl' : 'ltr'}
+            className={`text-blue-400 pt-2 border-t border-slate-800 font-sans ${isRTL ? 'text-right' : 'text-left'}`}
+          >
+            <span className="font-semibold">{c4.tokenEfficiencyLabel} </span>
+            <span>{renderBidiText(current.savedTokens, language)}</span>
           </div>
         </div>
       </div>
@@ -346,14 +403,14 @@ const InteractiveModuleDiagram: React.FC<{
       <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 p-5 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-base font-bold text-slate-900 dark:text-white">
-            {c5.title}
+            {renderBidiText(c5.title, language)}
           </h3>
           <button
             type="button"
             onClick={() => setM5ActiveStep((prev) => (prev + 1) % c5.steps.length)}
             className="px-3 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-lg cursor-pointer"
           >
-            {c5.nextBtn}
+            {renderBidiText(c5.nextBtn, language)}
           </button>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -361,19 +418,21 @@ const InteractiveModuleDiagram: React.FC<{
             <div
               key={s.step}
               onClick={() => setM5ActiveStep(idx)}
-              className={`p-3.5 rounded-lg border transition-all cursor-pointer ${
+              className={`p-3.5 rounded-lg border transition-all cursor-pointer space-y-1.5 ${
                 m5ActiveStep === idx
                   ? 'border-blue-500 bg-blue-500/10'
                   : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/70'
               }`}
             >
-              <div dir="ltr" className="ltr-inline text-xs font-mono font-bold text-blue-500">
+              <div dir="ltr" className="ltr-block text-xs font-mono font-bold text-blue-500">
                 {s.step}
               </div>
-              <div dir="ltr" className="ltr-inline block text-[11px] font-mono text-emerald-500 mt-1">
-                {s.mode}
+              <div className={`text-[11px] font-semibold text-emerald-500 ${isRTL ? 'text-right' : 'text-left'}`}>
+                {renderBidiText(s.mode, language)}
               </div>
-              <p className="text-xs text-slate-600 dark:text-slate-300 mt-2">{s.detail}</p>
+              <p className={`text-xs text-slate-600 dark:text-slate-300 leading-5 ${isRTL ? 'text-right' : 'text-left'}`}>
+                {renderBidiText(s.detail, language)}
+              </p>
             </div>
           ))}
         </div>
@@ -386,12 +445,12 @@ const InteractiveModuleDiagram: React.FC<{
     return (
       <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 p-5 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
+          <div className={isRTL ? 'text-right' : 'text-left'}>
             <h3 className="text-base font-bold text-slate-900 dark:text-white">
-              {c6.title}
+              {renderBidiText(c6.title, language)}
             </h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400">
-              {c6.subtitle}
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+              {renderBidiText(c6.subtitle, language)}
             </p>
           </div>
           <button
@@ -401,7 +460,7 @@ const InteractiveModuleDiagram: React.FC<{
               m6Fixed422 ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-amber-600 hover:bg-amber-500'
             }`}
           >
-            {m6Fixed422 ? c6.patchBtnActive : c6.patchBtnInactive}
+            {renderBidiText(m6Fixed422 ? c6.patchBtnActive : c6.patchBtnInactive, language)}
           </button>
         </div>
         <div dir="ltr" className="ltr-code p-4 rounded-lg bg-slate-950 border border-slate-800 text-xs font-mono space-y-1.5">
@@ -430,41 +489,43 @@ const InteractiveModuleDiagram: React.FC<{
       <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 p-5 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-base font-bold text-slate-900 dark:text-white">
-            {c7.title}
+            {renderBidiText(c7.title, language)}
           </h3>
           <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-200 dark:bg-slate-800">
             <button
               type="button"
               onClick={() => setM7Transport('stdio')}
-              dir="ltr"
-              className={`ltr-inline px-3 py-1 text-xs font-mono rounded cursor-pointer ${
+              className={`px-3 py-1 text-xs font-medium rounded cursor-pointer ${
                 m7Transport === 'stdio' ? 'bg-blue-600 text-white' : 'text-slate-600 dark:text-slate-300'
               }`}
             >
-              {c7.stdioBtn}
+              {renderBidiText(c7.stdioBtn, language)}
             </button>
             <button
               type="button"
               onClick={() => setM7Transport('sse')}
-              dir="ltr"
-              className={`ltr-inline px-3 py-1 text-xs font-mono rounded cursor-pointer ${
+              className={`px-3 py-1 text-xs font-medium rounded cursor-pointer ${
                 m7Transport === 'sse' ? 'bg-blue-600 text-white' : 'text-slate-600 dark:text-slate-300'
               }`}
             >
-              {c7.sseBtn}
+              {renderBidiText(c7.sseBtn, language)}
             </button>
           </div>
         </div>
-        <div dir="ltr" className="ltr-code p-4 rounded-lg bg-slate-950 border border-slate-800 text-xs font-mono">
+        <div className="p-4 rounded-lg bg-slate-950 border border-slate-800 text-xs space-y-2">
           {m7Transport === 'stdio' ? (
-            <div className="space-y-1 text-slate-200">
-              <div className="text-blue-400">{c7.stdioSubtitle}</div>
-              <div className="text-slate-400">{c7.stdioDetail}</div>
+            <div className="space-y-2 text-slate-200">
+              <div dir="ltr" className="ltr-block font-mono text-blue-400">{c7.stdioSubtitle}</div>
+              <div dir={isRTL ? 'rtl' : 'ltr'} className={`font-sans text-slate-300 ${isRTL ? 'text-right' : 'text-left'}`}>
+                {renderBidiText(c7.stdioDetail, language)}
+              </div>
             </div>
           ) : (
-            <div className="space-y-1 text-slate-200">
-              <div className="text-emerald-400">{c7.sseSubtitle}</div>
-              <div className="text-slate-400">{c7.sseDetail}</div>
+            <div className="space-y-2 text-slate-200">
+              <div dir="ltr" className="ltr-block font-mono text-emerald-400">{c7.sseSubtitle}</div>
+              <div dir={isRTL ? 'rtl' : 'ltr'} className={`font-sans text-slate-300 ${isRTL ? 'text-right' : 'text-left'}`}>
+                {renderBidiText(c7.sseDetail, language)}
+              </div>
             </div>
           )}
         </div>
@@ -477,7 +538,7 @@ const InteractiveModuleDiagram: React.FC<{
     <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 p-5 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-base font-bold text-slate-900 dark:text-white">
-          {c8.title}
+          {renderBidiText(c8.title, language)}
         </h3>
         <button
           type="button"
@@ -486,7 +547,7 @@ const InteractiveModuleDiagram: React.FC<{
             m8Isolated ? 'bg-emerald-600' : 'bg-rose-600'
           }`}
         >
-          {m8Isolated ? c8.isolatedBtn : c8.collidingBtn}
+          {renderBidiText(m8Isolated ? c8.isolatedBtn : c8.collidingBtn, language)}
         </button>
       </div>
       <div dir="ltr" className="ltr-code p-4 rounded-lg bg-slate-950 border border-slate-800 text-xs font-mono space-y-1">
@@ -524,7 +585,7 @@ export const ModuleContentView: React.FC<{
   onExportPdf,
 }) => {
   const fullModulePdfPayload: PrintableDocumentPayload = {
-    titleFa: `فصل ${module.number}: ${module.titleFa}`,
+    titleFa: `فصل ${formatLocalizedNumber(module.number, 'fa')}: ${module.titleFa}`,
     titleEn: `Module 0${module.number}: ${module.titleEn}`,
     subtitleOrCategory: `${module.difficulty} · ${module.readingTime}`,
     sections: module.subSections.map((sub) => ({
@@ -547,7 +608,11 @@ export const ModuleContentView: React.FC<{
   const prevMod = currentIdx > 0 ? allModules[currentIdx - 1] : null;
   const nextMod = currentIdx < allModules.length - 1 ? allModules[currentIdx + 1] : null;
 
-  const displayTitle = language === 'en' ? `${module.number}. ${module.titleEn}` : `${module.number}. ${module.titleFa}`;
+  const localizedModNum = formatLocalizedNumber(module.number, language, false);
+  const displayTitle =
+    language === 'en'
+      ? `${localizedModNum}. ${module.titleEn}`
+      : `${localizedModNum}. ${module.titleFa}`;
   const displaySubtitle = language === 'en' ? module.titleFa : module.titleEn;
   const displaySummary = language === 'en' && enContent?.summaryEn ? enContent.summaryEn : module.summaryFa;
 
@@ -558,15 +623,25 @@ export const ModuleContentView: React.FC<{
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/70 dark:border-white/[0.06] pb-4">
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <span className="font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-md">
-              {language === 'en' ? `Module 0${module.number} of 08` : `فصل ۰${module.number} از ۰۸`}
+              {language === 'en'
+                ? `Module ${formatLocalizedNumber(module.number, 'en', true)} of 08`
+                : `فصل ${formatLocalizedNumber(module.number, 'fa', true)} از ۰۸`}
             </span>
             <span aria-hidden="true" className="opacity-30">|</span>
-            <span dir="ltr" className="ltr-inline bg-slate-100 dark:bg-white/[0.04] px-2.5 py-1 rounded-md text-[11px] font-mono">
-              {module.readingTime}
+            <span
+              className={`bg-slate-100 dark:bg-white/[0.04] px-2.5 py-1 rounded-md text-[11px] font-medium ${
+                language === 'en' ? 'ltr-inline font-mono' : 'font-sans'
+              }`}
+            >
+              {formatLocalizedReadingTime(module.readingTime, language)}
             </span>
             <span aria-hidden="true" className="opacity-30">|</span>
-            <span dir="ltr" className="ltr-inline bg-slate-100 dark:bg-white/[0.04] px-2.5 py-1 rounded-md text-[11px] font-mono">
-              {module.difficulty}
+            <span
+              className={`bg-slate-100 dark:bg-white/[0.04] px-2.5 py-1 rounded-md text-[11px] font-medium ${
+                language === 'en' ? 'ltr-inline font-mono' : 'font-sans'
+              }`}
+            >
+              {renderBidiText(formatLocalizedDifficulty(module.difficulty, language), language)}
             </span>
           </div>
 
@@ -602,8 +677,13 @@ export const ModuleContentView: React.FC<{
         </div>
 
         <div className="space-y-3.5">
-          <h1 className="text-2xl sm:text-3xl lg:text-[34px] font-black text-slate-900 dark:text-white tracking-tight leading-snug">
-            {displayTitle}
+          <h1
+            data-testid="module-hero-title"
+            className={`text-2xl sm:text-3xl lg:text-[34px] font-black text-slate-900 dark:text-white tracking-tight leading-snug ${
+              isRTL ? 'text-right' : 'text-left'
+            }`}
+          >
+            {renderBidiText(displayTitle, language)}
           </h1>
           {language !== 'en' && (
             <div className={isRTL ? 'text-right' : 'text-left'}>
@@ -615,8 +695,13 @@ export const ModuleContentView: React.FC<{
               </span>
             </div>
           )}
-          <p className="text-sm sm:text-base leading-relaxed text-slate-600 dark:text-slate-300 max-w-4xl font-normal">
-            {displaySummary}
+          <p
+            data-testid="module-hero-summary"
+            className={`text-sm sm:text-base leading-relaxed text-slate-600 dark:text-slate-300 max-w-4xl font-normal ${
+              isRTL ? 'text-right' : 'text-left'
+            }`}
+          >
+            {renderBidiText(displaySummary, language)}
           </p>
         </div>
 
@@ -636,10 +721,10 @@ export const ModuleContentView: React.FC<{
                       {kt.metricOrBadge}
                     </div>
                     <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                      {kt.titleEn}
+                      {renderBidiText(kt.titleEn, 'en')}
                     </h3>
                     <p className="text-xs sm:text-[13px] leading-6 text-slate-600 dark:text-slate-400">
-                      {kt.descEn}
+                      {renderBidiText(kt.descEn, 'en')}
                     </p>
                   </div>
                 ))
@@ -652,10 +737,10 @@ export const ModuleContentView: React.FC<{
                       {kt.metricOrBadge}
                     </div>
                     <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                      {kt.titleFa}
+                      {renderBidiText(kt.titleFa, language)}
                     </h3>
                     <p className="text-xs sm:text-[13px] leading-6 text-slate-600 dark:text-slate-400">
-                      {kt.descFa}
+                      {renderBidiText(kt.descFa, language)}
                     </p>
                   </div>
                 ))}
@@ -675,10 +760,14 @@ export const ModuleContentView: React.FC<{
                 href={`#${sub.id}`}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200/80 dark:border-white/[0.06] bg-slate-50/80 dark:bg-white/[0.03] hover:border-blue-500/40 hover:text-blue-600 dark:hover:text-blue-400 text-xs font-medium text-slate-700 dark:text-slate-300 transition-colors"
               >
-                <span dir="ltr" className="ltr-inline text-[10px] font-mono text-blue-500 font-bold">
-                  0{idx + 1}
+                <span
+                  className={`text-[11px] text-blue-500 font-bold ${
+                    language === 'en' ? 'ltr-inline font-mono' : 'font-sans'
+                  }`}
+                >
+                  {formatLocalizedNumber(idx + 1, language, true)}
                 </span>
-                <span>{subPrimary}</span>
+                <span>{renderBidiText(subPrimary, language)}</span>
               </a>
             );
           })}
@@ -725,8 +814,12 @@ export const ModuleContentView: React.FC<{
             >
               <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200/70 dark:border-white/[0.06] pb-4">
                 <div>
-                  <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white leading-snug">
-                    {subTitlePrimary}
+                  <h2
+                    className={`text-lg sm:text-xl font-bold text-slate-900 dark:text-white leading-snug ${
+                      isRTL ? 'text-right' : 'text-left'
+                    }`}
+                  >
+                    {renderBidiText(subTitlePrimary, language)}
                   </h2>
                   {language !== 'en' && (
                     <div className={`mt-1 ${isRTL ? 'text-right' : 'text-left'}`}>
@@ -756,7 +849,7 @@ export const ModuleContentView: React.FC<{
                       isRTL ? 'text-right' : 'text-left'
                     }`}
                   >
-                    {p}
+                    {renderBidiText(p, language)}
                   </p>
                 ))}
               </div>
@@ -764,32 +857,39 @@ export const ModuleContentView: React.FC<{
               {/* Technical Bullet Points with Strict LTR Isolation */}
               {sub.bulletPoints && sub.bulletPoints.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                  {sub.bulletPoints.map((bp, bpIdx) => (
-                    <div
-                      key={bp.termEn}
-                      className="p-4 sm:p-5 rounded-xl border border-slate-200/80 dark:border-white/[0.06] bg-slate-50/70 dark:bg-white/[0.02] space-y-2"
-                    >
-                      <code
-                        dir="ltr"
-                        className="ltr-inline text-xs font-mono font-bold text-blue-600 dark:text-blue-400"
+                  {sub.bulletPoints.map((bp, bpIdx) => {
+                    const bulletDesc =
+                      language === 'en'
+                        ? enSub?.bulletPoints?.[bpIdx]?.descEn ||
+                          enSub?.bulletPoints?.find((b) => b.termEn === bp.termEn)?.descEn ||
+                          bp.descFa
+                        : bp.descFa;
+                    return (
+                      <div
+                        key={bp.termEn}
+                        className="p-4 sm:p-5 rounded-xl border border-slate-200/80 dark:border-white/[0.06] bg-slate-50/70 dark:bg-white/[0.02] space-y-2"
                       >
-                        {bp.termEn}
-                      </code>
-                      <p className="text-xs sm:text-sm leading-6 text-slate-700 dark:text-slate-300">
-                        {language === 'en'
-                          ? (enSub?.bulletPoints?.[bpIdx]?.descEn ||
-                              enSub?.bulletPoints?.find((b) => b.termEn === bp.termEn)?.descEn ||
-                              bp.descFa)
-                          : bp.descFa}
-                      </p>
-                    </div>
-                  ))}
+                        <code
+                          dir="ltr"
+                          className="ltr-inline text-xs font-mono font-bold text-blue-600 dark:text-blue-400"
+                        >
+                          {bp.termEn}
+                        </code>
+                        <p className="text-xs sm:text-sm leading-6 text-slate-700 dark:text-slate-300">
+                          {renderBidiText(bulletDesc, language)}
+                        </p>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
               {/* Architectural Comparison Matrix */}
               {sub.comparisonTable && (
-                <div className="overflow-x-auto rounded-xl border border-slate-200/80 dark:border-white/[0.07] my-4">
+                <div
+                  data-testid={`comparison-table-${sub.id}`}
+                  className="overflow-x-auto rounded-xl border border-slate-200/80 dark:border-white/[0.07] my-4"
+                >
                   <table className={`w-full ${isRTL ? 'text-right' : 'text-left'} border-collapse text-xs sm:text-sm`}>
                     <thead>
                       <tr className="bg-slate-50 dark:bg-white/[0.03] text-slate-800 dark:text-slate-200 border-b border-slate-200/80 dark:border-white/[0.07]">
@@ -800,7 +900,7 @@ export const ModuleContentView: React.FC<{
                           : sub.comparisonTable.headers
                         ).map((h) => (
                           <th key={h} className="py-3.5 px-4 font-bold">
-                            {h}
+                            {renderBidiText(h, language)}
                           </th>
                         ))}
                       </tr>
@@ -814,17 +914,17 @@ export const ModuleContentView: React.FC<{
                           key={row.criterion}
                           className="hover:bg-slate-50/80 dark:hover:bg-white/[0.02] transition-colors"
                         >
-                          <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
-                            <span dir="ltr" className="ltr-inline">{row.criterion}</span>
+                          <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white leading-6">
+                            {renderBidiText(row.criterion, language)}
                           </td>
                           <td className="py-3.5 px-4 text-slate-700 dark:text-slate-300 leading-6">
-                            {row.optionA}
+                            {renderBidiText(row.optionA, language)}
                           </td>
                           <td className="py-3.5 px-4 text-slate-700 dark:text-slate-300 leading-6">
-                            {row.optionB}
+                            {renderBidiText(row.optionB, language)}
                           </td>
                           <td className="py-3.5 px-4 font-medium text-blue-600 dark:text-blue-400 leading-6">
-                            {row.architectVerdict}
+                            {renderBidiText(row.architectVerdict, language)}
                           </td>
                         </tr>
                       ))}
@@ -844,9 +944,11 @@ export const ModuleContentView: React.FC<{
                 >
                   <div className="flex items-center gap-2 text-xs font-bold">
                     <ShieldCheck className="w-4 h-4 text-blue-500 shrink-0" />
-                    <span>{enSub.callout.titleEn}</span>
+                    <span>{renderBidiText(enSub.callout.titleEn, 'en')}</span>
                   </div>
-                  <p className="text-xs sm:text-sm leading-6 opacity-90">{enSub.callout.contentEn}</p>
+                  <p className="text-xs sm:text-sm leading-6 opacity-90">
+                    {renderBidiText(enSub.callout.contentEn, 'en')}
+                  </p>
                 </div>
               ) : (
                 sub.callouts?.map((c) => (
@@ -860,9 +962,11 @@ export const ModuleContentView: React.FC<{
                   >
                     <div className="flex items-center gap-2 text-xs font-bold">
                       <ShieldCheck className="w-4 h-4 text-blue-500 shrink-0" />
-                      <span>{c.title}</span>
+                      <span>{renderBidiText(c.title, language)}</span>
                     </div>
-                    <p className="text-xs sm:text-sm leading-6 opacity-90">{c.content}</p>
+                    <p className="text-xs sm:text-sm leading-6 opacity-90">
+                      {renderBidiText(c.content, language)}
+                    </p>
                   </div>
                 ))
               )}
@@ -882,14 +986,20 @@ export const ModuleContentView: React.FC<{
         <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-white dark:bg-[#0c121e] flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-0.5">
             <div className="text-xs font-bold text-slate-900 dark:text-white">
-              {language === 'en'
-                ? `End of Module 0${module.number}: ${module.titleEn}`
-                : `پایان فصل ۰${module.number}: ${module.titleFa}`}
+              {renderBidiText(
+                language === 'en'
+                  ? `End of Module ${formatLocalizedNumber(module.number, 'en', true)}: ${module.titleEn}`
+                  : `پایان فصل ${formatLocalizedNumber(module.number, 'fa', true)}: ${module.titleFa}`,
+                language
+              )}
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              {language === 'en'
-                ? 'Mark this chapter as completed to record your progress and unlock certification XP.'
-                : 'برای ثبت پیشرفت در کارنامه مهندسی و دریافت امتیاز XP، وضعیت مطالعه این فصل را تکمیل کنید.'}
+              {renderBidiText(
+                language === 'en'
+                  ? 'Mark this chapter as completed to record your progress and unlock certification XP.'
+                  : 'برای ثبت پیشرفت در کارنامه مهندسی و دریافت امتیاز XP، وضعیت مطالعه این فصل را تکمیل کنید.',
+                language
+              )}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -940,9 +1050,12 @@ export const ModuleContentView: React.FC<{
                 </span>
               </div>
               <div className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                {language === 'en'
-                  ? `${prevMod.number}. ${prevMod.titleEn}`
-                  : `${prevMod.number}. ${prevMod.titleFa}`}
+                {renderBidiText(
+                  language === 'en'
+                    ? `${prevMod.number}. ${prevMod.titleEn}`
+                    : `${formatLocalizedNumber(prevMod.number, 'fa')}. ${prevMod.titleFa}`,
+                  language
+                )}
               </div>
               {language !== 'en' && (
                 <div className={isRTL ? 'text-right' : 'text-left'}>
@@ -974,9 +1087,12 @@ export const ModuleContentView: React.FC<{
                 </span>
               </div>
               <div className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                {language === 'en'
-                  ? `${nextMod.number}. ${nextMod.titleEn}`
-                  : `${nextMod.number}. ${nextMod.titleFa}`}
+                {renderBidiText(
+                  language === 'en'
+                    ? `${nextMod.number}. ${nextMod.titleEn}`
+                    : `${formatLocalizedNumber(nextMod.number, 'fa')}. ${nextMod.titleFa}`,
+                  language
+                )}
               </div>
               {language !== 'en' && (
                 <div className={isRTL ? 'text-right' : 'text-left'}>
@@ -994,3 +1110,4 @@ export const ModuleContentView: React.FC<{
     </div>
   );
 };
+

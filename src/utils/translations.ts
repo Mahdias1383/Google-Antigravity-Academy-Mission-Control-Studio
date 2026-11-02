@@ -99,6 +99,17 @@ export interface TranslationDictionary {
   tableColTraditional: string;
   tableColAntigravity: string;
   tableColVerdict: string;
+
+  // Invite & Viral Sharing
+  inviteAndShare: string;
+  inviteModalTitle: string;
+  inviteModalSubtitle: string;
+  copyInviteLink: string;
+  inviteCopied: string;
+  shareTelegram: string;
+  shareTwitter: string;
+  shareLinkedIn: string;
+  shareWhatsApp: string;
 }
 
 export const APP_TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
@@ -192,6 +203,16 @@ export const APP_TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
     tableColTraditional: 'رویکرد سنتی / دستیار سنکرون',
     tableColAntigravity: 'محیط هوشمند Google Antigravity',
     tableColVerdict: 'قضاوت معمار سیستم',
+
+    inviteAndShare: 'معرفی و اشتراک',
+    inviteModalTitle: 'معرفی به مهندسان و دعوت همکاران',
+    inviteModalSubtitle: 'لینک اختصاصی خود را با همکاران و جامعه توسعه‌دهندگان به اشتراک بگذارید و امتیاز کسب کنید',
+    copyInviteLink: 'کپی لینک اختصاصی دعوت',
+    inviteCopied: 'لینک اختصاصی با موفقیت کپی شد!',
+    shareTelegram: 'اشتراک در تلگرام',
+    shareTwitter: 'اشتراک در توییتر / X',
+    shareLinkedIn: 'اشتراک در لینکدین',
+    shareWhatsApp: 'اشتراک در واتساپ',
   },
 
   en: {
@@ -284,6 +305,16 @@ export const APP_TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
     tableColTraditional: 'Synchronous Copilot',
     tableColAntigravity: 'Google Antigravity',
     tableColVerdict: 'Architectural Verdict',
+
+    inviteAndShare: 'Share & Invite',
+    inviteModalTitle: 'Invite Engineers & Share Academy',
+    inviteModalSubtitle: 'Share your personal invite link with peers and community to earn architect XP',
+    copyInviteLink: 'Copy Personal Invite Link',
+    inviteCopied: 'Invite link copied to clipboard!',
+    shareTelegram: 'Share on Telegram',
+    shareTwitter: 'Share on X / Twitter',
+    shareLinkedIn: 'Share on LinkedIn',
+    shareWhatsApp: 'Share on WhatsApp',
   },
 };
 

@@ -28,6 +28,7 @@ import {
   ChevronLeft,
   Glasses,
   Minimize2,
+  Share2,
   LayoutGrid,
   Menu,
   Layers,
@@ -74,6 +75,7 @@ import { MissionMilestoneOverlay } from './components/MissionMilestoneToast';
 import { PWAInstallButton, OfflineIndicator } from './components/PWAInstallAndOffline';
 import { PomodoroHeaderWidget } from './components/PomodoroHeaderWidget';
 import { Antigravity3DGame } from './components/Antigravity3DGame';
+import { InviteShareModal } from './components/InviteShareModal';
 
 type ActiveWorkspaceSection =
   | 'curriculum'
@@ -100,6 +102,8 @@ function MainWorkspace() {
   const [megaMenuOpen, setMegaMenuOpen] = useState<boolean>(false);
   const [searchModalOpen, setSearchModalOpen] = useState<boolean>(false);
   const [pdfPayload, setPdfPayload] = useState<PrintableDocumentPayload | null>(null);
+  const [inviteModalOpen, setInviteModalOpen] = useState<boolean>(false);
+  const [userBonusXp, setUserBonusXp] = useState<number>(0);
 
   // Comprehensive Sidebar Groups State (Default: all closed per user request)
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
@@ -1287,8 +1291,12 @@ function MainWorkspace() {
     <div
       id="top"
       dir={isRTL ? 'rtl' : 'ltr'}
-      className="h-screen overflow-hidden flex flex-col bg-[#f8fafc] dark:bg-[#090d16] text-slate-900 dark:text-slate-100 transition-colors"
+      className="h-screen overflow-hidden flex flex-col bg-[#f8fafc] dark:bg-[#090d16] text-slate-900 dark:text-slate-100 transition-colors relative"
     >
+      {/* Ambient Glassmorphic Lighting Accents (Linear/Raycast Studio Depth) */}
+      <div className="fixed top-0 left-1/4 w-[500px] h-[500px] bg-gradient-to-br from-blue-600/10 to-indigo-600/5 rounded-full blur-[120px] pointer-events-none -z-10" />
+      <div className="fixed bottom-0 right-1/4 w-[450px] h-[450px] bg-gradient-to-tr from-indigo-600/10 to-emerald-500/5 rounded-full blur-[130px] pointer-events-none -z-10" />
+
       {/* Precision Top Header with Dynamic Breadcrumb & Essential Controls */}
       <header className="sticky top-0 z-30 h-14 border-b border-slate-200/80 dark:border-white/[0.08] bg-white/95 dark:bg-[#090d16]/95 backdrop-blur-xl transition-colors">
         <div className="h-full px-3 sm:px-6 max-w-[1700px] mx-auto flex items-center justify-between gap-3">
@@ -1416,8 +1424,24 @@ function MainWorkspace() {
             >
               <span>LVL 4</span>
               <span className="opacity-40">·</span>
-              <span>2900 XP</span>
+              <span>{2900 + userBonusXp} XP</span>
             </div>
+
+            {/* Viral Share & Invite Academy Button */}
+            <button
+              type="button"
+              data-testid="open-invite-modal-btn"
+              onClick={() => setInviteModalOpen(true)}
+              className="h-8 px-2 sm:px-2.5 rounded-lg border border-indigo-500/30 bg-gradient-to-r from-indigo-500/10 via-blue-500/10 to-indigo-500/15 text-indigo-600 dark:text-indigo-400 hover:from-indigo-500/20 hover:to-blue-500/25 hover:border-indigo-500/50 transition-all flex items-center gap-1.5 cursor-pointer text-xs font-semibold shrink-0 shadow-2xs hover:shadow-sm group active:scale-95"
+              title={t('inviteAndShare')}
+              aria-label={t('inviteAndShare')}
+            >
+              <Share2 className="w-3.5 h-3.5 text-indigo-500 group-hover:scale-110 transition-transform" />
+              <span className="hidden xl:inline">{t('inviteAndShare')}</span>
+              <span className="font-mono text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 border border-indigo-500/25">
+                +250 XP
+              </span>
+            </button>
 
             {/* Quick Header Utility Deck */}
             <div className="h-8 px-1 rounded-lg border border-slate-200/80 dark:border-white/[0.08] bg-slate-100/75 dark:bg-[#0c121e] flex items-center gap-0.5 shrink-0">
@@ -2027,6 +2051,19 @@ function MainWorkspace() {
           </div>
         </div>
       )}
+
+      {/* Viral Mastery & Colleague Invite Modal */}
+      <InviteShareModal
+        isOpen={inviteModalOpen}
+        onClose={() => setInviteModalOpen(false)}
+        completedModulesCount={completedModules.length}
+        totalModulesCount={ALL_CURRICULUM_MODULES.length}
+        userXp={2900 + userBonusXp}
+        userLevel={4}
+        onRewardXp={(amount) => {
+          setUserBonusXp((prev) => prev + amount);
+        }}
+      />
 
       {/* PWA Offline Mode Connectivity Indicator */}
       <OfflineIndicator />

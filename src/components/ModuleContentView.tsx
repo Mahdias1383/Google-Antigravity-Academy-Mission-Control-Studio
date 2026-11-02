@@ -552,9 +552,9 @@ export const ModuleContentView: React.FC<{
   const displaySummary = language === 'en' && enContent?.summaryEn ? enContent.summaryEn : module.summaryFa;
 
   return (
-    <div className="space-y-10 pb-16">
+    <div className="space-y-10 pb-16 animate-fade-in-up">
       {/* Module Hero Header Surface */}
-      <div className="rounded-2xl border border-slate-200/90 dark:border-white/[0.08] bg-gradient-to-b from-white via-white to-slate-50/60 dark:from-[#0d1424] dark:via-[#0c121e] dark:to-[#080d17] p-6 sm:p-9 space-y-7 shadow-xs">
+      <div className="rounded-2xl border border-slate-200/90 dark:border-white/[0.08] bg-gradient-to-b from-white via-white to-slate-50/60 dark:from-[#0d1424] dark:via-[#0c121e] dark:to-[#080d17] p-6 sm:p-9 space-y-7 shadow-xs relative overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/70 dark:border-white/[0.06] pb-4">
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <span className="font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-md">
@@ -630,12 +630,12 @@ export const ModuleContentView: React.FC<{
               ? enContent.keyTakeaways.map((kt) => (
                   <div
                     key={kt.titleEn}
-                    className="p-4 sm:p-5 rounded-xl border border-slate-200/80 dark:border-white/[0.07] bg-slate-50/70 dark:bg-slate-900/30 hover:border-blue-500/30 transition-all space-y-1.5"
+                    className="p-4 sm:p-5 rounded-xl border border-slate-200/80 dark:border-white/[0.07] bg-slate-50/70 dark:bg-slate-900/30 card-interactive space-y-1.5 group"
                   >
                     <div dir="ltr" className="ltr-inline text-[11px] font-mono font-semibold text-blue-600 dark:text-blue-400">
                       {kt.metricOrBadge}
                     </div>
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                       {kt.titleEn}
                     </h3>
                     <p className="text-xs sm:text-[13px] leading-6 text-slate-600 dark:text-slate-400">
@@ -646,12 +646,12 @@ export const ModuleContentView: React.FC<{
               : module.keyTakeaways.map((kt) => (
                   <div
                     key={kt.titleFa}
-                    className="p-4 sm:p-5 rounded-xl border border-slate-200/80 dark:border-white/[0.07] bg-slate-50/70 dark:bg-slate-900/30 hover:border-blue-500/30 transition-all space-y-1.5"
+                    className="p-4 sm:p-5 rounded-xl border border-slate-200/80 dark:border-white/[0.07] bg-slate-50/70 dark:bg-slate-900/30 card-interactive space-y-1.5 group"
                   >
                     <div dir="ltr" className="ltr-inline text-[11px] font-mono font-semibold text-blue-600 dark:text-blue-400">
                       {kt.metricOrBadge}
                     </div>
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                       {kt.titleFa}
                     </h3>
                     <p className="text-xs sm:text-[13px] leading-6 text-slate-600 dark:text-slate-400">
@@ -721,7 +721,7 @@ export const ModuleContentView: React.FC<{
             <section
               key={sub.id}
               id={sub.id}
-              className="rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-white dark:bg-[#0c121e] p-6 sm:p-9 space-y-6 shadow-xs"
+              className="rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-white dark:bg-[#0c121e] p-6 sm:p-9 space-y-6 shadow-xs card-interactive"
             >
               <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200/70 dark:border-white/[0.06] pb-4">
                 <div>

@@ -2387,4 +2387,44 @@ test('Landing Page & Profile Page: breadcrumbs, section catalogs, and score stor
   assert.deepEqual(typeof stored, 'object');
 });
 
+test('Application Shell Redesign: Header and Sidebar Launchpad support all core workspaces cleanly in FA and EN', () => {
+  const coreSections = ['landing', 'curriculum', 'simulator', 'achievements', 'profile'] as const;
+
+  for (const sec of coreSections) {
+    const bcFa = buildBreadcrumbDescriptorWithTooltips({
+      activeSection: sec,
+      language: 'fa',
+      currentModule: {
+        number: 1,
+        titleFa: 'آشنایی با آنتی‌گرویتی',
+        titleEn: 'Introduction to Antigravity',
+        summaryFa: 'خلاصه',
+        readingTime: '10 min',
+        difficulty: 'Easy',
+      },
+      formattedModNumber: '۱',
+    });
+    assert.ok(bcFa.group.length > 0, `Breadcrumb group should not be empty for ${sec}`);
+    assert.ok(bcFa.item.length > 0, `Breadcrumb item should not be empty for ${sec}`);
+    assert.ok(bcFa.itemTooltip.badge.length > 0, `Tooltip badge should exist for ${sec}`);
+
+    const bcEn = buildBreadcrumbDescriptorWithTooltips({
+      activeSection: sec,
+      language: 'en',
+      currentModule: {
+        number: 1,
+        titleFa: 'آشنایی با آنتی‌گرویتی',
+        titleEn: 'Introduction to Antigravity',
+        summaryFa: 'Summary',
+        readingTime: '10 min',
+        difficulty: 'Easy',
+      },
+      formattedModNumber: '1',
+    });
+    assert.ok(bcEn.group.length > 0);
+    assert.ok(bcEn.item.length > 0);
+  }
+});
+
+
 

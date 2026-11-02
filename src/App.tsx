@@ -562,6 +562,7 @@ function MainWorkspace() {
   }
 
   // Reusable Comprehensive Sidebar Content (Unified across Desktop and Mobile Drawer)
+  // Reusable Comprehensive Sidebar Content (Unified across Desktop and Mobile Drawer)
   const renderComprehensiveSidebarContent = (isMobile = false) => (
     <div className="flex flex-col h-full justify-between gap-5 text-slate-800 dark:text-slate-200">
       <div className="space-y-4">
@@ -572,12 +573,14 @@ function MainWorkspace() {
             onClick={(e) => {
               e.preventDefault();
               handleNavigate('landing');
+              if (isMobile) setSidebarOpen(false);
             }}
             className="flex items-center gap-2.5 group focus:outline-none min-w-0 cursor-pointer"
+            title={language === 'en' ? 'Google Antigravity Home' : 'صفحه اصلی گوگل آنتی‌گرویتی'}
           >
-            <div className="relative">
+            <div className="relative shrink-0">
               <div className="absolute -inset-0.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 opacity-60 blur-xs group-hover:opacity-100 transition-opacity" />
-              <div className="relative flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 text-white font-mono text-xs font-black shadow-md shadow-blue-500/25 ring-1 ring-white/20 group-hover:scale-105 transition-transform shrink-0">
+              <div className="relative flex items-center justify-center w-8.5 h-8.5 rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 text-white font-mono text-xs font-black shadow-md shadow-blue-500/25 ring-1 ring-white/20 group-hover:scale-105 transition-transform">
                 AG
               </div>
             </div>
@@ -586,13 +589,16 @@ function MainWorkspace() {
                 <span className="text-sm font-extrabold tracking-tight text-slate-900 dark:text-white whitespace-nowrap">
                   {language === 'en' ? 'Google Antigravity' : 'گوگل آنتی‌گرویتی'}
                 </span>
-                <span className="text-[9px] font-mono px-1 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold border border-blue-500/25 shadow-2xs">
-                  PRO
+                <span className="text-[9px] font-mono px-1.5 py-0.2 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold border border-blue-500/25 shadow-2xs">
+                  v2.4 PRO
                 </span>
               </div>
-              <span className={`text-[10px] text-slate-500 dark:text-slate-400 truncate ${language === 'en' ? 'font-mono' : 'font-sans'}`}>
-                {language === 'en' ? 'Agent-First Architecture Workbench' : 'آکادمی و استودیوهای مهندسی ایجنت'}
-              </span>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className={`text-[10px] text-slate-500 dark:text-slate-400 truncate ${language === 'en' ? 'font-mono' : 'font-sans'}`}>
+                  {language === 'en' ? 'Agent-First Workbench · Live' : 'میزکار معماری ایجنت · فعال'}
+                </span>
+              </div>
             </div>
           </a>
 
@@ -615,7 +621,7 @@ function MainWorkspace() {
             setSearchModalOpen(true);
             if (isMobile) setSidebarOpen(false);
           }}
-          className="w-full px-3 py-2 rounded-xl border border-slate-200/90 dark:border-white/[0.08] bg-slate-100/80 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/[0.06] hover:border-blue-500/40 hover:shadow-sm transition-all flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 cursor-pointer group shadow-2xs"
+          className="w-full px-3 py-2.5 rounded-xl border border-slate-200/90 dark:border-white/[0.08] bg-slate-100/80 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/[0.06] hover:border-blue-500/40 hover:shadow-sm transition-all flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 cursor-pointer group shadow-2xs"
         >
           <div className="flex items-center gap-2 min-w-0">
             <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-500 transition-colors shrink-0" />
@@ -625,13 +631,13 @@ function MainWorkspace() {
           </div>
           <kbd
             dir="ltr"
-            className="ltr-inline px-1.5 py-0.5 text-[10px] font-mono font-semibold text-slate-500 dark:text-slate-400 bg-white dark:bg-[#090d16] border border-slate-200/90 dark:border-white/[0.1] rounded shrink-0 shadow-2xs"
+            className="ltr-inline px-1.5 py-0.5 text-[10px] font-mono font-semibold text-slate-500 dark:text-slate-400 bg-white dark:bg-[#090d16] border border-slate-200/90 dark:border-white/[0.1] rounded-md shrink-0 shadow-2xs"
           >
             Ctrl+K
           </kbd>
         </button>
 
-        {/* Quick Top-Level Portal Links: Landing Page & Profile */}
+        {/* Quick Top-Level Portal Links: 4-Button Modern Launchpad */}
         <div className="grid grid-cols-2 gap-1.5">
           <button
             type="button"
@@ -640,9 +646,9 @@ function MainWorkspace() {
               handleNavigate('landing');
               if (isMobile) setSidebarOpen(false);
             }}
-            className={`p-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`p-2.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
               activeSection === 'landing'
-                ? 'bg-blue-600/15 border-blue-500/40 text-blue-600 dark:text-blue-400 shadow-2xs'
+                ? 'bg-blue-600/15 border-blue-500/40 text-blue-600 dark:text-blue-400 shadow-2xs ring-1 ring-blue-500/20'
                 : 'border-slate-200/80 dark:border-white/[0.06] bg-slate-50 dark:bg-[#0c121e] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-blue-500/30'
             }`}
           >
@@ -652,19 +658,53 @@ function MainWorkspace() {
 
           <button
             type="button"
+            data-testid="sidebar-nav-curriculum-btn"
+            onClick={() => {
+              handleNavigate('curriculum');
+              if (isMobile) setSidebarOpen(false);
+            }}
+            className={`p-2.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              activeSection === 'curriculum'
+                ? 'bg-blue-600/15 border-blue-500/40 text-blue-600 dark:text-blue-400 shadow-2xs ring-1 ring-blue-500/20'
+                : 'border-slate-200/80 dark:border-white/[0.06] bg-slate-50 dark:bg-[#0c121e] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-blue-500/30'
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+            <span className="truncate">{language === 'en' ? 'Curriculum' : 'سرفصل‌ها'}</span>
+          </button>
+
+          <button
+            type="button"
             data-testid="sidebar-nav-profile-btn"
             onClick={() => {
               handleNavigate('profile');
               if (isMobile) setSidebarOpen(false);
             }}
-            className={`p-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`p-2.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
               activeSection === 'profile'
-                ? 'bg-indigo-600/15 border-indigo-500/40 text-indigo-600 dark:text-indigo-400 shadow-2xs'
+                ? 'bg-indigo-600/15 border-indigo-500/40 text-indigo-600 dark:text-indigo-400 shadow-2xs ring-1 ring-indigo-500/20'
                 : 'border-slate-200/80 dark:border-white/[0.06] bg-slate-50 dark:bg-[#0c121e] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-indigo-500/30'
             }`}
           >
             <GraduationCap className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-            <span className="truncate">{language === 'en' ? 'Profile' : 'کارنامه'}</span>
+            <span className="truncate">{language === 'en' ? 'Profile' : 'کارنامه و رتبه'}</span>
+          </button>
+
+          <button
+            type="button"
+            data-testid="sidebar-nav-achievements-btn"
+            onClick={() => {
+              handleNavigate('achievements');
+              if (isMobile) setSidebarOpen(false);
+            }}
+            className={`p-2.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              activeSection === 'achievements'
+                ? 'bg-amber-600/15 border-amber-500/40 text-amber-600 dark:text-amber-400 shadow-2xs ring-1 ring-amber-500/20'
+                : 'border-slate-200/80 dark:border-white/[0.06] bg-slate-50 dark:bg-[#0c121e] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-amber-500/30'
+            }`}
+          >
+            <Award className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            <span className="truncate">{language === 'en' ? 'Achievements' : 'دستاوردها'}</span>
           </button>
         </div>
 
@@ -1733,19 +1773,24 @@ function MainWorkspace() {
             handleNavigate('profile');
             if (isMobile) setSidebarOpen(false);
           }}
-          className="p-3 rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200/60 dark:from-[#0d1424] dark:via-[#0b101c] dark:to-[#090d16] hover:border-indigo-500/40 transition-all flex items-center justify-between gap-2 shadow-2xs cursor-pointer group"
+          className="p-3 rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200/60 dark:from-[#0d1424] dark:via-[#0b101c] dark:to-[#090d16] hover:border-indigo-500/40 hover:shadow-sm transition-all flex items-center justify-between gap-2 shadow-2xs cursor-pointer group"
         >
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="relative shrink-0">
-              <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-500 text-white font-mono text-xs font-extrabold flex items-center justify-center shadow-xs">
+              <span className="w-8.5 h-8.5 rounded-xl bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-500 text-white font-mono text-xs font-extrabold flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
                 AR
               </span>
               <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#090d16]" />
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                {language === 'en' ? 'Aria Rostami' : 'آریا رستمی'}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                  {language === 'en' ? 'Aria Rostami' : 'آریا رستمی'}
+                </span>
+                <span className="text-[9px] font-mono px-1 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-500/20">
+                  LVL 4
+                </span>
+              </div>
               <span className="text-[10px] text-amber-500 dark:text-amber-400 font-mono font-medium truncate tabular-nums">
                 Lead Architect · {2900 + userBonusXp} XP
               </span>
@@ -1791,17 +1836,20 @@ function MainWorkspace() {
       <div className="fixed bottom-0 right-1/4 w-[450px] h-[450px] bg-gradient-to-tr from-indigo-600/10 to-emerald-500/5 rounded-full blur-[130px] pointer-events-none -z-10" />
 
       {/* Precision Top Header with Dynamic Breadcrumb & Essential Controls */}
-      <header className="sticky top-0 z-30 h-14 border-b border-slate-200/80 dark:border-white/[0.08] bg-white/95 dark:bg-[#090d16]/95 backdrop-blur-xl transition-colors">
-        <div className="h-full px-3 sm:px-6 max-w-[1700px] mx-auto flex items-center justify-between gap-3">
-          {/* Start: Sidebar Toggle & Hierarchical Breadcrumbs */}
+      {/* Precision Top Header with Dynamic Breadcrumb, Segmented App Navigation & Command Controls */}
+      <header className="sticky top-0 z-30 h-16 border-b border-slate-200/80 dark:border-white/[0.08] bg-white/90 dark:bg-[#070b14]/90 backdrop-blur-2xl transition-colors shadow-2xs">
+        <div className="h-full px-3 sm:px-6 max-w-[1780px] mx-auto flex items-center justify-between gap-3">
+          {/* Zone 1: Sidebar Toggle, Brand Emblem & Hierarchical Breadcrumbs */}
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            {/* Sidebar Toggle Button */}
             <button
               type="button"
+              data-testid="header-sidebar-toggle-btn"
               onClick={() => setSidebarOpen((prev) => !prev)}
-              className={`h-8 sm:h-9 px-2.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+              className={`h-9 w-9 rounded-xl border text-xs font-semibold flex items-center justify-center transition-all cursor-pointer shrink-0 ${
                 sidebarOpen
-                  ? 'border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                  : 'border-slate-200/80 dark:border-white/[0.08] bg-slate-100/70 dark:bg-[#0c121e] text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                  ? 'border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400 shadow-2xs'
+                  : 'border-slate-200/80 dark:border-white/[0.08] bg-slate-100/70 dark:bg-[#0c121e] text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-blue-500/30'
               }`}
               aria-label="Toggle Side Menu"
               title={sidebarOpen ? (language === 'en' ? 'Collapse Menu (Ctrl+B)' : 'بستن منو (Ctrl+B)') : (language === 'en' ? 'Expand Menu (Ctrl+B)' : 'باز کردن منو (Ctrl+B)')}
@@ -1811,10 +1859,38 @@ function MainWorkspace() {
               ) : (
                 <PanelRightOpen className="w-4 h-4 text-slate-400 shrink-0" />
               )}
-              <span className="hidden sm:inline text-xs">{language === 'en' ? 'Menu' : 'منوی جامع'}</span>
             </button>
 
-            <span className="h-4 w-px bg-slate-200 dark:bg-white/[0.08] shrink-0" aria-hidden="true" />
+            {/* App Brand Mark */}
+            <a
+              href="#top"
+              data-testid="header-brand-link"
+              onClick={(e) => {
+                e.preventDefault();
+                handleNavigate('landing');
+              }}
+              className="flex items-center gap-2 group cursor-pointer select-none"
+              title={language === 'en' ? 'Google Antigravity Home' : 'صفحه اصلی گوگل آنتی‌گرویتی'}
+            >
+              <div className="relative shrink-0">
+                <div className="absolute -inset-0.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 opacity-60 blur-xs group-hover:opacity-100 transition-opacity" />
+                <div className="relative flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 text-white font-mono text-xs font-black shadow-md shadow-blue-500/25 ring-1 ring-white/20 group-hover:scale-105 transition-transform">
+                  AG
+                </div>
+              </div>
+              <div className="hidden sm:flex flex-col min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-extrabold tracking-tight text-slate-900 dark:text-white whitespace-nowrap">
+                    {language === 'en' ? 'Google Antigravity' : 'آنتی‌گرویتی'}
+                  </span>
+                  <span className="text-[9px] font-mono px-1 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold border border-blue-500/25 shadow-2xs">
+                    PRO
+                  </span>
+                </div>
+              </div>
+            </a>
+
+            <span className="h-4 w-px bg-slate-200 dark:bg-white/[0.08] shrink-0 hidden lg:inline" aria-hidden="true" />
 
             {/* Hierarchical Breadcrumb with Descriptive Hover Tooltips */}
             <nav
@@ -1899,19 +1975,22 @@ function MainWorkspace() {
             </nav>
           </div>
 
-          {/* Middle: Standard Top Navigation Tabs */}
-          <nav aria-label="Primary Navigation" className="hidden lg:flex items-center gap-1">
+          {/* Zone 2: App Segmented Navigation Tabs */}
+          <nav
+            aria-label="Primary Navigation"
+            className="hidden lg:flex items-center p-1 rounded-2xl bg-slate-100/80 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.06] shadow-2xs"
+          >
             <button
               type="button"
               data-testid="header-nav-landing-btn"
               onClick={() => handleNavigate('landing')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 activeSection === 'landing'
-                  ? 'bg-blue-600/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.05]'
+                  ? 'bg-white dark:bg-blue-600 text-blue-600 dark:text-white shadow-xs ring-1 ring-black/5 dark:ring-blue-400/30'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/[0.04]'
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              <Sparkles className="w-3.5 h-3.5 text-blue-500 dark:text-inherit" />
               <span>{language === 'en' ? 'Home' : 'صفحه اصلی'}</span>
             </button>
 
@@ -1919,27 +1998,52 @@ function MainWorkspace() {
               type="button"
               data-testid="header-nav-curriculum-btn"
               onClick={() => handleNavigate('curriculum')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 activeSection === 'curriculum'
-                  ? 'bg-blue-600/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.05]'
+                  ? 'bg-white dark:bg-blue-600 text-blue-600 dark:text-white shadow-xs ring-1 ring-black/5 dark:ring-blue-400/30'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/[0.04]'
               }`}
             >
-              <BookOpen className="w-3.5 h-3.5" />
+              <BookOpen className="w-3.5 h-3.5 text-blue-500 dark:text-inherit" />
               <span>{language === 'en' ? 'Curriculum' : 'سرفصل‌ها'}</span>
+            </button>
+
+            <button
+              type="button"
+              data-testid="header-nav-studios-btn"
+              onClick={() => {
+                if (!['simulator', 'guardrails', 'mcp', 'scenarios'].includes(activeSection)) {
+                  handleNavigate('simulator');
+                }
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                ['simulator', 'guardrails', 'mcp', 'scenarios'].includes(activeSection)
+                  ? 'bg-white dark:bg-emerald-600 text-emerald-600 dark:text-white shadow-xs ring-1 ring-black/5 dark:ring-emerald-400/30'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/[0.04]'
+              }`}
+            >
+              <Terminal className="w-3.5 h-3.5 text-emerald-500 dark:text-inherit" />
+              <span>{language === 'en' ? 'Studios' : 'استودیوها'}</span>
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  ['simulator', 'guardrails', 'mcp', 'scenarios'].includes(activeSection)
+                    ? 'bg-emerald-400 animate-pulse'
+                    : 'bg-emerald-500/40'
+                }`}
+              />
             </button>
 
             <button
               type="button"
               data-testid="header-nav-achievements-btn"
               onClick={() => handleNavigate('achievements')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 activeSection === 'achievements'
-                  ? 'bg-blue-600/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.05]'
+                  ? 'bg-white dark:bg-amber-600 text-amber-600 dark:text-white shadow-xs ring-1 ring-black/5 dark:ring-amber-400/30'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/[0.04]'
               }`}
             >
-              <Award className="w-3.5 h-3.5" />
+              <Award className="w-3.5 h-3.5 text-amber-500 dark:text-inherit" />
               <span>{language === 'en' ? 'Achievements' : 'دستاوردها'}</span>
             </button>
 
@@ -1947,33 +2051,34 @@ function MainWorkspace() {
               type="button"
               data-testid="header-nav-profile-btn"
               onClick={() => handleNavigate('profile')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 activeSection === 'profile'
-                  ? 'bg-indigo-600/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.05]'
+                  ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-xs ring-1 ring-black/5 dark:ring-indigo-400/30'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/[0.04]'
               }`}
             >
-              <User className="w-3.5 h-3.5 text-indigo-500" />
-              <span>{language === 'en' ? 'Profile' : 'پروفایل من'}</span>
+              <GraduationCap className="w-3.5 h-3.5 text-indigo-500 dark:text-inherit" />
+              <span>{language === 'en' ? 'Profile' : 'پروفایل'}</span>
             </button>
           </nav>
 
-          {/* End: Quick Search, Pomodoro, XP Badge & Controls */}
+          {/* Zone 3: Quick Search, Pomodoro, XP Badge, Utility Deck & User Avatar */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {/* Quick Search Ctrl+K Button */}
             <button
               type="button"
+              data-testid="header-quick-search-btn"
               onClick={() => setSearchModalOpen(true)}
-              className="h-8 px-2.5 sm:px-3 rounded-lg border border-slate-200/90 dark:border-white/[0.08] bg-slate-100/75 dark:bg-[#0c121e] hover:border-blue-500/40 transition-all flex items-center gap-2 cursor-pointer group shrink-0"
+              className="h-9 px-2.5 sm:px-3 rounded-xl border border-slate-200/90 dark:border-white/[0.08] bg-slate-100/80 dark:bg-white/[0.03] hover:border-blue-500/40 hover:bg-white dark:hover:bg-white/[0.06] transition-all flex items-center gap-2 cursor-pointer group shrink-0 shadow-2xs"
               title={language === 'en' ? 'Quick Search (Ctrl+K)' : 'جستجوی سریع (Ctrl+K)'}
             >
               <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-500 transition-colors shrink-0" />
-              <span className="hidden xl:inline text-xs text-slate-500 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200">
+              <span className="hidden xl:inline text-xs font-medium text-slate-500 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200">
                 {language === 'en' ? 'Search...' : 'جستجو...'}
               </span>
               <kbd
                 dir="ltr"
-                className="ltr-inline hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono font-semibold text-slate-500 dark:text-slate-400 bg-white dark:bg-[#090d16] border border-slate-200/80 dark:border-white/[0.08] rounded shrink-0"
+                className="ltr-inline hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono font-semibold text-slate-500 dark:text-slate-400 bg-white dark:bg-[#090d16] border border-slate-200/80 dark:border-white/[0.08] rounded-md shrink-0 shadow-2xs"
               >
                 Ctrl+K
               </kbd>
@@ -2006,7 +2111,7 @@ function MainWorkspace() {
               type="button"
               data-testid="quick-study-mode-btn"
               onClick={toggleQuickStudyMode}
-              className={`h-8 px-2.5 sm:px-3 rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer text-xs font-semibold shrink-0 ${
+              className={`h-9 px-2.5 sm:px-3 rounded-xl border transition-all flex items-center gap-1.5 cursor-pointer text-xs font-semibold shrink-0 ${
                 isStudyMode
                   ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-400 shadow-md shadow-blue-500/25 ring-2 ring-blue-500/30'
                   : 'border-slate-200/90 dark:border-white/[0.08] bg-slate-100/75 dark:bg-[#0c121e] text-slate-700 dark:text-slate-300 hover:border-blue-500/40 hover:bg-white dark:hover:bg-white/[0.06]'
@@ -2032,23 +2137,26 @@ function MainWorkspace() {
               )}
             </button>
 
-            {/* Rank / XP Pill */}
-            <div
+            {/* Rank / XP Pill (Clickable -> navigates to profile) */}
+            <button
+              type="button"
               dir="ltr"
               data-testid="header-xp-pill"
-              className="ltr-inline tabular-nums hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-blue-500/25 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-mono font-bold"
+              onClick={() => handleNavigate('profile')}
+              title={language === 'en' ? 'View Transcript & Rank' : 'مشاهده کارنامه و رتبه'}
+              className="ltr-inline tabular-nums hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-blue-500/25 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-mono font-bold cursor-pointer transition-colors shadow-2xs"
             >
               <span className="tabular-nums">LVL 4</span>
               <span className="opacity-40">·</span>
               <span className="tabular-nums">{2900 + userBonusXp} XP</span>
-            </div>
+            </button>
 
             {/* Viral Share & Invite Academy Button */}
             <button
               type="button"
               data-testid="open-invite-modal-btn"
               onClick={() => setInviteModalOpen(true)}
-              className="h-8 px-2 sm:px-2.5 rounded-lg border border-indigo-500/30 bg-gradient-to-r from-indigo-500/10 via-blue-500/10 to-indigo-500/15 text-indigo-600 dark:text-indigo-400 hover:from-indigo-500/20 hover:to-blue-500/25 hover:border-indigo-500/50 transition-all flex items-center gap-1.5 cursor-pointer text-xs font-semibold shrink-0 shadow-2xs hover:shadow-sm group active:scale-95"
+              className="h-9 px-2 sm:px-2.5 rounded-xl border border-indigo-500/30 bg-gradient-to-r from-indigo-500/10 via-blue-500/10 to-indigo-500/15 text-indigo-600 dark:text-indigo-400 hover:from-indigo-500/20 hover:to-blue-500/25 hover:border-indigo-500/50 transition-all flex items-center gap-1.5 cursor-pointer text-xs font-semibold shrink-0 shadow-2xs active:scale-95"
               title={t('inviteAndShare')}
               aria-label={t('inviteAndShare')}
             >
@@ -2060,13 +2168,13 @@ function MainWorkspace() {
             </button>
 
             {/* Quick Header Utility Deck */}
-            <div className="h-8 px-1 rounded-lg border border-slate-200/80 dark:border-white/[0.08] bg-slate-100/75 dark:bg-[#0c121e] flex items-center gap-0.5 shrink-0">
+            <div className="h-9 px-1 rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-100/75 dark:bg-[#0c121e] flex items-center gap-0.5 shrink-0 shadow-2xs">
               <button
                 type="button"
                 onClick={toggleLanguage}
                 title={t('langSwitchLabel')}
                 aria-label={language === 'fa' ? 'Switch interface to English' : 'تغییر رابط کاربری به فارسی'}
-                className="h-6.5 px-1.5 rounded text-xs font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1 cursor-pointer hover:bg-white dark:hover:bg-white/[0.08] transition-colors whitespace-nowrap"
+                className="h-7 px-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1 cursor-pointer hover:bg-white dark:hover:bg-white/[0.08] transition-colors whitespace-nowrap"
               >
                 <Globe className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 <span className="font-mono text-[11px]">{t('langSwitchBadge')}</span>
@@ -2075,7 +2183,7 @@ function MainWorkspace() {
               <button
                 type="button"
                 onClick={() => setDarkMode((prev) => !prev)}
-                className="h-6.5 w-6.5 rounded inline-flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-white/[0.08] transition-colors cursor-pointer shrink-0"
+                className="h-7 w-7 rounded-lg inline-flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-white/[0.08] transition-colors cursor-pointer shrink-0"
                 aria-label="Toggle Dark or Light Mode"
                 title={darkMode ? t('themeLight') : t('themeDark')}
               >
@@ -2083,6 +2191,20 @@ function MainWorkspace() {
                 <span className="sr-only">{darkMode ? t('themeLight') : t('themeDark')}</span>
               </button>
             </div>
+
+            {/* User Profile Avatar Button */}
+            <button
+              type="button"
+              data-testid="header-user-avatar-btn"
+              onClick={() => handleNavigate('profile')}
+              title={language === 'en' ? 'Aria Rostami · Lead Architect (Profile)' : 'آریا رستمی · معمار ارشد (پروفایل)'}
+              className="relative p-0.5 rounded-xl border border-slate-200/90 dark:border-white/[0.1] hover:border-indigo-500/50 hover:shadow-md transition-all cursor-pointer group shrink-0"
+            >
+              <div className="w-8 h-8 rounded-[10px] bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-500 text-white font-mono text-xs font-extrabold flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
+                AR
+              </div>
+              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#070b14]" />
+            </button>
           </div>
         </div>
       </header>

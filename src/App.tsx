@@ -146,8 +146,19 @@ function MainWorkspace() {
   const [completedDailyMissionIds, setCompletedDailyMissionIds] = useState<
     string[]
   >([]);
+  const [missionSuccessAnimating, setMissionSuccessAnimating] = useState<boolean>(false);
+  const missionAnimationTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (missionAnimationTimerRef.current) {
+        clearTimeout(missionAnimationTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleRerollDailyMission = () => {
+    setMissionSuccessAnimating(false);
     setActiveDailyMission((prev) =>
       selectArchitectDailyMission({ excludeMissionId: prev.id })
     );
@@ -162,6 +173,13 @@ function MainWorkspace() {
     if (!result.alreadyCompleted) {
       setCompletedDailyMissionIds(result.updatedCompletedIds);
       setUserBonusXp(result.updatedBonusXp);
+      setMissionSuccessAnimating(true);
+      if (missionAnimationTimerRef.current) {
+        clearTimeout(missionAnimationTimerRef.current);
+      }
+      missionAnimationTimerRef.current = setTimeout(() => {
+        setMissionSuccessAnimating(false);
+      }, 2200);
     }
   };
 
@@ -997,15 +1015,31 @@ function MainWorkspace() {
           return (
             <div
               data-testid="sidebar-daily-mission-widget"
-              className={`p-3.5 rounded-2xl border transition-all space-y-2.5 shadow-2xs ${
-                isMissionDone
+              className={`relative p-3.5 rounded-2xl border transition-all duration-300 space-y-2.5 shadow-2xs overflow-hidden ${
+                missionSuccessAnimating
+                  ? 'border-emerald-500 ring-2 ring-emerald-400/40 shadow-lg shadow-emerald-500/20 bg-gradient-to-br from-emerald-500/15 via-emerald-500/[0.04] to-slate-50 dark:from-emerald-950/40 dark:via-[#0c1624] dark:to-[#090d16] animate-mission-glow-pulse'
+                  : isMissionDone
                   ? 'border-emerald-500/40 bg-gradient-to-br from-emerald-500/[0.08] via-slate-50 to-white dark:from-emerald-950/30 dark:via-[#0b121e] dark:to-[#090d16]'
                   : 'border-amber-500/30 dark:border-amber-500/25 bg-gradient-to-br from-amber-500/[0.06] via-white to-slate-50 dark:from-[#13111c] dark:via-[#0c111d] dark:to-[#090d16]'
               }`}
             >
+              {/* Subtle ambient celebratory sparkles on mission completion */}
+              {missionSuccessAnimating && (
+                <div className="absolute inset-0 pointer-events-none overflow-hidden z-10" aria-hidden="true">
+                  <span className="absolute top-2 left-6 text-emerald-400 dark:text-emerald-300 text-xs animate-mission-sparkle select-none" style={{ animationDelay: '0ms' }}>✦</span>
+                  <span className="absolute top-4 right-10 text-amber-400 dark:text-amber-300 text-xs animate-mission-sparkle select-none" style={{ animationDelay: '140ms' }}>✨</span>
+                  <span className="absolute bottom-6 left-1/3 text-emerald-400 dark:text-emerald-300 text-[10px] animate-mission-sparkle select-none" style={{ animationDelay: '260ms' }}>✦</span>
+                  <span className="absolute bottom-3 right-1/4 text-teal-400 dark:text-teal-300 text-xs animate-mission-sparkle select-none" style={{ animationDelay: '380ms' }}>✨</span>
+                </div>
+              )}
+
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="p-1 rounded-lg bg-amber-500/15 text-amber-500 ring-1 ring-amber-500/30 shrink-0">
+                  <span className={`p-1 rounded-lg transition-colors shrink-0 ${
+                    missionSuccessAnimating
+                      ? 'bg-emerald-500/20 text-emerald-500 ring-1 ring-emerald-500/40'
+                      : 'bg-amber-500/15 text-amber-500 ring-1 ring-amber-500/30'
+                  }`}>
                     <Target className="w-3.5 h-3.5" />
                   </span>
                   <span className="text-[11px] font-extrabold text-slate-800 dark:text-slate-100 truncate">
@@ -1019,7 +1053,11 @@ function MainWorkspace() {
                   <span
                     dir="ltr"
                     data-testid="daily-mission-xp-badge"
-                    className="ltr-inline px-1.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-mono text-[10px] font-extrabold tabular-nums"
+                    className={`ltr-inline px-1.5 py-0.5 rounded-md border font-mono text-[10px] font-extrabold tabular-nums transition-all ${
+                      missionSuccessAnimating
+                        ? 'bg-emerald-500 text-white border-emerald-400 shadow-sm scale-105 ring-2 ring-emerald-400/40'
+                        : 'bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                    }`}
                   >
                     +{activeDailyMission.xpReward} XP
                   </span>
@@ -1072,21 +1110,34 @@ function MainWorkspace() {
                 </p>
               </div>
 
-              <div className="flex items-center gap-1.5 pt-0.5">
+              <div className="flex items-center gap-1.5 pt-0.5 relative">
+                {/* Floating celebratory XP indicator on completion */}
+                {missionSuccessAnimating && (
+                  <div
+                    data-testid="daily-mission-success-floating-xp"
+                    className="absolute -top-7 left-1/2 flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-600 dark:bg-emerald-500 text-white text-[10px] font-mono font-black shadow-lg shadow-emerald-500/40 pointer-events-none animate-mission-float-up z-20 whitespace-nowrap"
+                  >
+                    <Sparkles className="w-3 h-3 text-amber-300 animate-pulse" />
+                    <span>+{activeDailyMission.xpReward} XP</span>
+                  </div>
+                )}
+
                 <button
                   type="button"
                   onClick={handleCompleteDailyMission}
                   disabled={isMissionDone}
                   data-testid="daily-mission-complete-btn"
-                  className={`flex-1 py-1.5 px-2.5 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                    isMissionDone
+                  className={`flex-1 py-1.5 px-2.5 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer relative overflow-hidden ${
+                    missionSuccessAnimating
+                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/35 ring-2 ring-emerald-400/50 animate-mission-success-pop cursor-default'
+                      : isMissionDone
                       ? 'bg-emerald-600/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/40 cursor-default'
-                      : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-xs'
+                      : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-xs active:scale-95'
                   }`}
                 >
                   {isMissionDone ? (
                     <>
-                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                      <CheckCircle2 className={`w-3.5 h-3.5 shrink-0 ${missionSuccessAnimating ? 'text-white animate-scale-in' : ''}`} />
                       <span>
                         {language === 'en'
                           ? `Claimed +${activeDailyMission.xpReward} XP`

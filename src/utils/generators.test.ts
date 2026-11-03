@@ -2077,7 +2077,7 @@ test("Architect's Daily Mission: selectArchitectDailyMission and completeArchite
     assert.notEqual(rerolled.id, firstMission.id);
   }
 
-  // 3. Completing the mission awards extra XP and prevents duplicate claiming
+  // 3. Completing the mission awards extra XP and triggers the subtle celebratory animation
   const claim1 = completeArchitectDailyMission({
     mission: firstMission,
     completedMissionIds: [],
@@ -2087,6 +2087,9 @@ test("Architect's Daily Mission: selectArchitectDailyMission and completeArchite
   assert.equal(claim1.xpEarned, 150);
   assert.equal(claim1.updatedBonusXp, 150);
   assert.deepEqual(claim1.updatedCompletedIds, ['mission-refactor-rule']);
+  // First completion triggers subtle success micro-interaction
+  const shouldAnimateSuccess = !claim1.alreadyCompleted && claim1.xpEarned > 0;
+  assert.equal(shouldAnimateSuccess, true);
 
   const duplicateClaim = completeArchitectDailyMission({
     mission: firstMission,
@@ -2096,6 +2099,9 @@ test("Architect's Daily Mission: selectArchitectDailyMission and completeArchite
   assert.equal(duplicateClaim.alreadyCompleted, true);
   assert.equal(duplicateClaim.xpEarned, 0);
   assert.equal(duplicateClaim.updatedBonusXp, 150);
+  // Duplicate click does not re-trigger completion animation
+  const shouldAnimateDuplicate = !duplicateClaim.alreadyCompleted && duplicateClaim.xpEarned > 0;
+  assert.equal(shouldAnimateDuplicate, false);
 });
 
 test('Module Knowledge Check: buildModuleKnowledgeCheckPrompt, buildDeterministicModuleKnowledgeCheck, normalizeAiModuleKnowledgeCheckResponse, and evaluateModuleKnowledgeCheckSubmission generate and grade quizzes accurately', async () => {

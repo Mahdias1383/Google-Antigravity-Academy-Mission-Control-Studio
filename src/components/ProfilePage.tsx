@@ -28,20 +28,35 @@ import {
   Layers,
   FileSpreadsheet,
   AlertTriangle,
+  Target,
+  ListOrdered,
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { ALL_CURRICULUM_MODULES } from '../data/curriculumIndex';
 import {
   getStoredKnowledgeCheckScores,
   KnowledgeCheckModuleScoreRecord,
+  DailyMissionTargetSection,
 } from '../utils/generators';
 import { formatLocalizedNumber, renderBidiText } from '../utils/bidiText';
+import { MissionArchiveView } from './MissionArchiveView';
+import {
+  getStoredMissionArchive,
+  MISSION_ARCHIVE_UPDATED_EVENT,
+} from '../utils/missionArchive';
+import {
+  getStoredDailyStreak,
+  STREAK_UPDATED_EVENT,
+} from '../utils/streakMultiplier';
+import { ThirtyDayContributionHeatmap } from './ThirtyDayContributionHeatmap';
 
 interface ProfilePageProps {
   onNavigateToModule: (moduleId: string) => void;
   onNavigateToCurriculum: () => void;
+  onNavigateToSection?: (section: any) => void;
   completedModules: string[];
   userXp: number;
+  initialTab?: 'overview' | 'missions' | 'transcripts' | 'all';
 }
 
 interface UserProfileState {
@@ -75,11 +90,36 @@ const USER_PROFILE_STORAGE_KEY = 'ag_user_profile_data_v1';
 export const ProfilePage: React.FC<ProfilePageProps> = ({
   onNavigateToModule,
   onNavigateToCurriculum,
+  onNavigateToSection,
   completedModules,
   userXp,
+  initialTab = 'overview',
 }) => {
   const { language, isRTL } = useLanguage();
   const isEn = language === 'en';
+
+  const [activeTab, setActiveTab] = useState<'overview' | 'missions' | 'transcripts' | 'all'>(initialTab);
+  const [storedMissionsCount, setStoredMissionsCount] = useState<number>(() => {
+    return getStoredMissionArchive().length;
+  });
+  const [activeStreakDays, setActiveStreakDays] = useState<number>(() => {
+    return getStoredDailyStreak(14, 14).currentStreakDays;
+  });
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setStoredMissionsCount(getStoredMissionArchive().length);
+      setActiveStreakDays(getStoredDailyStreak(14, 14).currentStreakDays);
+    };
+    window.addEventListener(MISSION_ARCHIVE_UPDATED_EVENT, handleUpdate);
+    window.addEventListener(STREAK_UPDATED_EVENT, handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener(MISSION_ARCHIVE_UPDATED_EVENT, handleUpdate);
+      window.removeEventListener(STREAK_UPDATED_EVENT, handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, []);
 
   // Load persistent profile
   const [profile, setProfile] = useState<UserProfileState>(() => {
@@ -167,28 +207,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
     100,
     Math.round(((userXp - currentLevelBaseXp) / (nextLevelXp - currentLevelBaseXp)) * 100)
   );
-
-  // 52-Week Activity Heatmap Generator
-  const heatmapWeeks = React.useMemo(() => {
-    // Generates 52 weeks x 7 days
-    const weeks: Array<Array<{ day: number; count: number; dateStr: string }>> = [];
-    for (let w = 0; w < 52; w++) {
-      const days = [];
-      for (let d = 0; d < 7; d++) {
-        // Semi-random deterministic seed for realistic study activity
-        const pseudoRand = (Math.sin(w * 7 + d * 13) + 1) / 2;
-        let count = 0;
-        if (pseudoRand > 0.65) count = Math.floor(pseudoRand * 6) + 1;
-        days.push({
-          day: d,
-          count,
-          dateStr: `Week ${w + 1}, Day ${d + 1}`,
-        });
-      }
-      weeks.push(days);
-    }
-    return weeks;
-  }, []);
 
   // Badges Definitions
   const BADGES = [
@@ -411,9 +429,128 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       </div>
 
       {/* ============================================================ */}
-      {/* 2. CORE PERFORMANCE METRICS & XP PROGRESSION                 */}
+      {/* PROFILE NAVIGATION SUB-TABS                                   */}
       {/* ============================================================ */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div
+        data-testid="profile-tab-bar"
+        className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 dark:border-white/[0.08] pb-3"
+      >
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <button
+            type="button"
+            data-testid="profile-tab-overview"
+            onClick={() => setActiveTab('overview')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+              activeTab === 'overview'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'bg-slate-100 dark:bg-white/[0.04] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <User className="w-3.5 h-3.5" />
+            <span>{isEn ? 'Overview & Badges' : 'نمای کلی و نشان‌ها'}</span>
+          </button>
+
+          <button
+            type="button"
+            data-testid="profile-tab-missions"
+            onClick={() => setActiveTab('missions')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+              activeTab === 'missions'
+                ? 'bg-amber-500 text-slate-950 font-black shadow-xs'
+                : 'bg-slate-100 dark:bg-white/[0.04] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <Target className="w-3.5 h-3.5" />
+            <span>{isEn ? 'Mission Archive' : 'آرشیو مأموریت‌ها'}</span>
+            <span
+              className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full font-black ${
+                activeTab === 'missions'
+                  ? 'bg-black/20 text-slate-950'
+                  : 'bg-amber-500/15 text-amber-500'
+              }`}
+            >
+              {storedMissionsCount}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            data-testid="profile-tab-transcripts"
+            onClick={() => setActiveTab('transcripts')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+              activeTab === 'transcripts'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'bg-slate-100 dark:bg-white/[0.04] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5" />
+            <span>{isEn ? 'Exam Transcripts' : 'ریزنمرات آزمون‌ها'}</span>
+          </button>
+        </div>
+
+        <button
+          type="button"
+          data-testid="profile-tab-all"
+          onClick={() => setActiveTab(activeTab === 'all' ? 'overview' : 'all')}
+          className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+            activeTab === 'all'
+              ? 'border-blue-500/40 bg-blue-500/10 text-blue-600 dark:text-blue-400'
+              : 'border-slate-200 dark:border-white/[0.08] text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.04]'
+          }`}
+        >
+          <ListOrdered className="w-3.5 h-3.5" />
+          <span>
+            {activeTab === 'all'
+              ? isEn
+                ? 'Condensed View'
+                : 'نمای خلاصه'
+              : isEn
+              ? 'View All Sections'
+              : 'نمایش یکپارچه همه'}
+          </span>
+        </button>
+      </div>
+
+      {(activeTab === 'overview' || activeTab === 'all') && (
+        <>
+          {/* Quick Mission Archive Status Banner */}
+          <div
+            data-testid="profile-mission-archive-quick-banner"
+            className="p-4 sm:p-5 rounded-2xl border border-amber-500/30 bg-amber-500/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+          >
+            <div className="flex items-center gap-3">
+              <span className="p-2.5 rounded-xl bg-amber-500/15 text-amber-500 border border-amber-500/20 shrink-0">
+                <Target className="w-5 h-5" />
+              </span>
+              <div className="space-y-0.5">
+                <div className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                  <span>{isEn ? 'Architect Daily Mission Archive' : 'آرشیو مأموریت‌های روزانه معمار'}</span>
+                  <span className="text-[10px] font-mono font-bold bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded-full">
+                    {storedMissionsCount} {isEn ? 'Completed' : 'تکمیل‌شده'}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 dark:text-slate-400">
+                  {isEn
+                    ? 'Chronological record of verified daily technical tasks, earned XP bonuses, and audit hashes.'
+                    : 'تاریخچه زمانی تسک‌های فنی انجام‌شده به همراه امتیازهای XP و کدهای ممیزی رمزنگاری‌شده.'}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              data-testid="profile-goto-mission-archive-btn"
+              onClick={() => setActiveTab('missions')}
+              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 shadow-xs self-start sm:self-auto"
+            >
+              <span>{isEn ? 'Open Full Mission Archive' : 'مشاهده آرشیو کامل مأموریت‌ها'}</span>
+              {isRTL ? <ChevronLeft className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+            </button>
+          </div>
+
+          {/* ============================================================ */}
+          {/* 2. CORE PERFORMANCE METRICS & XP PROGRESSION                 */}
+          {/* ============================================================ */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Metric 1: XP & Progression to Level 5 */}
         <div className="p-5 rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0c121e] space-y-3 shadow-2xs">
           <div className="flex items-center justify-between text-xs text-slate-500">
@@ -445,8 +582,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             <Flame className="w-4 h-4 text-amber-500" />
           </div>
           <div>
-            <div className="text-2xl font-black font-mono text-slate-900 dark:text-white">
-              14 <span className="text-xs font-sans text-slate-500 font-normal">{isEn ? 'Days' : 'روز'}</span>
+            <div
+              data-testid="profile-active-streak-days"
+              className="text-2xl font-black font-mono text-slate-900 dark:text-white tabular-nums"
+            >
+              {formatLocalizedNumber(activeStreakDays, language)}{' '}
+              <span className="text-xs font-sans text-slate-500 font-normal">
+                {isEn ? 'Days' : 'روز'}
+              </span>
             </div>
             <div className="text-[11px] text-amber-500 font-medium mt-0.5">
               {isEn ? 'Top 5% Cohort Consistency' : 'جزو ۵٪ برتر از نظر استمرار روزانه'}
@@ -464,7 +607,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             <BookOpen className="w-4 h-4 text-emerald-500" />
           </div>
           <div>
-            <div className="text-2xl font-black font-mono text-slate-900 dark:text-white">
+            <div className="text-2xl font-black font-mono text-slate-900 dark:text-white tabular-nums">
               {completedModules.length} / {ALL_CURRICULUM_MODULES.length}
             </div>
             <div className="text-[11px] text-emerald-500 font-medium mt-0.5">
@@ -488,7 +631,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             <CheckCircle2 className="w-4 h-4 text-cyan-500" />
           </div>
           <div>
-            <div className="text-2xl font-black font-mono text-slate-900 dark:text-white">
+            <div className="text-2xl font-black font-mono text-slate-900 dark:text-white tabular-nums">
               {averageAccuracy}%
             </div>
             <div className="text-[11px] text-cyan-500 font-medium mt-0.5">
@@ -505,56 +648,13 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       </div>
 
       {/* ============================================================ */}
-      {/* 3. 52-WEEK LEARNING ACTIVITY HEATMAP                          */}
+      {/* 3. 30-DAY CONTRIBUTION-STYLE DAILY ACTIVITY STREAK HEATMAP   */}
       {/* ============================================================ */}
-      <div className="p-6 rounded-3xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0c121e] space-y-4 shadow-2xs">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-blue-500" />
-              <span>{isEn ? '52-Week Architect Study Activity' : 'هیت‌مپ فعالیت و مطالعه سالانه (۵۲ هفته)'}</span>
-            </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              {isEn
-                ? 'Daily engineering tasks, Pomodoro sessions, and quiz submissions recorded in real-time.'
-                : 'پایش بلادرنگ فعالیت‌های مهندسی، نشست‌های تمرکز و ارسال پاسخ آزمون‌ها.'}
-            </p>
-          </div>
-
-          <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-slate-500 font-mono">
-            <span>{isEn ? 'Less' : 'کمتر'}</span>
-            <span className="w-2.5 h-2.5 rounded-xs bg-slate-100 dark:bg-white/[0.06]" />
-            <span className="w-2.5 h-2.5 rounded-xs bg-blue-500/30" />
-            <span className="w-2.5 h-2.5 rounded-xs bg-blue-500/60" />
-            <span className="w-2.5 h-2.5 rounded-xs bg-blue-500" />
-            <span>{isEn ? 'More' : 'بیشتر'}</span>
-          </div>
-        </div>
-
-        {/* Heatmap Grid Container */}
-        <div className="overflow-x-auto pb-2">
-          <div className="min-w-[700px] flex gap-1">
-            {heatmapWeeks.map((week, wIdx) => (
-              <div key={wIdx} className="flex flex-col gap-1">
-                {week.map((d, dIdx) => {
-                  let bgClass = 'bg-slate-100 dark:bg-white/[0.05]';
-                  if (d.count > 4) bgClass = 'bg-blue-600 text-white';
-                  else if (d.count > 2) bgClass = 'bg-blue-500/70';
-                  else if (d.count > 0) bgClass = 'bg-blue-500/30';
-
-                  return (
-                    <div
-                      key={dIdx}
-                      title={`${d.dateStr}: ${d.count} study contributions`}
-                      className={`w-3 h-3 rounded-xs ${bgClass} transition-colors cursor-pointer hover:ring-1 hover:ring-blue-400`}
-                    />
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      <ThirtyDayContributionHeatmap
+        completedModulesCount={completedModules.length}
+        completedMissionsCount={storedMissionsCount}
+        onStreakUpdated={(newStreak) => setActiveStreakDays(newStreak)}
+      />
 
       {/* ============================================================ */}
       {/* 4. UNLOCKED BADGES & CERTIFICATIONS SHOWCASE                  */}
@@ -619,101 +719,112 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           })}
         </div>
       </div>
+      </>
+      )}
+
+      {/* ============================================================ */}
+      {/* MISSION ARCHIVE VIEW (CHRONOLOGICAL COMPLETED MISSIONS)       */}
+      {/* ============================================================ */}
+      {(activeTab === 'missions' || activeTab === 'all') && (
+        <MissionArchiveView onNavigateToSection={onNavigateToSection} />
+      )}
 
       {/* ============================================================ */}
       {/* 5. KNOWLEDGE CHECK EXAM TRANSCRIPTS TABLE                     */}
       {/* ============================================================ */}
-      <div className="p-6 rounded-3xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0c121e] space-y-5 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
-            <h2 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-              <FileSpreadsheet className="w-4 h-4 text-blue-500" />
-              <span>{isEn ? 'Module Knowledge Check Exam Transcripts' : 'ریزنمرات آزمون‌های انتهای فصول (کارنامه رسمی)'}</span>
-            </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              {isEn
-                ? 'Detailed record of every 3-question module exam, accuracy score, and retake option.'
-                : 'ثبت جزئیات آزمون‌های ۳ سوالی هر سرفصل همراه با امتیاز کسب‌شده و امکان آزمون مجدد.'}
-            </p>
+      {(activeTab === 'transcripts' || activeTab === 'all') && (
+        <div className="p-6 rounded-3xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0c121e] space-y-5 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h2 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                <FileSpreadsheet className="w-4 h-4 text-blue-500" />
+                <span>{isEn ? 'Module Knowledge Check Exam Transcripts' : 'ریزنمرات آزمون‌های انتهای فصول (کارنامه رسمی)'}</span>
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {isEn
+                  ? 'Detailed record of every 3-question module exam, accuracy score, and retake option.'
+                  : 'ثبت جزئیات آزمون‌های ۳ سوالی هر سرفصل همراه با امتیاز کسب‌شده و امکان آزمون مجدد.'}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={onNavigateToCurriculum}
+              className="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-white/[0.06] hover:bg-blue-600 hover:text-white text-slate-700 dark:text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer self-start sm:self-auto"
+            >
+              <span>{isEn ? 'Go to Curriculum' : 'مشاهده سرفصل‌ها'}</span>
+              {isRTL ? <ChevronLeft className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+            </button>
           </div>
 
-          <button
-            type="button"
-            onClick={onNavigateToCurriculum}
-            className="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-white/[0.06] hover:bg-blue-600 hover:text-white text-slate-700 dark:text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer self-start sm:self-auto"
-          >
-            <span>{isEn ? 'Go to Curriculum' : 'مشاهده سرفصل‌ها'}</span>
-            {isRTL ? <ChevronLeft className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-          </button>
-        </div>
+          {/* Transcripts Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-start">
+              <thead>
+                <tr className="border-b border-slate-200/80 dark:border-white/[0.07] text-slate-400 font-bold uppercase tracking-wider">
+                  <th className="py-2.5 px-3 text-start">{isEn ? 'Chapter' : 'فصل'}</th>
+                  <th className="py-2.5 px-3 text-start">{isEn ? 'Topic' : 'عنوان سرفصل'}</th>
+                  <th className="py-2.5 px-3 text-start">{isEn ? 'Exam Status' : 'وضعیت آزمون'}</th>
+                  <th className="py-2.5 px-3 text-start">{isEn ? 'Score' : 'نمره'}</th>
+                  <th className="py-2.5 px-3 text-start">{isEn ? 'Earned XP' : 'امتیاز'}</th>
+                  <th className="py-2.5 px-3 text-end">{isEn ? 'Action' : 'اقدام'}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-white/[0.04]">
+                {ALL_CURRICULUM_MODULES.map((mod) => {
+                  const rec = scoresMap[mod.id];
+                  const isPassed = rec && rec.correctCount >= 2;
+                  const isCompleted = completedModules.includes(mod.id);
 
-        {/* Transcripts Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-start">
-            <thead>
-              <tr className="border-b border-slate-200/80 dark:border-white/[0.07] text-slate-400 font-bold uppercase tracking-wider">
-                <th className="py-2.5 px-3 text-start">{isEn ? 'Chapter' : 'فصل'}</th>
-                <th className="py-2.5 px-3 text-start">{isEn ? 'Topic' : 'عنوان سرفصل'}</th>
-                <th className="py-2.5 px-3 text-start">{isEn ? 'Exam Status' : 'وضعیت آزمون'}</th>
-                <th className="py-2.5 px-3 text-start">{isEn ? 'Score' : 'نمره'}</th>
-                <th className="py-2.5 px-3 text-start">{isEn ? 'Earned XP' : 'امتیاز'}</th>
-                <th className="py-2.5 px-3 text-end">{isEn ? 'Action' : 'اقدام'}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-white/[0.04]">
-              {ALL_CURRICULUM_MODULES.map((mod) => {
-                const rec = scoresMap[mod.id];
-                const isPassed = rec && rec.correctCount >= 2;
-                const isCompleted = completedModules.includes(mod.id);
-
-                return (
-                  <tr key={mod.id} className="hover:bg-slate-50/70 dark:hover:bg-white/[0.02] transition-colors">
-                    <td className="py-3 px-3 font-mono font-bold text-blue-600 dark:text-blue-400">
-                      MOD-0{mod.number}
-                    </td>
-                    <td className="py-3 px-3 font-medium text-slate-900 dark:text-white">
-                      {isEn ? mod.titleEn : mod.titleFa}
-                    </td>
-                    <td className="py-3 px-3">
-                      {rec ? (
-                        <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold text-[11px] bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                          <CheckCircle2 className="w-3 h-3" />
-                          <span>{isEn ? 'Passed' : 'قبول شده'}</span>
-                        </span>
-                      ) : (
-                        <span className="text-[11px] font-mono text-slate-400 bg-slate-100 dark:bg-white/[0.05] px-2 py-0.5 rounded-full">
-                          {isEn ? 'Pending' : 'در انتظار آزمون'}
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-3 px-3 font-mono">
-                      {rec ? (
-                        <span className="font-bold text-slate-800 dark:text-slate-200">
-                          {rec.correctCount} / {rec.totalQuestions} ({Math.round((rec.correctCount / rec.totalQuestions) * 100)}%)
-                        </span>
-                      ) : (
-                        <span className="text-slate-400">—</span>
-                      )}
-                    </td>
-                    <td className="py-3 px-3 font-mono font-bold text-emerald-500">
-                      {rec ? `+${rec.earnedXp} XP` : '0 XP'}
-                    </td>
-                    <td className="py-3 px-3 text-end">
-                      <button
-                        type="button"
-                        onClick={() => onNavigateToModule(mod.id)}
-                        className="px-2.5 py-1 rounded-lg bg-blue-500/10 hover:bg-blue-600 hover:text-white text-blue-600 dark:text-blue-400 text-[11px] font-bold transition-colors cursor-pointer"
-                      >
-                        {rec ? (isEn ? 'Retake Quiz' : 'آزمون مجدد') : (isEn ? 'Take Quiz' : 'شرکت در آزمون')}
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                  return (
+                    <tr key={mod.id} className="hover:bg-slate-50/70 dark:hover:bg-white/[0.02] transition-colors">
+                      <td className="py-3 px-3 font-mono font-bold text-blue-600 dark:text-blue-400">
+                        MOD-0{mod.number}
+                      </td>
+                      <td className="py-3 px-3 font-medium text-slate-900 dark:text-white">
+                        {isEn ? mod.titleEn : mod.titleFa}
+                      </td>
+                      <td className="py-3 px-3">
+                        {rec ? (
+                          <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold text-[11px] bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span>{isEn ? 'Passed' : 'قبول شده'}</span>
+                          </span>
+                        ) : (
+                          <span className="text-[11px] font-mono text-slate-400 bg-slate-100 dark:bg-white/[0.05] px-2 py-0.5 rounded-full">
+                            {isEn ? 'Pending' : 'در انتظار آزمون'}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-3 font-mono">
+                        {rec ? (
+                          <span className="font-bold text-slate-800 dark:text-slate-200">
+                            {rec.correctCount} / {rec.totalQuestions} ({Math.round((rec.correctCount / rec.totalQuestions) * 100)}%)
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-3 font-mono font-bold text-emerald-500">
+                        {rec ? `+${rec.earnedXp} XP` : '0 XP'}
+                      </td>
+                      <td className="py-3 px-3 text-end">
+                        <button
+                          type="button"
+                          onClick={() => onNavigateToModule(mod.id)}
+                          className="px-2.5 py-1 rounded-lg bg-blue-500/10 hover:bg-blue-600 hover:text-white text-blue-600 dark:text-blue-400 text-[11px] font-bold transition-colors cursor-pointer"
+                        >
+                          {rec ? (isEn ? 'Retake Quiz' : 'آزمون مجدد') : (isEn ? 'Take Quiz' : 'شرکت در آزمون')}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

@@ -636,6 +636,31 @@ export const ModuleContentView: React.FC<{
   const [aiOverviewCache, setAiOverviewCache] = useState<
     Record<string, ModuleQuickOverviewPayload>
   >({});
+  const [isCelebratingCompletion, setIsCelebratingCompletion] = useState<boolean>(false);
+  const celebrationTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  React.useEffect(() => {
+    return () => {
+      if (celebrationTimerRef.current) {
+        clearTimeout(celebrationTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleModuleCompletionClick = () => {
+    if (!isCompleted) {
+      setIsCelebratingCompletion(true);
+      if (celebrationTimerRef.current) {
+        clearTimeout(celebrationTimerRef.current);
+      }
+      celebrationTimerRef.current = setTimeout(() => {
+        setIsCelebratingCompletion(false);
+      }, 2600);
+    } else {
+      setIsCelebratingCompletion(false);
+    }
+    onToggleComplete(module.id);
+  };
 
   const moduleOverviewInput: ModuleQuickOverviewInput = React.useMemo(
     () => ({
@@ -993,34 +1018,59 @@ export const ModuleContentView: React.FC<{
             </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 relative">
             <ExportSectionPdfButton
               label={t('exportPdfBtn')}
               payload={fullModulePdfPayload}
               onExport={onExportPdf}
             />
-            <button
-              type="button"
-              onClick={() => onToggleComplete(module.id)}
-              data-testid="toggle-module-complete-btn"
-              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold border transition-colors cursor-pointer whitespace-nowrap ${
-                isCompleted
-                  ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300'
-                  : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.04] text-slate-700 dark:text-slate-200 hover:border-blue-500/40'
-              }`}
-            >
-              {isCompleted ? (
-                <>
-                  <CheckSquare className="w-4 h-4 text-emerald-500" />
-                  <span>{t('completedBadge')}</span>
-                </>
-              ) : (
-                <>
-                  <Square className="w-4 h-4 text-slate-400" />
-                  <span>{t('markCompleted')}</span>
-                </>
+            <div className="relative inline-flex items-center">
+              {isCelebratingCompletion && (
+                <div
+                  data-testid="curriculum-module-celebration-burst"
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -inset-x-6 -top-8 h-20 overflow-visible z-30 flex items-center justify-center"
+                >
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-mono text-[10px] font-black shadow-lg animate-mission-float-up whitespace-nowrap">
+                    +150 XP · Module 0{module.number} Complete!
+                  </span>
+                  <svg
+                    viewBox="0 0 180 70"
+                    className="absolute inset-0 w-full h-full overflow-visible"
+                  >
+                    <circle cx="20" cy="12" r="3.5" fill="#10b981" className="milestone-confetti-particle [animation-duration:1800ms]" />
+                    <rect x="48" y="8" width="6" height="4" rx="1" fill="#3b82f6" className="milestone-confetti-particle [animation-delay:90ms] [animation-duration:2060ms]" />
+                    <polygon points="85,6 90,11 85,16 80,11" fill="#f59e0b" className="milestone-confetti-particle [animation-delay:180ms] [animation-duration:1800ms]" />
+                    <circle cx="122" cy="10" r="3.5" fill="#8b5cf6" className="milestone-confetti-particle [animation-delay:90ms] [animation-duration:2320ms]" />
+                    <rect x="152" y="12" width="6" height="4" rx="1" fill="#06b6d4" className="milestone-confetti-particle [animation-delay:270ms] [animation-duration:2060ms]" />
+                  </svg>
+                </div>
               )}
-            </button>
+              <button
+                type="button"
+                onClick={handleModuleCompletionClick}
+                data-testid="toggle-module-complete-btn"
+                className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold border transition-all cursor-pointer whitespace-nowrap ${
+                  isCelebratingCompletion
+                    ? 'border-emerald-400 bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 animate-mission-success-pop animate-mission-glow-pulse'
+                    : isCompleted
+                    ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300'
+                    : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.04] text-slate-700 dark:text-slate-200 hover:border-blue-500/40'
+                }`}
+              >
+                {isCompleted ? (
+                  <>
+                    <CheckSquare className="w-4 h-4 text-emerald-500" />
+                    <span>{t('completedBadge')}</span>
+                  </>
+                ) : (
+                  <>
+                    <Square className="w-4 h-4 text-slate-400" />
+                    <span>{t('markCompleted')}</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1366,9 +1416,12 @@ export const ModuleContentView: React.FC<{
             />
             <button
               type="button"
-              onClick={() => onToggleComplete(module.id)}
-              className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer whitespace-nowrap ${
-                isCompleted
+              data-testid="toggle-module-complete-footer-btn"
+              onClick={handleModuleCompletionClick}
+              className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer whitespace-nowrap ${
+                isCelebratingCompletion
+                  ? 'border-emerald-400 bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 animate-mission-success-pop animate-mission-glow-pulse'
+                  : isCompleted
                   ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300'
                   : 'border-blue-500/40 bg-blue-600 text-white hover:bg-blue-500'
               }`}

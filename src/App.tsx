@@ -91,6 +91,8 @@ import { Antigravity3DGame } from './components/Antigravity3DGame';
 import { InviteShareModal } from './components/InviteShareModal';
 import { LandingPage } from './components/LandingPage';
 import { ProfilePage } from './components/ProfilePage';
+import { ArchitectDailyStreakCard } from './components/ArchitectDailyStreakCard';
+import { recordCompletedMissionArchive } from './utils/missionArchive';
 
 type ActiveWorkspaceSection =
   | 'landing'
@@ -173,6 +175,7 @@ function MainWorkspace() {
     if (!result.alreadyCompleted) {
       setCompletedDailyMissionIds(result.updatedCompletedIds);
       setUserBonusXp(result.updatedBonusXp);
+      recordCompletedMissionArchive(activeDailyMission, result.xpEarned);
       setMissionSuccessAnimating(true);
       if (missionAnimationTimerRef.current) {
         clearTimeout(missionAnimationTimerRef.current);
@@ -1828,32 +1831,44 @@ function MainWorkspace() {
             handleNavigate('profile');
             if (isMobile) setSidebarOpen(false);
           }}
-          className="p-3 rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200/60 dark:from-[#0d1424] dark:via-[#0b101c] dark:to-[#090d16] hover:border-indigo-500/40 hover:shadow-sm transition-all flex items-center justify-between gap-2 shadow-2xs cursor-pointer group"
+          className="p-3 rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200/60 dark:from-[#0d1424] dark:via-[#0b101c] dark:to-[#090d16] hover:border-indigo-500/40 hover:shadow-sm transition-all flex flex-col gap-1 shadow-2xs cursor-pointer group"
         >
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="relative shrink-0">
-              <span className="w-8.5 h-8.5 rounded-xl bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-500 text-white font-mono text-xs font-extrabold flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
-                AR
-              </span>
-              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#090d16]" />
-            </div>
-            <div className="flex flex-col min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                  {language === 'en' ? 'Aria Rostami' : 'آریا رستمی'}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="relative shrink-0">
+                <span className="w-8.5 h-8.5 rounded-xl bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-500 text-white font-mono text-xs font-extrabold flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
+                  AR
                 </span>
-                <span className="text-[9px] font-mono px-1 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-500/20">
-                  LVL 4
+                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#090d16]" />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                    {language === 'en' ? 'Aria Rostami' : 'آریا رستمی'}
+                  </span>
+                  <span className="text-[9px] font-mono px-1 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-500/20">
+                    LVL 4
+                  </span>
+                </div>
+                <span className="text-[10px] text-amber-500 dark:text-amber-400 font-mono font-medium truncate tabular-nums">
+                  Lead Architect · {2900 + userBonusXp} XP
                 </span>
               </div>
-              <span className="text-[10px] text-amber-500 dark:text-amber-400 font-mono font-medium truncate tabular-nums">
-                Lead Architect · {2900 + userBonusXp} XP
-              </span>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <PWAInstallButton />
             </div>
           </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <PWAInstallButton />
-          </div>
+
+          {/* Daily Streak Counter with Tier Badges & Incremental XP Multiplier */}
+          <ArchitectDailyStreakCard
+            language={language}
+            onXpAwarded={(xp) => setUserBonusXp((prev) => prev + xp)}
+            onNavigateToAchievements={() => {
+              handleNavigate('achievements');
+              if (isMobile) setSidebarOpen(false);
+            }}
+          />
         </div>
 
         {/* Quick Language & Theme Controls Inside Sidebar */}
@@ -2413,6 +2428,7 @@ function MainWorkspace() {
               <ProfilePage
                 onNavigateToModule={(modId) => handleNavigate('curriculum', modId)}
                 onNavigateToCurriculum={() => handleNavigate('curriculum')}
+                onNavigateToSection={(sec) => handleNavigate(sec)}
                 completedModules={completedModules}
                 userXp={2900 + userBonusXp}
               />

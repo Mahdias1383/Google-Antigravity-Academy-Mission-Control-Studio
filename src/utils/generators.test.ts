@@ -2432,5 +2432,274 @@ test('Application Shell Redesign: Header and Sidebar Launchpad support all core 
   }
 });
 
+test('Daily Streak & Incremental XP Multipliers: calculates tiers, multiplier bonuses, and check-in progression accurately', async () => {
+  const {
+    calculateStreakMultiplier,
+    applyStreakXpMultiplier,
+    recordDailyStreakCheckIn,
+    getStoredDailyStreak,
+    STREAK_TIER_SPECS,
+  } = await import('./streakMultiplier');
+
+  // 1. Verify all 6 progressive streak tiers
+  assert.equal(STREAK_TIER_SPECS.length, 6);
+
+  // Day 0-2: Baseline 1.0x
+  const eval0 = calculateStreakMultiplier(1);
+  assert.equal(eval0.multiplier, 1.0);
+  assert.equal(eval0.tier.badgeCode, 'STRK-NOV');
+  assert.equal(eval0.nextTier?.badgeCode, 'STRK-BLD');
+  assert.equal(eval0.daysToNextTier, 2); // 3 - 1 = 2
+
+  // Day 3-6: Builder 1.1x
+  const eval3 = calculateStreakMultiplier(5);
+  assert.equal(eval3.multiplier, 1.1);
+  assert.equal(eval3.tier.badgeCode, 'STRK-BLD');
+  assert.equal(eval3.nextTier?.badgeCode, 'AG-STRK-007');
+  assert.equal(eval3.daysToNextTier, 2); // 7 - 5 = 2
+
+  // Day 7-13: Weekly Vanguard 1.25x
+  const eval7 = calculateStreakMultiplier(7);
+  assert.equal(eval7.multiplier, 1.25);
+  assert.equal(eval7.tier.badgeCode, 'AG-STRK-007');
+  assert.equal(eval7.nextTier?.badgeCode, 'AG-STRK-014');
+  assert.equal(eval7.daysToNextTier, 7); // 14 - 7 = 7
+  assert.equal(eval7.progressPercentToNextTier, 0);
+
+  // Day 14-29: Fortified Architect 1.5x
+  const eval14 = calculateStreakMultiplier(14);
+  assert.equal(eval14.multiplier, 1.5);
+  assert.equal(eval14.tier.badgeCode, 'AG-STRK-014');
+  assert.equal(eval14.nextTier?.badgeCode, 'AG-STRK-030');
+
+  // Day 30-99: Mission Titan 1.75x
+  const eval30 = calculateStreakMultiplier(45);
+  assert.equal(eval30.multiplier, 1.75);
+  assert.equal(eval30.tier.badgeCode, 'AG-STRK-030');
+  assert.equal(eval30.nextTier?.badgeCode, 'AG-STRK-100');
+
+  // Day 100+: Mythic Centurion 2.0x Double XP
+  const eval100 = calculateStreakMultiplier(105);
+  assert.equal(eval100.multiplier, 2.0);
+  assert.equal(eval100.tier.badgeCode, 'AG-STRK-100');
+  assert.equal(eval100.nextTier, null);
+  assert.equal(eval100.daysToNextTier, 0);
+  assert.equal(eval100.progressPercentToNextTier, 100);
+
+  // 2. XP Multiplier Calculations
+  const calcBase = applyStreakXpMultiplier(100, 1);
+  assert.equal(calcBase.finalXp, 100);
+  assert.equal(calcBase.bonusXpEarned, 0);
+
+  const calc7d = applyStreakXpMultiplier(100, 7);
+  assert.equal(calc7d.finalXp, 125);
+  assert.equal(calc7d.bonusXpEarned, 25);
+
+  const calc14d = applyStreakXpMultiplier(200, 14);
+  assert.equal(calc14d.finalXp, 300);
+  assert.equal(calc14d.bonusXpEarned, 100);
+
+  const calc100d = applyStreakXpMultiplier(250, 100);
+  assert.equal(calc100d.finalXp, 500);
+  assert.equal(calc100d.bonusXpEarned, 250);
+
+  // 3. Stored streak fallback
+  const fallback = getStoredDailyStreak(7, 7);
+  assert.equal(fallback.currentStreakDays >= 0, true);
+  assert.equal(fallback.longestStreakDays >= fallback.currentStreakDays, true);
+
+  // 4. Check-in simulation
+  const checkinResult = recordDailyStreakCheckIn({ forcedStreakIncrement: true });
+  assert.equal(checkinResult.updatedStreakDays > 0, true);
+  assert.equal(checkinResult.xpAwarded > 0, true);
+  assert.equal(checkinResult.multiplier >= 1.0, true);
+});
+
+test('Mission Archive in Profile: stores chronological completed missions, generates audit hashes, filters by category/search, and calculates aggregate metrics accurately', async () => {
+  const {
+    getSeedMissionArchive,
+    getStoredMissionArchive,
+    recordCompletedMissionArchive,
+    generateVerificationHash,
+    filterAndSortMissionArchive,
+    calculateMissionArchiveStats,
+    SEED_COMPLETED_MISSIONS,
+  } = await import('./missionArchive');
+  const { ARCHITECT_DAILY_MISSIONS_POOL } = await import('./generators');
+
+  // 1. Verify seed data has valid chronological records with required fields
+  const seed = getSeedMissionArchive();
+  assert.equal(seed.length >= 3, true);
+  assert.equal(seed.every((s) => s.code.startsWith('ADM-')), true);
+  assert.equal(seed.every((s) => s.verificationHash.startsWith('AG-AUDIT-')), true);
+  assert.equal(seed.every((s) => s.xpEarned > 0), true);
+
+  // 2. Verify hash generation format
+  const hash = generateVerificationHash('ADM-01', 1772275200000);
+  assert.ok(hash.startsWith('AG-AUDIT-ADM01-'));
+  assert.equal(hash.length >= 15, true);
+
+  // 3. Verify record completion prepends new entry and avoids duplicate per day
+  const missionToComplete = ARCHITECT_DAILY_MISSIONS_POOL[1]; // ADM-02
+  const updated = recordCompletedMissionArchive(
+    missionToComplete,
+    175,
+    '2026-03-03T12:00:00.000Z'
+  );
+  assert.equal(updated.length, seed.length + 1);
+  assert.equal(updated[0].code, 'ADM-02');
+  assert.equal(updated[0].xpEarned, 175);
+  assert.ok(updated[0].verificationHash.startsWith('AG-AUDIT-ADM02-'));
+
+  // 4. Filtering and Sorting
+  // Filter by category: FastMCP Guard
+  const fastMcpFiltered = filterAndSortMissionArchive({
+    entries: updated,
+    selectedCategory: 'FastMCP Guard',
+  });
+  assert.equal(fastMcpFiltered.length >= 1, true);
+  assert.equal(
+    fastMcpFiltered.every((e) => e.categoryBadge === 'FastMCP Guard'),
+    true
+  );
+
+  // Search by keyword: 'ADM-01'
+  const searchByCode = filterAndSortMissionArchive({
+    entries: updated,
+    searchQuery: 'ADM-01',
+  });
+  assert.equal(searchByCode.length, 1);
+  assert.equal(searchByCode[0].code, 'ADM-01');
+
+  // Search by artifact substring: 'verify.md'
+  const searchByArtifact = filterAndSortMissionArchive({
+    entries: updated,
+    searchQuery: 'verify.md',
+  });
+  assert.equal(searchByArtifact.length, 1);
+  assert.equal(searchByArtifact[0].code, 'ADM-05');
+
+  // Sort order: Oldest first
+  const sortedOldest = filterAndSortMissionArchive({
+    entries: updated,
+    sortOrder: 'oldest',
+  });
+  const firstTime = new Date(sortedOldest[0].completedAtIso).getTime();
+  const lastTime = new Date(sortedOldest[sortedOldest.length - 1].completedAtIso).getTime();
+  assert.ok(firstTime <= lastTime);
+
+  // 5. Aggregate Statistics Calculation
+  const stats = calculateMissionArchiveStats(updated);
+  assert.equal(stats.totalCompleted, updated.length);
+  assert.ok(stats.totalXpEarned > 500);
+  assert.ok(stats.distinctArtifactsCount >= 3);
+  assert.ok(stats.latestCompletionIso !== null);
+});
+
+test('30-Day Contribution Heatmap in ProfilePage: generates 30 chronological days, computes intensity levels (0..4), calculates active streak chains, filters by category, and records daily boosts accurately', async () => {
+  const {
+    computeContributionIntensityLevel,
+    getOffsetDateIso,
+    buildThirtyDayActivityHeatmap,
+    recordThirtyDayActivityBoost,
+  } = await import('./thirtyDayActivityHeatmap');
+
+  // 1. Verify intensity level thresholds (0..4)
+  assert.equal(computeContributionIntensityLevel(0), 0);
+  assert.equal(computeContributionIntensityLevel(1), 1);
+  assert.equal(computeContributionIntensityLevel(2), 1);
+  assert.equal(computeContributionIntensityLevel(3), 2);
+  assert.equal(computeContributionIntensityLevel(4), 2);
+  assert.equal(computeContributionIntensityLevel(5), 3);
+  assert.equal(computeContributionIntensityLevel(6), 3);
+  assert.equal(computeContributionIntensityLevel(7), 4);
+  assert.equal(computeContributionIntensityLevel(12), 4);
+
+  // 2. Verify date offset calculation
+  assert.equal(getOffsetDateIso('2026-10-30', 0), '2026-10-30');
+  assert.equal(getOffsetDateIso('2026-10-30', -29), '2026-10-01');
+
+  // 3. Build 30-day heatmap with a 14-day active streak
+  const summary14 = buildThirtyDayActivityHeatmap({
+    referenceDateIso: '2026-10-30',
+    targetCurrentStreak: 14,
+    completedModulesCount: 3,
+    completedMissionsCount: 4,
+    categoryFilter: 'all',
+  });
+
+  assert.equal(summary14.cells.length, 30);
+  assert.equal(summary14.totalDays, 30);
+  assert.equal(summary14.cells[0].dateIso, '2026-10-01');
+  assert.equal(summary14.cells[0].daysAgo, 29);
+  assert.equal(summary14.cells[29].dateIso, '2026-10-30');
+  assert.equal(summary14.cells[29].isToday, true);
+  assert.equal(summary14.currentStreakDays, 14);
+  assert.ok(summary14.longestStreakInWindow >= 14);
+  assert.ok(summary14.activeDaysCount >= 14 && summary14.activeDaysCount <= 30);
+  assert.ok(summary14.totalContributions > 0);
+  assert.ok(summary14.totalXpInWindow > 0);
+  assert.ok(summary14.totalMinutesInWindow > 0);
+  assert.equal(summary14.streakEvaluation.multiplier, 1.5); // 14-day streak = 1.5x
+
+  // Verify the last 14 cells are marked as part of the current streak, and cell 15 (14 days ago = index 15) is the streak boundary gap
+  const streakCellsCount = summary14.cells.filter((c) => c.isPartOfCurrentStreak).length;
+  assert.equal(streakCellsCount, 14);
+  assert.equal(summary14.cells[29].isPartOfCurrentStreak, true);
+  assert.equal(summary14.cells[16].isPartOfCurrentStreak, true);
+  assert.equal(summary14.cells[15].isPartOfCurrentStreak, false);
+
+  // 4. Verify category filtering changes filteredContributions while preserving 30 cells
+  const summaryMissions = buildThirtyDayActivityHeatmap({
+    referenceDateIso: '2026-10-30',
+    targetCurrentStreak: 14,
+    categoryFilter: 'missions',
+  });
+  const summaryDeepWork = buildThirtyDayActivityHeatmap({
+    referenceDateIso: '2026-10-30',
+    targetCurrentStreak: 14,
+    categoryFilter: 'deep-work',
+  });
+
+  assert.equal(summaryMissions.cells.length, 30);
+  assert.equal(summaryDeepWork.cells.length, 30);
+  assert.ok(
+    summaryMissions.cells[29].filteredContributions <=
+      summary14.cells[29].totalContributions
+  );
+  assert.ok(
+    summaryDeepWork.cells[29].filteredContributions <=
+      summary14.cells[29].totalContributions
+  );
+
+  // 5. Verify daily activity boost increases today's contributions and XP
+  const boostRes = recordThirtyDayActivityBoost({
+    dateIso: '2026-10-30',
+    extraMissions: 2,
+    extraDeepWork: 1,
+    extraStudioActions: 1,
+  });
+  assert.equal(boostRes.updatedOverride.dateIso, '2026-10-30');
+  assert.ok((boostRes.updatedOverride.extraMissions || 0) >= 2);
+
+  const summaryWithBoost = buildThirtyDayActivityHeatmap({
+    referenceDateIso: '2026-10-30',
+    targetCurrentStreak: 15,
+    overridesMap: {
+      '2026-10-30': boostRes.updatedOverride,
+    },
+  });
+  assert.ok(
+    summaryWithBoost.cells[29].totalContributions >
+      summary14.cells[29].totalContributions
+  );
+  assert.ok(
+    summaryWithBoost.cells[29].xpEarned > summary14.cells[29].xpEarned
+  );
+});
+
+
+
+
 
 

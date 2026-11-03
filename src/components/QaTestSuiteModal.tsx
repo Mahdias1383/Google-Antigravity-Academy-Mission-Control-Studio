@@ -367,14 +367,14 @@ export const QaTestSuiteModal: React.FC<QaTestSuiteModalProps> = ({
       {/* QA Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-purple-950 via-slate-900 to-indigo-950 border border-purple-500/30 shadow-xl">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-purple-600/20 border border-purple-500/40 flex items-center justify-center text-purple-400 shadow">
+          <div className="w-11 h-11 rounded-2xl bg-purple-600/20 border border-purple-500/40 flex items-center justify-center text-purple-400 shadow shrink-0">
             <FlaskConical className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              {isRtl ? 'سامانه آزمون‌های خودکار و تضمین کیفیت مهندسی (QA Runner)' : 'Engineering QA & Automated Test Suite'}
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-400/30 font-semibold">
-                5 Phases
+            <h2 className="text-lg font-bold text-white flex flex-wrap items-center gap-2">
+              <span>{isRtl ? 'سامانه آزمون‌های خودکار و تضمین کیفیت مهندسی (QA Runner)' : 'Engineering QA & Automated Test Suite'}</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-400/30 font-semibold whitespace-nowrap">
+                {isRtl ? '۵ فاز آزمون' : '5 Phases'}
               </span>
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
@@ -388,9 +388,9 @@ export const QaTestSuiteModal: React.FC<QaTestSuiteModalProps> = ({
         <button
           disabled={isRunning}
           onClick={runAllTests}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-lg shadow-purple-900/40 transition cursor-pointer"
+          className="h-10 inline-flex items-center justify-center gap-2 px-5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-lg shadow-purple-900/40 transition cursor-pointer whitespace-nowrap shrink-0"
         >
-          <Play className={`w-4 h-4 ${isRunning ? 'animate-spin' : ''}`} />
+          <Play className={`w-4 h-4 shrink-0 ${isRunning ? 'animate-spin' : ''}`} />
           <span>{isRunning ? (isRtl ? 'در حال اجرای آزمون‌ها...' : 'Running Tests...') : (isRtl ? 'اجرای کلیه آزمون‌ها' : 'Run All Test Phases')}</span>
         </button>
       </div>
@@ -400,8 +400,8 @@ export const QaTestSuiteModal: React.FC<QaTestSuiteModalProps> = ({
         <div className="flex flex-wrap items-center gap-1.5 text-xs">
           <button
             onClick={() => setSelectedPhase(0)}
-            className={`px-3 py-1.5 rounded-lg font-medium transition cursor-pointer ${
-              selectedPhase === 0 ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            className={`h-8 inline-flex items-center justify-center px-3 rounded-lg font-semibold transition cursor-pointer whitespace-nowrap shrink-0 ${
+              selectedPhase === 0 ? 'bg-purple-600 text-white shadow' : 'text-slate-400 hover:text-white hover:bg-slate-800'
             }`}
           >
             {isRtl ? 'همه فازها' : 'All Phases'}
@@ -410,23 +410,23 @@ export const QaTestSuiteModal: React.FC<QaTestSuiteModalProps> = ({
             <button
               key={ph}
               onClick={() => setSelectedPhase(ph)}
-              className={`px-3 py-1.5 rounded-lg font-medium transition cursor-pointer ${
-                selectedPhase === ph ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              className={`h-8 inline-flex items-center justify-center px-3 rounded-lg font-semibold transition cursor-pointer whitespace-nowrap shrink-0 ${
+                selectedPhase === ph ? 'bg-purple-600 text-white shadow' : 'text-slate-400 hover:text-white hover:bg-slate-800'
               }`}
             >
-              Phase {ph}
+              {isRtl ? `فاز ${ph.toLocaleString('fa-IR')}` : `Phase ${ph}`}
             </button>
           ))}
         </div>
 
         {results.length > 0 && (
-          <div className="flex items-center gap-3 text-xs font-mono">
-            <span className="flex items-center gap-1 text-emerald-400">
-              <CheckCircle className="w-3.5 h-3.5" />
+          <div className="flex items-center gap-3 text-xs font-mono shrink-0">
+            <span className="flex items-center gap-1 text-emerald-400 whitespace-nowrap">
+              <CheckCircle className="w-3.5 h-3.5 shrink-0" />
               {passedCount} {isRtl ? 'قبول' : 'Passed'}
             </span>
-            <span className="flex items-center gap-1 text-rose-400">
-              <XCircle className="w-3.5 h-3.5" />
+            <span className="flex items-center gap-1 text-rose-400 whitespace-nowrap">
+              <XCircle className="w-3.5 h-3.5 shrink-0" />
               {failedCount} {isRtl ? 'رد' : 'Failed'}
             </span>
           </div>

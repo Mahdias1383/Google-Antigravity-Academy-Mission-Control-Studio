@@ -165,9 +165,9 @@ export const PassengerPortal: React.FC<PassengerPortalProps> = ({
         </div>
 
         {/* Digital Wallet Card */}
-        <div className="flex items-center gap-4 bg-slate-800/90 border border-slate-700/80 p-3.5 rounded-xl">
+        <div className="flex items-center justify-between sm:justify-start gap-4 bg-slate-800/90 border border-slate-700/80 p-3.5 rounded-xl shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+            <div className="w-10 h-10 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
               <Wallet className="w-5 h-5" />
             </div>
             <div>
@@ -181,40 +181,40 @@ export const PassengerPortal: React.FC<PassengerPortalProps> = ({
 
           <button
             onClick={() => setTopUpModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-lg shadow-emerald-900/30 transition cursor-pointer"
+            className="h-9 inline-flex items-center justify-center gap-1.5 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-lg shadow-emerald-900/30 transition cursor-pointer whitespace-nowrap shrink-0"
           >
-            <PlusCircle className="w-3.5 h-3.5" />
+            <PlusCircle className="w-3.5 h-3.5 shrink-0" />
             <span>{t.topUpWallet}</span>
           </button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+      <div className="flex flex-wrap items-center gap-2 border-b border-slate-800 pb-2.5">
         <button
           onClick={() => setActiveTab('browse')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition cursor-pointer ${
+          className={`h-9 inline-flex items-center justify-center gap-2 px-4 rounded-xl text-xs font-semibold transition cursor-pointer whitespace-nowrap shrink-0 ${
             activeTab === 'browse'
               ? 'bg-blue-600 text-white shadow-md'
               : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
           }`}
         >
-          <Train className="w-4 h-4" />
+          <Train className="w-4 h-4 shrink-0" />
           <span>{t.searchTrains}</span>
         </button>
 
         <button
           onClick={() => setActiveTab('my-tickets')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition cursor-pointer ${
+          className={`h-9 inline-flex items-center justify-center gap-2 px-4 rounded-xl text-xs font-semibold transition cursor-pointer whitespace-nowrap shrink-0 ${
             activeTab === 'my-tickets'
               ? 'bg-blue-600 text-white shadow-md'
               : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
           }`}
         >
-          <TicketIcon className="w-4 h-4" />
+          <TicketIcon className="w-4 h-4 shrink-0" />
           <span>{t.myTickets}</span>
           {userTickets.filter((tk) => tk.status === 'confirmed').length > 0 && (
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500 text-white">
+            <span className="px-1.5 py-0.5 leading-none rounded-full text-[10px] bg-emerald-500 text-white font-mono">
               {userTickets.filter((tk) => tk.status === 'confirmed').length}
             </span>
           )}
@@ -222,13 +222,13 @@ export const PassengerPortal: React.FC<PassengerPortalProps> = ({
 
         <button
           onClick={() => setActiveTab('wallet')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition cursor-pointer ${
+          className={`h-9 inline-flex items-center justify-center gap-2 px-4 rounded-xl text-xs font-semibold transition cursor-pointer whitespace-nowrap shrink-0 ${
             activeTab === 'wallet'
               ? 'bg-blue-600 text-white shadow-md'
               : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
           }`}
         >
-          <CreditCard className="w-4 h-4" />
+          <CreditCard className="w-4 h-4 shrink-0" />
           <span>{isRtl ? 'گردش حساب و تراکنش‌ها' : 'Wallet Ledger'}</span>
         </button>
       </div>
@@ -237,15 +237,15 @@ export const PassengerPortal: React.FC<PassengerPortalProps> = ({
       {activeTab === 'browse' && (
         <div className="space-y-4">
           {/* Corridor Filter */}
-          <div className="flex items-center justify-between gap-3 p-3 bg-slate-900/80 border border-slate-800 rounded-xl">
-            <div className="flex items-center gap-2 text-xs text-slate-300">
-              <MapPin className="w-4 h-4 text-blue-400" />
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 bg-slate-900/80 border border-slate-800 rounded-xl">
+            <div className="flex items-center gap-2 text-xs font-medium text-slate-300">
+              <MapPin className="w-4 h-4 text-blue-400 shrink-0" />
               <span>{isRtl ? 'فیلتر بر اساس مسیر ریلی:' : 'Filter by Route Corridor:'}</span>
             </div>
             <select
               value={selectedLineId}
               onChange={(e) => setSelectedLineId(e.target.value)}
-              className="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-blue-500 cursor-pointer"
+              className="h-9 bg-slate-800 border border-slate-700 text-slate-200 text-xs font-medium rounded-xl px-3 focus:outline-none focus:border-blue-500 cursor-pointer"
             >
               <option value="all">{isRtl ? 'همه خطوط سراسری' : 'All National Corridors'}</option>
               {lines.map((l) => (
@@ -494,15 +494,15 @@ export const PassengerPortal: React.FC<PassengerPortalProps> = ({
       {/* Booking Modal */}
       {bookingTrain && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 flex flex-col gap-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <TicketIcon className="w-5 h-5 text-blue-400" />
-                {isRtl ? `رزرو بلیت قطار ${bookingTrain.trainNumber}` : `Book Train ${bookingTrain.trainNumber}`}
+                <TicketIcon className="w-5 h-5 text-blue-400 shrink-0" />
+                <span>{isRtl ? `رزرو بلیت قطار ${bookingTrain.trainNumber}` : `Book Train ${bookingTrain.trainNumber}`}</span>
               </h3>
               <button
                 onClick={() => setBookingTrain(null)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg bg-slate-800 cursor-pointer"
+                className="text-slate-400 hover:text-white p-1.5 rounded-lg bg-slate-800 cursor-pointer"
               >
                 ✕
               </button>
@@ -515,8 +515,8 @@ export const PassengerPortal: React.FC<PassengerPortalProps> = ({
               </div>
             )}
 
-            <form onSubmit={handleExecuteBooking} className="space-y-4 text-xs">
-              <div className="p-3 bg-slate-800/60 rounded-xl space-y-1.5 border border-slate-700">
+            <form onSubmit={handleExecuteBooking} className="flex flex-col gap-4 text-xs">
+              <div className="p-3.5 bg-slate-800/60 rounded-xl flex flex-col gap-2 border border-slate-700">
                 <div className="flex justify-between text-slate-300">
                   <span>{isRtl ? 'قطار انتخابی:' : 'Selected Train:'}</span>
                   <span className="font-semibold text-white">{isRtl ? bookingTrain.trainNameFa : bookingTrain.trainNameEn}</span>
@@ -533,27 +533,27 @@ export const PassengerPortal: React.FC<PassengerPortalProps> = ({
                 </div>
               </div>
 
-              <div>
-                <label className="text-slate-300 block mb-1 font-semibold">{isRtl ? 'تعداد صندلی درخواستی:' : 'Seat Count:'}</label>
-                <div className="flex items-center gap-3">
+              <div className="flex flex-col gap-2">
+                <label className="text-slate-300 font-semibold">{isRtl ? 'تعداد صندلی درخواستی:' : 'Seat Count:'}</label>
+                <div className="grid grid-cols-4 gap-3">
                   {[1, 2, 3, 4].map((cnt) => (
                     <button
                       key={cnt}
                       type="button"
                       onClick={() => setSelectedSeatCount(cnt)}
-                      className={`flex-1 py-2.5 rounded-xl font-bold transition cursor-pointer border ${
+                      className={`h-10 inline-flex items-center justify-center rounded-xl font-bold transition cursor-pointer border ${
                         selectedSeatCount === cnt
                           ? 'bg-blue-600 text-white border-blue-400 shadow-md'
                           : 'bg-slate-800 text-slate-300 border-slate-700 hover:border-slate-500'
                       }`}
                     >
-                      {cnt}
+                      {cnt.toLocaleString(isRtl ? 'fa-IR' : 'en-US')}
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div className="p-3.5 bg-blue-950/50 border border-blue-500/40 rounded-xl space-y-2">
+              <div className="p-3.5 bg-blue-950/50 border border-blue-500/40 rounded-xl flex flex-col gap-2">
                 <div className="flex items-center justify-between text-slate-300">
                   <span>{isRtl ? 'مجموع قابل پرداخت:' : 'Total Payable:'}</span>
                   <span className="text-base font-bold text-amber-300 font-mono">
@@ -569,17 +569,17 @@ export const PassengerPortal: React.FC<PassengerPortalProps> = ({
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setBookingTrain(null)}
-                  className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer"
+                  className="h-9 px-4 inline-flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium cursor-pointer"
                 >
                   {isRtl ? 'انصراف' : 'Cancel'}
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition cursor-pointer shadow-lg shadow-emerald-900/30"
+                  className="h-9 px-5 inline-flex items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition cursor-pointer shadow-lg shadow-emerald-900/30"
                 >
                   {isRtl ? 'تایید و صدور بلیت' : 'Confirm & Reserve'}
                 </button>
@@ -691,64 +691,70 @@ export const PassengerPortal: React.FC<PassengerPortalProps> = ({
       {/* Top-Up Wallet Modal */}
       {topUpModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 flex flex-col gap-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Wallet className="w-5 h-5 text-emerald-400" />
-                {t.topUpWallet}
+                <Wallet className="w-5 h-5 text-emerald-400 shrink-0" />
+                <span>{t.topUpWallet}</span>
               </h3>
               <button
                 onClick={() => setTopUpModalOpen(false)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg bg-slate-800 cursor-pointer"
+                className="text-slate-400 hover:text-white p-1.5 rounded-lg bg-slate-800 cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleTopUpSubmit} className="space-y-4 text-xs">
-              <div>
-                <label className="text-slate-300 block mb-1 font-semibold">{isRtl ? 'مبلغ شارژ (تومان):' : 'Amount (Tomans):'}</label>
-                <input
-                  type="number"
-                  value={topUpAmount}
-                  onChange={(e) => setTopUpAmount(Number(e.target.value))}
-                  step="100000"
-                  min="100000"
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white font-mono text-sm"
-                  required
-                />
+            <form onSubmit={handleTopUpSubmit} className="flex flex-col gap-4 text-xs">
+              <div className="grid grid-cols-auto gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-slate-300 font-semibold">{isRtl ? 'مبلغ شارژ (تومان):' : 'Amount (Tomans):'}</label>
+                  <input
+                    type="number"
+                    value={topUpAmount}
+                    onChange={(e) => setTopUpAmount(Number(e.target.value))}
+                    step="100000"
+                    min="100000"
+                    className="w-full h-11 bg-slate-800 border border-slate-700 focus:border-emerald-500 rounded-xl px-3.5 text-white font-mono text-sm focus:outline-none"
+                    required
+                  />
+                </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-2.5">
                 {[500000, 1000000, 2000000].map((amt) => (
                   <button
                     key={amt}
                     type="button"
                     onClick={() => setTopUpAmount(amt)}
-                    className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-mono text-[11px] cursor-pointer"
+                    className={`h-9 inline-flex items-center justify-center rounded-xl border font-mono text-[11px] font-semibold transition cursor-pointer ${
+                      topUpAmount === amt
+                        ? 'bg-emerald-600/30 border-emerald-500 text-emerald-200'
+                        : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-200'
+                    }`}
                   >
                     {amt.toLocaleString(isRtl ? 'fa-IR' : 'en-US')}
                   </button>
                 ))}
               </div>
 
-              <div className="p-3 bg-slate-800/60 rounded-xl text-[11px] text-slate-400">
+              <div className="p-3 bg-slate-800/60 rounded-xl text-[11px] text-slate-400 leading-relaxed">
                 {isRtl
                   ? 'این شارژ به‌صورت آنی در کیف پول دیجیتال اعمال شده و رویداد آن در Activity Monitor ذخیره خواهد شد.'
                   : 'Balance is credited instantaneously and audited in the Activity Monitor.'}
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setTopUpModalOpen(false)}
-                  className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer"
+                  className="h-9 px-4 inline-flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium cursor-pointer"
                 >
                   {isRtl ? 'انصراف' : 'Cancel'}
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition cursor-pointer"
+                  className="h-9 px-5 inline-flex items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition cursor-pointer shadow-lg shadow-emerald-900/30"
                 >
                   {isRtl ? 'شارژ آنلاین کیف پول' : 'Confirm Top-Up'}
                 </button>

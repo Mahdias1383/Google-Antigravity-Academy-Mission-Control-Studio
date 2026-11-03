@@ -148,27 +148,27 @@ export const OperationsPortal: React.FC<OperationsPortalProps> = ({
       )}
 
       {/* Corridor Line Selector Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 border border-slate-700 shadow-lg">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 border border-slate-700 shadow-lg">
         <div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Train className="w-5 h-5 text-blue-400" />
-            {t.operationsPortal}
+            <Train className="w-5 h-5 text-blue-400 shrink-0" />
+            <span>{t.operationsPortal}</span>
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-400 mt-1">
             {isRtl
               ? 'پایش حرکت قطارها، بهینه‌سازی جداول زمانی و پیشگیری لحظه‌ای از سوانح با الگوریتم checkAccident'
               : 'Real-time timetable dispatching and collision mitigation via mathematical checkAccident engine'}
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <label className="text-xs text-slate-300 font-medium whitespace-nowrap">
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <label className="text-xs text-slate-300 font-semibold whitespace-nowrap">
             {isRtl ? 'انتخاب خط سیر:' : 'Select Corridor:'}
           </label>
           <select
             value={selectedLineId}
             onChange={(e) => setSelectedLineId(e.target.value)}
-            className="bg-slate-800 border border-slate-600 text-white text-xs rounded-xl px-3 py-2 font-medium focus:outline-none focus:border-blue-500 cursor-pointer"
+            className="h-9 bg-slate-800 border border-slate-600 text-white text-xs rounded-xl px-3 font-medium focus:outline-none focus:border-blue-500 cursor-pointer shrink-0"
           >
             {lines.map((l) => (
               <option key={l.id} value={l.id}>
@@ -179,10 +179,10 @@ export const OperationsPortal: React.FC<OperationsPortalProps> = ({
 
           <button
             onClick={() => setNewTrainModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white transition cursor-pointer shadow-lg shadow-blue-900/30 whitespace-nowrap"
+            className="h-9 inline-flex items-center justify-center gap-1.5 px-3.5 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white transition cursor-pointer shadow-lg shadow-blue-900/30 whitespace-nowrap shrink-0"
           >
-            <PlusCircle className="w-4 h-4" />
-            {isRtl ? 'ثبت قطار جدید در برنامه' : 'Schedule New Train'}
+            <PlusCircle className="w-4 h-4 shrink-0" />
+            <span>{isRtl ? 'ثبت قطار جدید در برنامه' : 'Schedule New Train'}</span>
           </button>
         </div>
       </div>
@@ -333,88 +333,90 @@ export const OperationsPortal: React.FC<OperationsPortalProps> = ({
       {/* Edit Schedule Modal */}
       {editingSchedule && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 flex flex-col gap-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Edit2 className="w-4 h-4 text-amber-400" />
-                {isRtl ? `ویرایش زمان‌بندی قطار ${editingSchedule.trainNumber}` : `Edit Train ${editingSchedule.trainNumber}`}
+                <Edit2 className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>{isRtl ? `ویرایش زمان‌بندی قطار ${editingSchedule.trainNumber}` : `Edit Train ${editingSchedule.trainNumber}`}</span>
               </h3>
               <button
                 onClick={() => setEditingSchedule(null)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg bg-slate-800 cursor-pointer"
+                className="text-slate-400 hover:text-white p-1.5 rounded-lg bg-slate-800 cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleSaveEdit} className="space-y-4 text-xs">
-              <div>
-                <label className="text-slate-300 block mb-1 font-medium">{t.departureTime} (HH:MM)</label>
-                <input
-                  type="text"
-                  value={editingSchedule.departureTime}
-                  onChange={(e) => setEditingSchedule({ ...editingSchedule, departureTime: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white font-mono"
-                  required
-                />
-              </div>
+            <form onSubmit={handleSaveEdit} className="flex flex-col gap-4 text-xs">
+              <div className="grid grid-cols-auto gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-slate-300 font-semibold">{t.departureTime} (HH:MM)</label>
+                  <input
+                    type="text"
+                    value={editingSchedule.departureTime}
+                    onChange={(e) => setEditingSchedule({ ...editingSchedule, departureTime: e.target.value })}
+                    className="w-full h-10 bg-slate-800 border border-slate-700 focus:border-amber-500 rounded-xl px-3 text-white font-mono focus:outline-none"
+                    required
+                  />
+                </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-slate-300 block mb-1 font-medium">{t.trainSpeed} (km/h)</label>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-slate-300 font-semibold">{t.trainSpeed} (km/h)</label>
                   <input
                     type="number"
                     value={editingSchedule.speedKmh}
                     onChange={(e) => setEditingSchedule({ ...editingSchedule, speedKmh: Number(e.target.value) })}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white font-mono"
+                    className="w-full h-10 bg-slate-800 border border-slate-700 focus:border-amber-500 rounded-xl px-3 text-white font-mono focus:outline-none"
                     min="40"
                     max="300"
                     required
                   />
                 </div>
+              </div>
 
-                <div>
-                  <label className="text-slate-300 block mb-1 font-medium">{t.trainCapacity}</label>
+              <div className="grid grid-cols-auto gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-slate-300 font-semibold">{t.trainCapacity}</label>
                   <input
                     type="number"
                     value={editingSchedule.totalCapacity}
                     onChange={(e) => setEditingSchedule({ ...editingSchedule, totalCapacity: Number(e.target.value) })}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white font-mono"
+                    className="w-full h-10 bg-slate-800 border border-slate-700 focus:border-amber-500 rounded-xl px-3 text-white font-mono focus:outline-none"
                     min="50"
+                    required
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-slate-300 font-semibold">{t.priceToman}</label>
+                  <input
+                    type="number"
+                    value={editingSchedule.ticketPrice}
+                    onChange={(e) => setEditingSchedule({ ...editingSchedule, ticketPrice: Number(e.target.value) })}
+                    className="w-full h-10 bg-slate-800 border border-slate-700 focus:border-amber-500 rounded-xl px-3 text-white font-mono focus:outline-none"
+                    step="10000"
                     required
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="text-slate-300 block mb-1 font-medium">{t.priceToman}</label>
-                <input
-                  type="number"
-                  value={editingSchedule.ticketPrice}
-                  onChange={(e) => setEditingSchedule({ ...editingSchedule, ticketPrice: Number(e.target.value) })}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white font-mono"
-                  step="10000"
-                  required
-                />
-              </div>
-
-              <div className="p-3 bg-amber-950/40 border border-amber-600/30 rounded-xl text-amber-200 text-[11px]">
+              <div className="p-3 bg-amber-950/40 border border-amber-600/30 rounded-xl text-amber-200 text-[11px] leading-relaxed">
                 {isRtl
                   ? 'توجه: هرگونه تغییر در زمان حرکت یا سرعت قطار به‌صورت خودکار در لاگ حسابرسی امنیتی (Activity Monitor) ثبت و امضا می‌شود.'
                   : 'Notice: Modifications to departure time or speed are automatically tracked in the Admin Activity Monitor audit log.'}
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setEditingSchedule(null)}
-                  className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer"
+                  className="h-9 px-4 inline-flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium cursor-pointer"
                 >
                   {isRtl ? 'انصراف' : 'Cancel'}
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-semibold transition cursor-pointer"
+                  className="h-9 px-5 inline-flex items-center justify-center rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold transition cursor-pointer shadow-lg shadow-amber-900/30"
                 >
                   {isRtl ? 'ذخیره تغییرات و اعمال' : 'Save Changes'}
                 </button>
@@ -427,63 +429,65 @@ export const OperationsPortal: React.FC<OperationsPortalProps> = ({
       {/* New Train Modal */}
       {newTrainModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 flex flex-col gap-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <PlusCircle className="w-4 h-4 text-blue-400" />
-                {isRtl ? `تعریف قطار جدید در خط ${selectedLine?.nameFa}` : `Schedule New Train on ${selectedLine?.nameEn}`}
+                <PlusCircle className="w-4 h-4 text-blue-400 shrink-0" />
+                <span>{isRtl ? `تعریف قطار جدید در خط ${selectedLine?.nameFa}` : `Schedule New Train on ${selectedLine?.nameEn}`}</span>
               </h3>
               <button
                 onClick={() => setNewTrainModalOpen(false)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg bg-slate-800 cursor-pointer"
+                className="text-slate-400 hover:text-white p-1.5 rounded-lg bg-slate-800 cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleCreateTrain} className="space-y-3.5 text-xs">
-              <div>
-                <label className="text-slate-300 block mb-1 font-medium">{isRtl ? 'شماره قطار (کد سیر):' : 'Train Number:'}</label>
-                <input
-                  type="text"
-                  value={formTrainNumber}
-                  onChange={(e) => setFormTrainNumber(e.target.value)}
-                  placeholder="۱۰۴ صبا"
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-slate-300 block mb-1 font-medium">{isRtl ? 'نام قطار و کلاس سرویس:' : 'Train Name & Class:'}</label>
-                <input
-                  type="text"
-                  value={formTrainNameFa}
-                  onChange={(e) => setFormTrainNameFa(e.target.value)}
-                  placeholder="قطار تندرو ۴ ستاره صبا"
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-slate-300 block mb-1 font-medium">{t.departureTime} (HH:MM)</label>
+            <form onSubmit={handleCreateTrain} className="flex flex-col gap-4 text-xs">
+              <div className="grid grid-cols-auto gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-slate-300 font-semibold">{isRtl ? 'شماره قطار (کد سیر):' : 'Train Number:'}</label>
                   <input
                     type="text"
-                    value={formDeparture}
-                    onChange={(e) => setFormDeparture(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white font-mono"
+                    value={formTrainNumber}
+                    onChange={(e) => setFormTrainNumber(e.target.value)}
+                    placeholder="۱۰۴ صبا"
+                    className="w-full h-10 bg-slate-800 border border-slate-700 focus:border-blue-500 rounded-xl px-3 text-white focus:outline-none"
                     required
                   />
                 </div>
 
-                <div>
-                  <label className="text-slate-300 block mb-1 font-medium">{t.trainSpeed} (km/h)</label>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-slate-300 font-semibold">{isRtl ? 'نام قطار و کلاس سرویس:' : 'Train Name & Class:'}</label>
+                  <input
+                    type="text"
+                    value={formTrainNameFa}
+                    onChange={(e) => setFormTrainNameFa(e.target.value)}
+                    placeholder="قطار تندرو ۴ ستاره صبا"
+                    className="w-full h-10 bg-slate-800 border border-slate-700 focus:border-blue-500 rounded-xl px-3 text-white focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-auto gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-slate-300 font-semibold">{t.departureTime} (HH:MM)</label>
+                  <input
+                    type="text"
+                    value={formDeparture}
+                    onChange={(e) => setFormDeparture(e.target.value)}
+                    className="w-full h-10 bg-slate-800 border border-slate-700 focus:border-blue-500 rounded-xl px-3 text-white font-mono focus:outline-none"
+                    required
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-slate-300 font-semibold">{t.trainSpeed} (km/h)</label>
                   <input
                     type="number"
                     value={formSpeed}
                     onChange={(e) => setFormSpeed(Number(e.target.value))}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white font-mono"
+                    className="w-full h-10 bg-slate-800 border border-slate-700 focus:border-blue-500 rounded-xl px-3 text-white font-mono focus:outline-none"
                     min="60"
                     max="250"
                     required
@@ -491,43 +495,43 @@ export const OperationsPortal: React.FC<OperationsPortalProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-slate-300 block mb-1 font-medium">{t.trainCapacity}</label>
+              <div className="grid grid-cols-auto gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-slate-300 font-semibold">{t.trainCapacity}</label>
                   <input
                     type="number"
                     value={formCapacity}
                     onChange={(e) => setFormCapacity(Number(e.target.value))}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white font-mono"
+                    className="w-full h-10 bg-slate-800 border border-slate-700 focus:border-blue-500 rounded-xl px-3 text-white font-mono focus:outline-none"
                     min="50"
                     required
                   />
                 </div>
 
-                <div>
-                  <label className="text-slate-300 block mb-1 font-medium">{t.priceToman}</label>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-slate-300 font-semibold">{t.priceToman}</label>
                   <input
                     type="number"
                     value={formPrice}
                     onChange={(e) => setFormPrice(Number(e.target.value))}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white font-mono"
+                    className="w-full h-10 bg-slate-800 border border-slate-700 focus:border-blue-500 rounded-xl px-3 text-white font-mono focus:outline-none"
                     step="10000"
                     required
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setNewTrainModalOpen(false)}
-                  className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer"
+                  className="h-9 px-4 inline-flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium cursor-pointer"
                 >
                   {isRtl ? 'انصراف' : 'Cancel'}
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold transition cursor-pointer"
+                  className="h-9 px-5 inline-flex items-center justify-center rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold transition cursor-pointer shadow-lg shadow-blue-900/30"
                 >
                   {isRtl ? 'ثبت و ثبت در لاگ حسابرسی' : 'Schedule & Audit'}
                 </button>

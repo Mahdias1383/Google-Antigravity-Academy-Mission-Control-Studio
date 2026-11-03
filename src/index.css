@@ -106,6 +106,15 @@
     font-feature-settings: "tnum" 1;
   }
 
+  button, select, input {
+    font-family: inherit;
+  }
+
+  input[type="date"] {
+    direction: ltr;
+    text-align: center;
+  }
+
   ::selection {
     background-color: rgba(59, 130, 246, 0.25);
     color: inherit;
@@ -123,6 +132,10 @@
 }
 
 @layer components {
+  .grid-cols-auto {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+
   .ltr-inline {
     font-family: var(--font-mono);
     direction: ltr;

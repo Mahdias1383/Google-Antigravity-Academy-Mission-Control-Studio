@@ -109,9 +109,13 @@ export default defineConfig(() => {
       },
     ],
     resolve: {
+      dedupe: ['react', 'react-dom'],
       alias: {
         '@': path.resolve(__dirname, '.'),
       },
+    },
+    optimizeDeps: {
+      include: ['react', 'react-dom', 'recharts'],
     },
     server: {
       // HMR and WebSocket server are disabled in AI Studio to prevent WebSocket connection errors.

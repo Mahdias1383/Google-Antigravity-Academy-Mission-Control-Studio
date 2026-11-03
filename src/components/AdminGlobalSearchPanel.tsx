@@ -151,8 +151,8 @@ export const AdminGlobalSearchPanel: React.FC<AdminGlobalSearchPanelProps> = ({
         </div>
 
         {/* Quick Search Chips */}
-        <div className="flex flex-wrap items-center gap-1.5 text-xs">
-          <span className="text-slate-400 text-[11px] me-1">
+        <div className="flex flex-wrap items-center gap-1.5 text-xs shrink-0">
+          <span className="text-slate-400 text-[11px] font-medium me-1 whitespace-nowrap">
             {isRtl ? 'جستجوی سریع:' : 'Quick Try:'}
           </span>
           {quickQueries.map((chip) => (
@@ -160,9 +160,9 @@ export const AdminGlobalSearchPanel: React.FC<AdminGlobalSearchPanelProps> = ({
               key={chip.value}
               type="button"
               onClick={() => setQuery(chip.value)}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border transition cursor-pointer ${
+              className={`h-7 inline-flex items-center justify-center px-2.5 rounded-lg text-[11px] font-medium border transition cursor-pointer whitespace-nowrap shrink-0 ${
                 query === chip.value
-                  ? 'bg-blue-600 text-white border-blue-400'
+                  ? 'bg-blue-600 text-white border-blue-400 shadow-sm'
                   : 'bg-slate-800/90 hover:bg-slate-700 text-slate-300 border-slate-700'
               }`}
             >
@@ -175,7 +175,7 @@ export const AdminGlobalSearchPanel: React.FC<AdminGlobalSearchPanelProps> = ({
       {/* Search Box */}
       <div className="relative">
         <Search
-          className={`w-4 h-4 text-blue-400 absolute top-1/2 -translate-y-1/2 ${
+          className={`w-4 h-4 text-blue-400 absolute top-1/2 -translate-y-1/2 pointer-events-none ${
             isRtl ? 'right-3.5' : 'left-3.5'
           }`}
         />
@@ -194,20 +194,18 @@ export const AdminGlobalSearchPanel: React.FC<AdminGlobalSearchPanelProps> = ({
               ? 'شماره قطار (مثلاً ۱۰۱)، کد رزرو (PNR-8921-FA)، نام مسافر، ایستگاه یا شناسه لاگ را وارد کنید...'
               : 'Search train number (e.g. 101), ticket PNR (PNR-8921-FA), passenger name, station, or audit event...'
           }
-          className={`w-full bg-slate-950/90 border border-slate-700 focus:border-blue-500 rounded-xl py-3 text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition ${
-            isRtl ? 'pr-10 pl-24' : 'pl-10 pr-24'
-          }`}
+          className="w-full h-11 bg-slate-950/90 border border-slate-700 focus:border-blue-500 rounded-xl ps-10 pe-24 text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition"
         />
         {hasActiveQuery && (
           <button
             type="button"
             onClick={() => setQuery('')}
             aria-label={isRtl ? 'پاک کردن جستجو' : 'Clear global search'}
-            className={`absolute top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs flex items-center gap-1 cursor-pointer ${
+            className={`h-7 absolute top-1/2 -translate-y-1/2 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs inline-flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap ${
               isRtl ? 'left-2.5' : 'right-2.5'
             }`}
           >
-            <X className="w-3.5 h-3.5" />
+            <X className="w-3.5 h-3.5 shrink-0" />
             <span>{isRtl ? 'پاک کردن' : 'Clear'}</span>
           </button>
         )}
@@ -222,15 +220,15 @@ export const AdminGlobalSearchPanel: React.FC<AdminGlobalSearchPanelProps> = ({
               <button
                 type="button"
                 onClick={() => setCategory('all')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                className={`h-8 inline-flex items-center justify-center gap-1.5 px-3 rounded-xl text-xs font-semibold transition cursor-pointer whitespace-nowrap shrink-0 ${
                   category === 'all'
                     ? 'bg-blue-600 text-white shadow'
                     : 'bg-slate-800/80 text-slate-300 hover:text-white'
                 }`}
               >
-                <Layers className="w-3.5 h-3.5" />
+                <Layers className="w-3.5 h-3.5 shrink-0" />
                 <span>{isRtl ? 'همه نتایج' : 'All Results'}</span>
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-black/30 font-mono">
+                <span className="px-1.5 py-0.5 rounded-full text-[10px] leading-none bg-black/30 font-mono">
                   {allCategorySearch.totalCount}
                 </span>
               </button>
@@ -238,15 +236,15 @@ export const AdminGlobalSearchPanel: React.FC<AdminGlobalSearchPanelProps> = ({
               <button
                 type="button"
                 onClick={() => setCategory('schedules')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                className={`h-8 inline-flex items-center justify-center gap-1.5 px-3 rounded-xl text-xs font-semibold transition cursor-pointer whitespace-nowrap shrink-0 ${
                   category === 'schedules'
                     ? 'bg-amber-600 text-white shadow'
                     : 'bg-slate-800/80 text-slate-300 hover:text-white'
                 }`}
               >
-                <Train className="w-3.5 h-3.5" />
+                <Train className="w-3.5 h-3.5 shrink-0" />
                 <span>{isRtl ? 'برنامه حرکت قطارها' : 'Train Schedules'}</span>
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-black/30 font-mono">
+                <span className="px-1.5 py-0.5 rounded-full text-[10px] leading-none bg-black/30 font-mono">
                   {allCategorySearch.schedules.length}
                 </span>
               </button>
@@ -254,15 +252,15 @@ export const AdminGlobalSearchPanel: React.FC<AdminGlobalSearchPanelProps> = ({
               <button
                 type="button"
                 onClick={() => setCategory('tickets')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                className={`h-8 inline-flex items-center justify-center gap-1.5 px-3 rounded-xl text-xs font-semibold transition cursor-pointer whitespace-nowrap shrink-0 ${
                   category === 'tickets'
                     ? 'bg-emerald-600 text-white shadow'
                     : 'bg-slate-800/80 text-slate-300 hover:text-white'
                 }`}
               >
-                <TicketIcon className="w-3.5 h-3.5" />
+                <TicketIcon className="w-3.5 h-3.5 shrink-0" />
                 <span>{isRtl ? 'بلیت‌های مسافران' : 'Passenger Tickets'}</span>
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-black/30 font-mono">
+                <span className="px-1.5 py-0.5 rounded-full text-[10px] leading-none bg-black/30 font-mono">
                   {allCategorySearch.tickets.length}
                 </span>
               </button>
@@ -270,21 +268,21 @@ export const AdminGlobalSearchPanel: React.FC<AdminGlobalSearchPanelProps> = ({
               <button
                 type="button"
                 onClick={() => setCategory('auditLogs')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                className={`h-8 inline-flex items-center justify-center gap-1.5 px-3 rounded-xl text-xs font-semibold transition cursor-pointer whitespace-nowrap shrink-0 ${
                   category === 'auditLogs'
                     ? 'bg-indigo-600 text-white shadow'
                     : 'bg-slate-800/80 text-slate-300 hover:text-white'
                 }`}
               >
-                <ShieldCheck className="w-3.5 h-3.5" />
+                <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
                 <span>{isRtl ? 'لاگ‌های حسابرسی (Audit)' : 'Audit Logs'}</span>
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-black/30 font-mono">
+                <span className="px-1.5 py-0.5 rounded-full text-[10px] leading-none bg-black/30 font-mono">
                   {allCategorySearch.auditLogs.length}
                 </span>
               </button>
             </div>
 
-            <div className="text-xs text-slate-400">
+            <div className="text-xs text-slate-400 font-medium">
               {isRtl
                 ? `${searchResults.totalCount} نتیجه منطبق با «${query}» یافت شد`
                 : `Found ${searchResults.totalCount} matching record(s) for "${query}"`}

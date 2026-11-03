@@ -12,6 +12,22 @@ import {
   buildAuditExportFilename,
 } from './auditLogService';
 import { normalizeSearchText, performGlobalAdminSearch } from './globalSearchService';
+import {
+  buildTicketSalesTimeSeries,
+  buildSystemActivityTimeSeries,
+  buildCorridorPerformanceBreakdown,
+  buildTicketDemandForecast,
+} from './dashboardAnalyticsService';
+import {
+  buildQuarterlyImpactReport,
+  buildImpactReportFilename,
+  exportImpactReportToJson,
+  exportImpactReportToPdfBytes,
+} from './impactReportService';
+import {
+  DEFAULT_ADMIN_POLL_INTERVAL_MS,
+  createAdminPollingController,
+} from './adminPollingService';
 import { INITIAL_SCHEDULES, INITIAL_LINES, INITIAL_TICKETS } from './storageAndMigration';
 
 test('timeStringToMinutes converts correctly', () => {
@@ -258,5 +274,182 @@ test('filterAuditLogs by user and date range and export to CSV and JSON', () => 
   });
   assert.equal(fname, 'railpulse-audit-logs-usr-pass-1-from-2026-11-01.csv');
 });
+
+test('dashboardAnalyticsService builds time-series ticket sales trends and system activity metrics', () => {
+  const sales7d = buildTicketSalesTimeSeries(INITIAL_SCHEDULES, INITIAL_TICKETS, '7d');
+  assert.equal(sales7d.length, 7);
+  assert.ok(sales7d[sales7d.length - 1].ticketsSold > 0);
+  assert.ok(sales7d[sales7d.length - 1].revenueMillions > 0);
+
+  const sales30d = buildTicketSalesTimeSeries(INITIAL_SCHEDULES, INITIAL_TICKETS, '30d');
+  assert.equal(sales30d.length, 30);
+
+  const activitySeries = buildSystemActivityTimeSeries([]);
+  assert.equal(activitySeries.length, 6);
+  assert.ok(activitySeries[0].totalEvents > 0);
+
+  const corridors = buildCorridorPerformanceBreakdown(INITIAL_LINES, INITIAL_SCHEDULES);
+  assert.equal(corridors.length, INITIAL_LINES.length);
+  assert.ok(corridors[0].bookedSeats > 0);
+  assert.ok(corridors[0].availableSeats > 0);
+});
+
+test('buildTicketDemandForecast projects future ticket demand with OLS regression and confidence intervals', () => {
+  const baseline7d = buildTicketDemandForecast(
+    INITIAL_SCHEDULES,
+    INITIAL_TICKETS,
+    '7d',
+    'baseline'
+  );
+  // 7 recent historical days + 7 forecast days = 14 points
+  assert.equal(baseline7d.points.length, 14);
+  assert.equal(baseline7d.horizonDays, 7);
+  assert.ok(baseline7d.totalProjectedSeats > 0);
+  assert.ok(baseline7d.totalProjectedRevenueMillions > 0);
+  assert.ok(baseline7d.peakForecastSeats > 0);
+
+  // Verify bridge point (index 6) has both actualTickets and projectedTickets equal for seamless chart transition
+  const bridgePoint = baseline7d.points[6];
+  assert.equal(bridgePoint.isForecast, false);
+  assert.ok(bridgePoint.actualTickets !== null);
+  assert.equal(bridgePoint.actualTickets, bridgePoint.projectedTickets);
+
+  // Verify forecast points (indices 7..13) obey lowerBoundTickets <= projectedTickets <= upperBoundTickets
+  const futurePoints = baseline7d.points.slice(7);
+  assert.equal(futurePoints.length, 7);
+  for (const fp of futurePoints) {
+    assert.equal(fp.isForecast, true);
+    assert.equal(fp.actualTickets, null);
+    assert.ok(fp.projectedTickets !== null && fp.projectedTickets > 0);
+    assert.ok(
+      fp.lowerBoundTickets !== null &&
+        fp.upperBoundTickets !== null &&
+        fp.lowerBoundTickets <= fp.projectedTickets &&
+        fp.projectedTickets <= fp.upperBoundTickets
+    );
+  }
+
+  // Verify 14d horizon produces 7 historical + 14 forecast = 21 points
+  const holiday14d = buildTicketDemandForecast(
+    INITIAL_SCHEDULES,
+    INITIAL_TICKETS,
+    '14d',
+    'peak_holiday'
+  );
+  assert.equal(holiday14d.points.length, 21);
+
+  // Verify scenario ordering: weather_disruption < baseline < peak_holiday for 7d horizon
+  const holiday7d = buildTicketDemandForecast(
+    INITIAL_SCHEDULES,
+    INITIAL_TICKETS,
+    '7d',
+    'peak_holiday'
+  );
+  const weather7d = buildTicketDemandForecast(
+    INITIAL_SCHEDULES,
+    INITIAL_TICKETS,
+    '7d',
+    'weather_disruption'
+  );
+  assert.ok(weather7d.totalProjectedSeats < baseline7d.totalProjectedSeats);
+  assert.ok(baseline7d.totalProjectedSeats < holiday7d.totalProjectedSeats);
+});
+
+test('impactReportService generates quarterly business impact reports and exports valid PDF and JSON', () => {
+  const report = buildQuarterlyImpactReport({
+    lines: INITIAL_LINES,
+    schedules: INITIAL_SCHEDULES,
+    tickets: INITIAL_TICKETS,
+    auditLogs: [],
+    quarter: 'Q4-1405',
+    salesWindow: '14d',
+    forecastHorizon: '14d',
+    scenario: 'peak_holiday',
+  });
+
+  assert.equal(report.quarter, 'Q4-1405');
+  assert.equal(report.scenario, 'peak_holiday');
+  assert.ok(report.executiveSummary.quarterlyProjectedSeats > 0);
+  assert.ok(report.executiveSummary.quarterlyProjectedRevenueMillions > 0);
+  assert.ok(report.executiveSummary.recommendedExtraTrainsets >= 1);
+  assert.equal(report.historicalSalesTrend.length, 14);
+  assert.equal(report.forecastTrajectory.length, 21);
+  assert.equal(report.strategicRecommendations.length, 3);
+
+  // Verify filenames
+  assert.equal(
+    buildImpactReportFilename('pdf', 'Q4-1405', 'peak_holiday'),
+    'railpulse-quarterly-impact-Q4-1405-peak_holiday.pdf'
+  );
+  assert.equal(
+    buildImpactReportFilename('json', 'Q4-1405', 'peak_holiday'),
+    'railpulse-quarterly-impact-Q4-1405-peak_holiday.json'
+  );
+
+  // Verify JSON export
+  const jsonText = exportImpactReportToJson(report);
+  const parsed = JSON.parse(jsonText);
+  assert.equal(parsed.reportId, report.reportId);
+  assert.equal(
+    parsed.executiveSummary.quarterlyProjectedSeats,
+    report.executiveSummary.quarterlyProjectedSeats
+  );
+
+  // Verify PDF binary export
+  const pdfBytes = exportImpactReportToPdfBytes(report);
+  assert.ok(pdfBytes.byteLength > 1500, 'PDF should have non-trivial byte length');
+  const pdfText = new TextDecoder().decode(pdfBytes);
+  assert.ok(pdfText.startsWith('%PDF-1.4'), 'PDF must start with %PDF-1.4 header');
+  assert.ok(pdfText.trimEnd().endsWith('%%EOF'), 'PDF must end with %%EOF');
+  assert.ok(
+    pdfText.includes('RAILPULSE ENTERPRISE - QUARTERLY BUSINESS IMPACT REPORT'),
+    'PDF must contain executive title'
+  );
+  assert.ok(
+    pdfText.includes('Historical Ticket Sales & Predictive Demand Trajectory'),
+    'PDF must include embedded vector chart section'
+  );
+});
+
+test('createAdminPollingController defaults to 60s and periodically triggers onRefreshData', async () => {
+  assert.equal(DEFAULT_ADMIN_POLL_INTERVAL_MS, 60_000);
+
+  let refreshCallCount = 0;
+  const controller = createAdminPollingController({
+    intervalMs: 25,
+    onRefreshData: () => {
+      refreshCallCount += 1;
+    },
+  });
+
+  assert.equal(controller.getState().isRunning, false);
+  controller.start();
+  assert.equal(controller.getState().isRunning, true);
+
+  await new Promise((resolve) => setTimeout(resolve, 65));
+  assert.ok(
+    refreshCallCount >= 2,
+    `Expected at least 2 periodic refresh calls, got ${refreshCallCount}`
+  );
+  assert.equal(controller.getState().syncCount, refreshCallCount);
+
+  // Test pause prevents automatic polling
+  const countBeforePause = refreshCallCount;
+  controller.setPaused(true);
+  assert.equal(controller.getState().isPaused, true);
+  await new Promise((resolve) => setTimeout(resolve, 45));
+  assert.equal(refreshCallCount, countBeforePause);
+
+  // Test manual triggerNow works immediately
+  controller.triggerNow();
+  assert.equal(refreshCallCount, countBeforePause + 1);
+
+  controller.stop();
+  assert.equal(controller.getState().isRunning, false);
+});
+
+
+
+
 
 

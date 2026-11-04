@@ -2698,6 +2698,67 @@ test('30-Day Contribution Heatmap in ProfilePage: generates 30 chronological day
   );
 });
 
+test('Repository Structure Audit: validateFileListAgainstDomainWhitelist and auditDirectoryCompliance flag any management_system cross-project residue', async () => {
+  const {
+    validateFileListAgainstDomainWhitelist,
+    evaluateFilePathCompliance,
+    auditDirectoryCompliance,
+    ANTIGRAVITY_ACADEMY_WHITELIST_CONFIG,
+  } = await import('./repositoryAudit');
+
+  // 1. Synthetic test: detects forbidden management_system remnants
+  const mockSuspiciousPaths = [
+    'src/App.tsx',
+    'src/components/AdminPortal.tsx', // residue
+    'src/services/collisionEngine.ts', // residue
+    'src/types/railpulse.ts', // residue
+    'src/studios/MissionControlSimulator.tsx',
+    'unknown_folder/untracked.txt', // residue
+  ];
+
+  const syntheticReport = validateFileListAgainstDomainWhitelist(mockSuspiciousPaths);
+  assert.equal(syntheticReport.isCompliant, false);
+  assert.equal(syntheticReport.flaggedIssuesCount, 4);
+
+  // Verify critical keyword detection
+  const railpulseIssue = syntheticReport.issues.find(i => i.filePath.includes('railpulse'));
+  assert.ok(railpulseIssue);
+  assert.equal(railpulseIssue?.severity, 'critical');
+  assert.equal(railpulseIssue?.matchedForbiddenKeyword, 'railpulse');
+
+  const collisionIssue = syntheticReport.issues.find(i => i.filePath.includes('collisionEngine'));
+  assert.ok(collisionIssue);
+  assert.equal(collisionIssue?.matchedForbiddenKeyword, 'collisionengine');
+
+  // 2. Synthetic test: valid Antigravity Academy files pass cleanly
+  const validAntigravityPaths = [
+    'src/App.tsx',
+    'src/components/LandingPage.tsx',
+    'src/studios/MissionControlSimulator.tsx',
+    'src/studios/GuardrailAutomationStudio.tsx',
+    'src/studios/McpCheatSheetScenarioStudios.tsx',
+    'src/types/curriculum.ts',
+    'src/data/curriculumIndex.ts',
+    'package.json',
+    'index.html',
+    'metadata.json',
+  ];
+  const cleanReport = validateFileListAgainstDomainWhitelist(validAntigravityPaths);
+  assert.equal(cleanReport.isCompliant, true);
+  assert.equal(cleanReport.flaggedIssuesCount, 0);
+
+  // 3. Real live directory scan: audits the actual repository workspace
+  const liveReport = await auditDirectoryCompliance();
+  assert.equal(
+    liveReport.isCompliant,
+    true,
+    `Current repository must be 100% compliant with Antigravity Academy domain. Violations: ${JSON.stringify(liveReport.issues, null, 2)}`
+  );
+  assert.equal(liveReport.flaggedIssuesCount, 0);
+  assert.ok(liveReport.validFilesCount >= 35);
+  assert.equal(liveReport.auditedDomain, 'Google-Antigravity-Academy-Mission-Control-Studio');
+});
+
 
 
 

@@ -1,0 +1,67 @@
+name: Repository File-Structure & Anti-Contamination Audit
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit-cross-repo-residue:
+    name: Whitelist Validation & Anti-Contamination Gate (Node.js 22.x)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci || npm install
+
+      - name: Execute Domain Whitelist & Cross-Repository Residue Audit
+        run: npm run audit:domain
+
+      - name: Run Zero-Tolerance Grep Scan for Forbidden Residue Keywords
+        run: |
+          echo "Scanning entire workspace for foreign domain terms..."
+          FORBIDDEN_REGEX="railpulse|checkaccident|mareyschedulegraph|passengerportal|adminportal|operationsportal|trainschedule|trainline|bookingengine|collisionengine|idlesessionservice"
+          
+          # Scan tracked files, ignoring git metadata, node_modules, and dist
+          MATCHES=$(grep -rn -i -E "$FORBIDDEN_REGEX" . \
+            --exclude-dir=".git" \
+            --exclude-dir="node_modules" \
+            --exclude-dir="dist" \
+            --exclude-dir=".aistudio" \
+            --exclude="repositoryAudit.ts" \
+            --exclude="generators.test.ts" \
+            --exclude="cleanup-audit.yml" || true)
+
+          if [ -n "$MATCHES" ]; then
+            echo "❌ Cross-repository contamination detected!"
+            echo "$MATCHES"
+            exit 1
+          fi
+
+          echo "✅ Grep scan passed with zero foreign cross-repository matches."
+
+      - name: Verify Dedicated Domain Audit Test Suite
+        run: npx tsx --test --test-name-pattern="Repository Structure Audit" src/utils/generators.test.ts

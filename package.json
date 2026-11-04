@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "tsc --noEmit",
     "test": "tsx --test src/utils/generators.test.ts",
-    "test:management": "tsx --test src/services/railpulse.test.ts",
+    "audit:domain": "tsx src/utils/runRepositoryAudit.ts",
     "preview": "vite preview"
   },
   "dependencies": {

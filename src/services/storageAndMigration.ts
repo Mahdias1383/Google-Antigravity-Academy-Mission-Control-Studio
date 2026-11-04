@@ -4,68 +4,106 @@ import {
   TrainSchedule,
   Ticket,
   WalletTransaction,
-  LegacyV1Schema,
   MigrationLog,
+  LegacyV1Schema,
 } from '../types/railpulse';
 import { recordAuditAction } from './auditLogService';
 
-const DB_STORAGE_KEY = 'railpulse_db_v2';
-
 export interface RailPulseDatabase {
+  version: number;
   users: User[];
   lines: TrainLine[];
   schedules: TrainSchedule[];
   tickets: Ticket[];
   transactions: WalletTransaction[];
   migrationLogs: MigrationLog[];
-  schemaVersion: string;
 }
+
+export const INITIAL_USERS: User[] = [
+  {
+    id: 'usr-admin-1',
+    username: 'admin',
+    fullName: 'سید علی محمدی (مدیر ارشد سامانه)',
+    email: 'admin@railpulse.ir',
+    role: 'admin',
+    passwordHash: 'hash-admin-2026',
+    walletBalance: 15000000,
+    createdAt: '2026-01-10T08:00:00.000Z',
+  },
+  {
+    id: 'usr-emp-1',
+    username: 'reza.shams',
+    fullName: 'مهندس رضا شمس (راهبر دیسپچینگ)',
+    email: 'reza.shams@railpulse.ir',
+    role: 'employee',
+    passwordHash: 'hash-reza-2026',
+    walletBalance: 4500000,
+    assignedLines: ['line-tehran-mashhad', 'line-tehran-isfahan'],
+    createdAt: '2026-01-12T09:30:00.000Z',
+  },
+  {
+    id: 'usr-emp-2',
+    username: 'maryam.kamali',
+    fullName: 'مریم کمالی (کنترل ترافیک خط ۲)',
+    email: 'maryam.kamali@railpulse.ir',
+    role: 'employee',
+    passwordHash: 'hash-maryam-2026',
+    walletBalance: 3200000,
+    assignedLines: ['line-tehran-isfahan', 'line-tabriz-tehran'],
+    createdAt: '2026-01-15T10:15:00.000Z',
+  },
+  {
+    id: 'usr-pass-1',
+    username: 'sara.rad',
+    fullName: 'سارا راد (مسافر ویژه)',
+    email: 'sara.rad@example.ir',
+    role: 'passenger',
+    passwordHash: 'hash-sara-2026',
+    walletBalance: 3850000,
+    createdAt: '2026-02-01T11:00:00.000Z',
+  },
+];
 
 export const INITIAL_LINES: TrainLine[] = [
   {
     id: 'line-tehran-mashhad',
-    code: 'LN-01',
+    code: 'IR-HSR-01',
     nameFa: 'خط اصلی تهران - مشهد (شرق)',
-    nameEn: 'Tehran - Mashhad Main High-Speed Corridor',
+    nameEn: 'Tehran - Mashhad High-Speed Corridor',
     totalDistanceKm: 926,
-    status: 'active',
     stations: [
-      { id: 'st-thr', nameFa: 'تهران', nameEn: 'Tehran Central', code: 'THR', kmFromStart: 0, platformsCount: 8 },
-      { id: 'st-smn', nameFa: 'سمنان', nameEn: 'Semnan', code: 'SMN', kmFromStart: 228, platformsCount: 2 },
-      { id: 'st-shd', nameFa: 'شاهرود', nameEn: 'Shahroud', code: 'SHD', kmFromStart: 410, platformsCount: 2 },
-      { id: 'st-nys', nameFa: 'نیشابور', nameEn: 'Neyshabur', code: 'NYS', kmFromStart: 810, platformsCount: 2 },
-      { id: 'st-mhd', nameFa: 'مشهد مقدس', nameEn: 'Mashhad Holy Terminal', code: 'MHD', kmFromStart: 926, platformsCount: 6 },
+      { id: 'st-thr', nameFa: 'تهران (مرکزی)', nameEn: 'Tehran Central', kmFromStart: 0, platformsCount: 6 },
+      { id: 'st-smn', nameFa: 'سمنان', nameEn: 'Semnan', kmFromStart: 228, platformsCount: 3 },
+      { id: 'st-shr', nameFa: 'شاهرود', nameEn: 'Shahroud', kmFromStart: 414, platformsCount: 4 },
+      { id: 'st-nsh', nameFa: 'نیشابور', nameEn: 'Neyshabur', kmFromStart: 788, platformsCount: 3 },
+      { id: 'st-msh', nameFa: 'مشهد مقدس', nameEn: 'Mashhad Terminal', kmFromStart: 926, platformsCount: 8 },
     ],
   },
   {
     id: 'line-tehran-isfahan',
-    code: 'LN-02',
-    nameFa: 'خط سریع‌السیر تهران - اصفهان (مرکز)',
-    nameEn: 'Tehran - Isfahan Express Corridor',
-    totalDistanceKm: 410,
-    status: 'active',
+    code: 'IR-EXP-02',
+    nameFa: 'خط سریع‌السیر تهران - قم - اصفهان',
+    nameEn: 'Tehran - Qom - Isfahan Express',
+    totalDistanceKm: 415,
     stations: [
-      { id: 'st-thr2', nameFa: 'تهران', nameEn: 'Tehran Central', code: 'THR', kmFromStart: 0, platformsCount: 8 },
-      { id: 'st-qom', nameFa: 'قم', nameEn: 'Qom', code: 'QOM', kmFromStart: 132, platformsCount: 3 },
-      { id: 'st-ksh', nameFa: 'کاشان', nameEn: 'Kashan', code: 'KSH', kmFromStart: 220, platformsCount: 2 },
-      { id: 'st-isf', nameFa: 'اصفهان', nameEn: 'Isfahan Central', code: 'ISF', kmFromStart: 410, platformsCount: 4 },
+      { id: 'st-thr-2', nameFa: 'تهران (جنوب)', nameEn: 'Tehran South', kmFromStart: 0, platformsCount: 5 },
+      { id: 'st-qom', nameFa: 'قم', nameEn: 'Qom Junction', kmFromStart: 156, platformsCount: 4 },
+      { id: 'st-ksh', nameFa: 'کاشان', nameEn: 'Kashan', kmFromStart: 254, platformsCount: 3 },
+      { id: 'st-isf', nameFa: 'اصفهان', nameEn: 'Isfahan Central', kmFromStart: 415, platformsCount: 6 },
     ],
   },
   {
     id: 'line-tabriz-tehran',
-    code: 'LN-03',
-    nameFa: 'خط تاریخی تبریز - تهران (شمال غرب)',
-    nameEn: 'Tabriz - Tehran Golden Link',
+    code: 'IR-NWR-03',
+    nameFa: 'خط شمال‌غرب تبریز - زنجان - تهران',
+    nameEn: 'Tabriz - Zanjan - Tehran Corridor',
     totalDistanceKm: 736,
-    status: 'active',
     stations: [
-      { id: 'st-tbz', nameFa: 'تبریز', nameEn: 'Tabriz', code: 'TBZ', kmFromStart: 0, platformsCount: 4 },
-      { id: 'st-mrg', nameFa: 'مراغه', nameEn: 'Maragheh', code: 'MRG', kmFromStart: 129, platformsCount: 2 },
-      { id: 'st-mnh', nameFa: 'میانه', nameEn: 'Mianeh', code: 'MNH', kmFromStart: 270, platformsCount: 2 },
-      { id: 'st-znj', nameFa: 'زنجان', nameEn: 'Zanjan', code: 'ZNJ', kmFromStart: 421, platformsCount: 2 },
-      { id: 'st-qzv', nameFa: 'قزوین', nameEn: 'Qazvin', code: 'QZV', kmFromStart: 592, platformsCount: 2 },
-      { id: 'st-krj', nameFa: 'کرج', nameEn: 'Karaj', code: 'KRJ', kmFromStart: 695, platformsCount: 3 },
-      { id: 'st-thr3', nameFa: 'تهران', nameEn: 'Tehran Central', code: 'THR', kmFromStart: 736, platformsCount: 8 },
+      { id: 'st-tbz', nameFa: 'تبریز', nameEn: 'Tabriz Grand', kmFromStart: 0, platformsCount: 5 },
+      { id: 'st-mrh', nameFa: 'مراغه', nameEn: 'Maragheh', kmFromStart: 127, platformsCount: 3 },
+      { id: 'st-znj', nameFa: 'زنجان', nameEn: 'Zanjan', kmFromStart: 421, platformsCount: 4 },
+      { id: 'st-qzv', nameFa: 'قزوین', nameEn: 'Qazvin', kmFromStart: 592, platformsCount: 4 },
+      { id: 'st-thr-3', nameFa: 'تهران (غرب)', nameEn: 'Tehran West', kmFromStart: 736, platformsCount: 6 },
     ],
   },
 ];
@@ -74,468 +112,293 @@ export const INITIAL_SCHEDULES: TrainSchedule[] = [
   {
     id: 'TR-101',
     trainNumber: '۱۰۱ فدک',
-    trainNameFa: 'قطار ۵ ستاره فدک ویژه مشهد',
-    trainNameEn: 'Fadak 5-Star VIP Express',
+    trainNameFa: 'قطار ۵ ستاره سریع‌السیر فدک ۱۰۱',
+    trainNameEn: 'Fadak 5-Star High-Speed 101',
     lineId: 'line-tehran-mashhad',
     departureTime: '06:30',
     speedKmh: 160,
-    stopTimesMinutes: [10, 15, 10], // stops at Semnan, Shahroud, Neyshabur
-    totalCapacity: 280,
-    bookedSeats: 112,
-    ticketPrice: 480000, // Tomans
-    trainType: 'high-speed',
-    status: 'scheduled',
-  },
-  {
-    id: 'TR-102',
-    trainNumber: '۱۰۲ زندگی',
-    trainNameFa: 'قطار لوکس زندگی تهران - مشهد',
-    trainNameEn: 'Zendegi Luxury InterCity',
-    lineId: 'line-tehran-mashhad',
-    departureTime: '07:45',
-    speedKmh: 140,
-    stopTimesMinutes: [15, 20, 15],
+    stopTimesMinutes: [10, 12, 10],
     totalCapacity: 320,
-    bookedSeats: 180,
-    ticketPrice: 520000,
-    trainType: 'express',
-    status: 'scheduled',
+    bookedSeats: 268,
+    ticketPrice: 480000,
+    trainType: 'high_speed',
+    status: 'active',
   },
   {
     id: 'TR-103',
-    trainNumber: '۱۰۳ نورالرضا',
-    trainNameFa: 'قطار نورالرضا (کلاس اقتصادی)',
-    trainNameEn: 'Nour Al-Reza Standard',
+    trainNumber: '۱۰۳ غزال',
+    trainNameFa: 'قطار تندرو غزال ۱۰۳',
+    trainNameEn: 'Ghazal Express 103',
     lineId: 'line-tehran-mashhad',
-    departureTime: '08:15',
-    speedKmh: 110,
-    stopTimesMinutes: [15, 20, 15],
-    totalCapacity: 400,
-    bookedSeats: 85,
-    ticketPrice: 320000,
-    trainType: 'intercity',
-    status: 'scheduled',
-  },
-  {
-    id: 'TR-201',
-    trainNumber: '۲۰۱ پردیس',
-    trainNameFa: 'قطار تندرو پردیس تهران - اصفهان',
-    trainNameEn: 'Pardis Fast Commuter',
-    lineId: 'line-tehran-isfahan',
-    departureTime: '07:15',
-    speedKmh: 150,
-    stopTimesMinutes: [10, 10], // Qom, Kashan
-    totalCapacity: 240,
-    bookedSeats: 145,
-    ticketPrice: 290000,
-    trainType: 'high-speed',
+    departureTime: '09:15',
+    speedKmh: 140,
+    stopTimesMinutes: [12, 15, 10],
+    totalCapacity: 280,
+    bookedSeats: 195,
+    ticketPrice: 390000,
+    trainType: 'express',
     status: 'scheduled',
   },
   {
     id: 'TR-202',
-    trainNumber: '۲۰۲ ریل‌باس',
-    trainNameFa: 'ترن‌ست نگین تهران - اصفهان',
-    trainNameEn: 'Negin Regional Express',
+    trainNumber: '۲۰۲ پردیس',
+    trainNameFa: 'قطار خودکشش پردیس ۲۰۲',
+    trainNameEn: 'Pardis EMU Express 202',
     lineId: 'line-tehran-isfahan',
-    departureTime: '09:30',
-    speedKmh: 130,
-    stopTimesMinutes: [12, 12],
-    totalCapacity: 260,
-    bookedSeats: 90,
-    ticketPrice: 240000,
-    trainType: 'express',
-    status: 'scheduled',
-  },
-  {
-    id: 'TR-301',
-    trainNumber: '۳۰۱ خلیج فارس',
-    trainNameFa: 'قطار خلیج فارس تبریز - تهران',
-    trainNameEn: 'Persian Gulf Night Sleeper',
-    lineId: 'line-tabriz-tehran',
-    departureTime: '18:00',
-    speedKmh: 120,
-    stopTimesMinutes: [10, 12, 15, 12, 10], // Maragheh, Mianeh, Zanjan, Qazvin, Karaj
-    totalCapacity: 300,
+    departureTime: '07:45',
+    speedKmh: 150,
+    stopTimesMinutes: [8, 10],
+    totalCapacity: 240,
     bookedSeats: 210,
-    ticketPrice: 380000,
-    trainType: 'express',
+    ticketPrice: 310000,
+    trainType: 'high_speed',
+    status: 'active',
+  },
+  {
+    id: 'TR-305',
+    trainNumber: '۳۰۵ سبلان',
+    trainNameFa: 'قطار کوپه‌ای سبلان ۳۰۵',
+    trainNameEn: 'Sabalan Sleeper 305',
+    lineId: 'line-tabriz-tehran',
+    departureTime: '11:00',
+    speedKmh: 130,
+    stopTimesMinutes: [10, 12, 10],
+    totalCapacity: 300,
+    bookedSeats: 224,
+    ticketPrice: 360000,
+    trainType: 'sleeper',
     status: 'scheduled',
-  },
-];
-
-export const INITIAL_USERS: User[] = [
-  {
-    id: 'usr-admin-1',
-    username: 'admin',
-    fullName: 'سید علی محمدی',
-    email: 'admin@railpulse.ir',
-    role: 'admin',
-    passwordHash: 'hash-admin-pass-2026',
-    walletBalance: 25000000,
-    nationalId: '0019283741',
-    phoneNumber: '09121112233',
-    createdAt: '2026-01-01T08:00:00Z',
-  },
-  {
-    id: 'usr-emp-1',
-    username: 'reza.staff',
-    fullName: 'مهندس رضا شمس',
-    email: 'reza.staff@railpulse.ir',
-    role: 'employee',
-    passwordHash: 'hash-emp-pass-2026',
-    walletBalance: 3200000,
-    nationalId: '0029384756',
-    phoneNumber: '09123334455',
-    assignedLines: ['line-tehran-mashhad', 'line-tehran-isfahan'],
-    createdAt: '2026-01-10T09:30:00Z',
-  },
-  {
-    id: 'usr-emp-2',
-    username: 'maryam.kamali',
-    fullName: 'مریم کمالی',
-    email: 'maryam.kamali@railpulse.ir',
-    role: 'employee',
-    passwordHash: 'hash-maryam-2026',
-    walletBalance: 2800000,
-    nationalId: '0038475619',
-    phoneNumber: '09125556677',
-    assignedLines: ['line-tabriz-tehran'],
-    createdAt: '2026-01-15T11:00:00Z',
-  },
-  {
-    id: 'usr-pass-1',
-    username: 'sara.rad',
-    fullName: 'سارا راد',
-    email: 'sara.rad@gmail.com',
-    role: 'passenger',
-    passwordHash: 'hash-sara-2026',
-    walletBalance: 4500000,
-    nationalId: '0076543219',
-    phoneNumber: '09351234567',
-    createdAt: '2026-02-01T14:20:00Z',
-  },
-  {
-    id: 'usr-pass-2',
-    username: 'farhad.amini',
-    fullName: 'فرهاد امینی',
-    email: 'farhad.amini@yahoo.com',
-    role: 'passenger',
-    passwordHash: 'hash-farhad-2026',
-    walletBalance: 1200000,
-    nationalId: '0087654321',
-    phoneNumber: '09367890123',
-    createdAt: '2026-02-10T16:40:00Z',
   },
 ];
 
 export const INITIAL_TICKETS: Ticket[] = [
   {
-    id: 'tkt-init-1',
+    id: 'tk-1001',
     pnr: 'PNR-8921-FA',
-    trainId: 'TR-101',
+    userId: 'usr-pass-1',
+    passengerName: 'سارا راد (مسافر ویژه)',
+    scheduleId: 'TR-101',
     trainNumber: '۱۰۱ فدک',
-    trainNameFa: 'قطار ۵ ستاره فدک ویژه مشهد',
-    trainNameEn: 'Fadak 5-Star VIP Express',
-    lineId: 'line-tehran-mashhad',
     lineNameFa: 'خط اصلی تهران - مشهد (شرق)',
-    lineNameEn: 'Tehran - Mashhad Main High-Speed Corridor',
-    passengerId: 'usr-pass-1',
-    passengerName: 'سارا راد',
-    passengerNationalId: '0076543219',
-    seatCount: 2,
-    seatNumbers: [14, 15],
-    unitPrice: 480000,
-    totalPrice: 960000,
-    departureStation: 'تهران (مرکزی)',
-    arrivalStation: 'مشهد مقدس',
+    lineNameEn: 'Tehran - Mashhad High-Speed Corridor',
     departureTime: '06:30',
-    estimatedArrivalTime: '12:55',
-    bookingTimestamp: '2026-11-01T09:15:00Z',
+    seatCount: 2,
+    seatNumbers: ['C1-12A', 'C1-12B'],
+    totalPrice: 960000,
+    purchasedAt: '2026-11-03T08:15:00.000Z',
     status: 'confirmed',
-    qrPayload: 'RAILPULSE:PNR-8921-FA:PASSENGER-SARA_RAD:TR-101:SEATS-14-15:STATUS-CONFIRMED',
+    qrPayload: 'RAILPULSE|PNR-8921-FA|TR-101|SEATS:2|VERIFIED',
   },
 ];
 
 export const INITIAL_TRANSACTIONS: WalletTransaction[] = [
   {
-    id: 'tx-init-1',
+    id: 'tx-dep-1001',
     userId: 'usr-pass-1',
-    type: 'credit',
-    amount: 5460000,
-    previousBalance: 0,
-    newBalance: 5460000,
-    referenceId: 'DEP-SHETAB-998822',
-    descriptionFa: 'شارژ آنلاین کیف پول دیجیتال مسافر از درگاه بانکی شتاب',
-    descriptionEn: 'Online wallet top-up via Shetab payment portal',
-    timestamp: '2026-11-01T09:05:00Z',
+    type: 'deposit',
+    amount: 1500000,
+    balanceAfter: 4810000,
+    descriptionFa: 'شارژ آنلاین کیف پول دیجیتال از درگاه شتاب',
+    descriptionEn: 'Online digital wallet top-up via Shetab gateway',
+    timestamp: '2026-11-03T07:50:00.000Z',
   },
   {
-    id: 'tx-init-2',
+    id: 'tx-pur-1002',
     userId: 'usr-pass-1',
-    type: 'debit',
+    type: 'purchase',
     amount: 960000,
-    previousBalance: 5460000,
-    newBalance: 4500000,
+    balanceAfter: 3850000,
+    descriptionFa: 'خرید ۲ بلیت قطار ۱۰۱ فدک (کد رزرو PNR-8921-FA)',
+    descriptionEn: 'Purchased 2 tickets on Train 101 Fadak (PNR-8921-FA)',
+    timestamp: '2026-11-03T08:15:00.000Z',
     referenceId: 'PNR-8921-FA',
-    descriptionFa: 'کسر وجه جهت رزرو ۲ صندلی در قطار ۱۰۱ فدک تهران - مشهد',
-    descriptionEn: 'Debit for reservation of 2 seats on Train 101 Tehran-Mashhad',
-    timestamp: '2026-11-01T09:15:00Z',
   },
 ];
 
-/**
- * Gets database from persistent storage or bootstraps initial dataset
- */
-export function getDatabase(): RailPulseDatabase {
-  if (typeof window === 'undefined') {
-    return {
-      users: INITIAL_USERS,
-      lines: INITIAL_LINES,
-      schedules: INITIAL_SCHEDULES,
-      tickets: INITIAL_TICKETS,
-      transactions: INITIAL_TRANSACTIONS,
-      migrationLogs: [],
-      schemaVersion: '2.0.0',
-    };
-  }
+const DB_STORAGE_KEY = 'railpulse_enterprise_db_v2';
 
-  try {
-    const raw = localStorage.getItem(DB_STORAGE_KEY);
-    if (!raw) {
-      const initialDb: RailPulseDatabase = {
-        users: INITIAL_USERS,
-        lines: INITIAL_LINES,
-        schedules: INITIAL_SCHEDULES,
-        tickets: INITIAL_TICKETS,
-        transactions: INITIAL_TRANSACTIONS,
-        migrationLogs: [],
-        schemaVersion: '2.0.0',
-      };
-      saveDatabase(initialDb);
-      return initialDb;
+let memoryDb: RailPulseDatabase | null = null;
+
+function createSeedDatabase(): RailPulseDatabase {
+  return {
+    version: 2,
+    users: JSON.parse(JSON.stringify(INITIAL_USERS)),
+    lines: JSON.parse(JSON.stringify(INITIAL_LINES)),
+    schedules: JSON.parse(JSON.stringify(INITIAL_SCHEDULES)),
+    tickets: JSON.parse(JSON.stringify(INITIAL_TICKETS)),
+    transactions: JSON.parse(JSON.stringify(INITIAL_TRANSACTIONS)),
+    migrationLogs: [],
+  };
+}
+
+export function getDatabase(): RailPulseDatabase {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const raw = window.localStorage.getItem(DB_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as RailPulseDatabase;
+        if (parsed && parsed.version === 2 && Array.isArray(parsed.lines)) {
+          memoryDb = parsed;
+          return parsed;
+        }
+      }
+    } catch {
+      // Fallback to memoryDb
     }
-    const parsed = JSON.parse(raw);
-    return {
-      users: parsed.users || INITIAL_USERS,
-      lines: parsed.lines || INITIAL_LINES,
-      schedules: parsed.schedules || INITIAL_SCHEDULES,
-      tickets: parsed.tickets || INITIAL_TICKETS,
-      transactions: parsed.transactions || INITIAL_TRANSACTIONS,
-      migrationLogs: parsed.migrationLogs || [],
-      schemaVersion: parsed.schemaVersion || '2.0.0',
-    };
-  } catch (err) {
-    console.error('Error reading RailPulse database:', err);
-    return {
-      users: INITIAL_USERS,
-      lines: INITIAL_LINES,
-      schedules: INITIAL_SCHEDULES,
-      tickets: INITIAL_TICKETS,
-      transactions: INITIAL_TRANSACTIONS,
-      migrationLogs: [],
-      schemaVersion: '2.0.0',
-    };
   }
+  if (!memoryDb) {
+    memoryDb = createSeedDatabase();
+    saveDatabase(memoryDb);
+  }
+  return memoryDb;
 }
 
 export function saveDatabase(db: RailPulseDatabase): void {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(db));
-  } catch (err) {
-    console.error('Error writing RailPulse database:', err);
+  memoryDb = db;
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      window.localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(db));
+    } catch {
+      // Ignore storage quota errors
+    }
   }
 }
 
-/**
- * Reset database back to pristine initial state
- */
 export function resetDatabaseToSeed(): RailPulseDatabase {
-  const freshDb: RailPulseDatabase = {
-    users: INITIAL_USERS,
-    lines: INITIAL_LINES,
-    schedules: INITIAL_SCHEDULES,
-    tickets: INITIAL_TICKETS,
-    transactions: INITIAL_TRANSACTIONS,
-    migrationLogs: [],
-    schemaVersion: '2.0.0',
-  };
-  saveDatabase(freshDb);
-  recordAuditAction({
-    actorId: 'system',
-    actorName: 'مدیریت پایگاه داده سامانه (DB Reset)',
-    actorRole: 'system',
-    actionType: 'schedule_update',
-    entityType: 'system',
-    entityId: 'db-seed-reset',
-    summaryFa: 'بازنشانی پایگاه داده سامانه به داده‌های پایه (Seed State)',
-    summaryEn: 'Reset database to initial pristine seed state',
-    riskLevel: 'high',
-    status: 'success',
-  });
-  return freshDb;
+  const seed = createSeedDatabase();
+  saveDatabase(seed);
+  return seed;
 }
 
-/**
- * Legacy Python CLI V1 to Enterprise V2 Migration Pipeline
- */
-export function migrateLegacyV1Data(legacy: LegacyV1Schema, actor: User): {
-  success: boolean;
-  migratedUsers: number;
-  migratedEmployees: number;
-  migratedLines: number;
-  migratedTrains: number;
-  diffSummary: string[];
-} {
+export function migrateLegacyV1Data(
+  legacy: LegacyV1Schema,
+  actor: User
+): MigrationLog {
   const db = getDatabase();
+  let migratedUsers = 0;
+  let migratedEmployees = 0;
+  let migratedLines = 0;
+  let migratedTrains = 0;
   const diffSummary: string[] = [];
 
-  let uCount = 0;
-  let eCount = 0;
-  let lCount = 0;
-  let tCount = 0;
-
-  // 1. Migrate Users
-  if (legacy.user_dict) {
-    for (const [key, val] of Object.entries(legacy.user_dict)) {
-      const existing = db.users.find((u) => u.username.toLowerCase() === val.username.toLowerCase());
-      if (!existing) {
-        db.users.push({
-          id: `usr-migrated-${Date.now()}-${uCount}`,
-          username: val.username,
-          fullName: val.username,
-          email: val.email || `${val.username}@passenger.local`,
-          role: 'passenger',
-          passwordHash: `migrated-hash-${val.password || '123456'}`,
-          walletBalance: Number(val.wallet) || 0,
-          createdAt: new Date().toISOString(),
-        });
-        uCount++;
-        diffSummary.push(`کاربر جدید «${val.username}» از ساختار دیکشنری با موجودی ${val.wallet} ریال منتقل شد.`);
-      }
+  for (const [key, u] of Object.entries(legacy.user_dict || {})) {
+    const normUsername = u.username.toLowerCase().trim();
+    if (!db.users.some((existing) => existing.username === normUsername)) {
+      db.users.push({
+        id: `usr-mig-${key}-${Date.now()}`,
+        username: normUsername,
+        fullName: u.username,
+        email: u.email,
+        role: 'passenger',
+        passwordHash: `hash-${normUsername}`,
+        walletBalance: Math.max(0, Number(u.wallet) || 0),
+        createdAt: new Date().toISOString(),
+      });
+      migratedUsers++;
     }
   }
 
-  // 2. Migrate Employees
-  if (legacy.employee_dict) {
-    for (const [key, val] of Object.entries(legacy.employee_dict)) {
-      const existing = db.users.find((u) => u.username.toLowerCase() === val.username.toLowerCase());
-      if (!existing) {
-        db.users.push({
-          id: `usr-emp-migrated-${Date.now()}-${eCount}`,
-          username: val.username,
-          fullName: val.username,
-          email: val.email || `${val.username}@railpulse.ir`,
-          role: 'employee',
-          passwordHash: `migrated-hash-${val.password || '123456'}`,
-          walletBalance: 1000000,
-          assignedLines: val.line_access || ['line-tehran-mashhad'],
-          createdAt: new Date().toISOString(),
-        });
-        eCount++;
-        diffSummary.push(`پرسنل «${val.username}» به اسکیمای v2 با دسترسی خط منتقل شد.`);
-      }
+  for (const [key, emp] of Object.entries(legacy.employee_dict || {})) {
+    const normUsername = emp.username.toLowerCase().trim();
+    if (!db.users.some((existing) => existing.username === normUsername)) {
+      db.users.push({
+        id: `emp-mig-${key}-${Date.now()}`,
+        username: normUsername,
+        fullName: emp.username,
+        email: emp.email,
+        role: 'employee',
+        passwordHash: `hash-${normUsername}`,
+        walletBalance: 1000000,
+        assignedLines: [...(emp.line_access || [])],
+        createdAt: new Date().toISOString(),
+      });
+      migratedEmployees++;
     }
   }
 
-  // 3. Migrate Lines
-  if (legacy.line_dic) {
-    for (const [lineKey, lineVal] of Object.entries(legacy.line_dic)) {
-      const lineId = `line-migrated-${lineKey.replace(/\s+/g, '-').toLowerCase()}`;
-      const existing = db.lines.find((l) => l.nameFa === lineVal.name || l.id === lineId);
-      if (!existing) {
-        const stationsList = (lineVal.stations || []).map((stName, idx) => {
-          const dist = lineVal.distances && lineVal.distances[idx] !== undefined ? lineVal.distances[idx] : idx * 100;
-          return {
-            id: `st-mig-${lineKey}-${idx}`,
-            nameFa: stName,
-            nameEn: stName,
-            code: stName.slice(0, 3).toUpperCase(),
-            kmFromStart: dist,
-            platformsCount: 2,
-          };
-        });
-        const totalDist = stationsList.length > 0 ? stationsList[stationsList.length - 1].kmFromStart : 500;
-
-        db.lines.push({
-          id: lineId,
-          code: `LN-MIG-${lCount + 1}`,
-          nameFa: lineVal.name || `خط انتقالی ${lineKey}`,
-          nameEn: `Migrated Line ${lineKey}`,
-          stations: stationsList,
-          totalDistanceKm: totalDist,
-          status: 'active',
-        });
-        lCount++;
-        diffSummary.push(`خط ریلی «${lineVal.name || lineKey}» با ${stationsList.length} ایستگاه ثبت شد.`);
-      }
+  const lineKeyMap: Record<string, string> = {};
+  for (const [key, l] of Object.entries(legacy.line_dic || {})) {
+    const newLineId = `line-mig-${key}`;
+    lineKeyMap[key] = newLineId;
+    if (!db.lines.some((existing) => existing.id === newLineId)) {
+      const stations = (l.stations || []).map((stName, idx) => ({
+        id: `st-${key}-${idx}`,
+        nameFa: stName,
+        nameEn: stName,
+        kmFromStart: l.distances?.[idx] ?? idx * 80,
+        platformsCount: 3,
+      }));
+      const totalDist =
+        stations.length > 0 ? stations[stations.length - 1].kmFromStart : 250;
+      db.lines.push({
+        id: newLineId,
+        code: `MIG-${key.toUpperCase().slice(0, 6)}`,
+        nameFa: l.name,
+        nameEn: l.name,
+        stations,
+        totalDistanceKm: totalDist,
+      });
+      migratedLines++;
     }
   }
 
-  // 4. Migrate Trains
-  if (legacy.train_dic) {
-    for (const [trainKey, trainVal] of Object.entries(legacy.train_dic)) {
-      const trainId = `TR-MIG-${trainVal.train_num || trainKey}`;
-      const existing = db.schedules.find((s) => s.id === trainId || s.trainNumber === trainVal.train_num);
-      if (!existing) {
-        db.schedules.push({
-          id: trainId,
-          trainNumber: String(trainVal.train_num || trainKey),
-          trainNameFa: `قطار انتقالی ${trainVal.train_num || trainKey}`,
-          trainNameEn: `Migrated Train ${trainVal.train_num || trainKey}`,
-          lineId: db.lines[0]?.id || 'line-tehran-mashhad',
-          departureTime: trainVal.departure || '08:00',
-          speedKmh: Number(trainVal.speed) || 120,
-          stopTimesMinutes: trainVal.stops || [10, 10],
-          totalCapacity: Number(trainVal.capacity) || 200,
-          bookedSeats: 0,
-          ticketPrice: Number(trainVal.price) || 250000,
-          trainType: 'intercity',
-          status: 'scheduled',
-        });
-        tCount++;
-        diffSummary.push(`قطار «${trainVal.train_num || trainKey}» با ظرفیت ${trainVal.capacity} مسافر با موفقیت نرمالایز شد.`);
-      }
+  for (const [key, tr] of Object.entries(legacy.train_dic || {})) {
+    const newTrainId = `TR-MIG-${key.toUpperCase()}`;
+    if (!db.schedules.some((existing) => existing.id === newTrainId)) {
+      const targetLineId = lineKeyMap[tr.line] || db.lines[0]?.id || 'line-tehran-mashhad';
+      db.schedules.push({
+        id: newTrainId,
+        trainNumber: tr.train_num,
+        trainNameFa: `قطار انتقالی ${tr.train_num}`,
+        trainNameEn: `Migrated Train ${tr.train_num}`,
+        lineId: targetLineId,
+        departureTime: tr.departure || '12:00',
+        speedKmh: Math.max(60, Number(tr.speed) || 120),
+        stopTimesMinutes: [...(tr.stops || [10, 10])],
+        totalCapacity: Math.max(50, Number(tr.capacity) || 200),
+        bookedSeats: 0,
+        ticketPrice: Math.max(50000, Number(tr.price) || 250000),
+        trainType: 'express',
+        status: 'scheduled',
+      });
+      migratedTrains++;
     }
   }
 
-  const logRecord: MigrationLog = {
-    id: `mig-${Date.now()}`,
-    legacyFormat: 'Python Dict (CLI v1)',
-    targetVersion: 'RailPulse Relational v2',
-    migratedUsers: uCount,
-    migratedEmployees: eCount,
-    migratedLines: lCount,
-    migratedTrains: tCount,
+  diffSummary.push(
+    `+${migratedUsers} Users`,
+    `+${migratedEmployees} Staff`,
+    `+${migratedLines} Lines`,
+    `+${migratedTrains} Trains`
+  );
+
+  const logEntry: MigrationLog = {
+    id: `MIG-${Date.now()}`,
     timestamp: new Date().toISOString(),
-    status: 'completed',
+    executedBy: actor.fullName,
+    migratedUsers,
+    migratedEmployees,
+    migratedLines,
+    migratedTrains,
     diffSummary,
   };
 
-  db.migrationLogs.unshift(logRecord);
+  db.migrationLogs.unshift(logEntry);
   saveDatabase(db);
 
-  // Automated Audit Log
   recordAuditAction({
     actorId: actor.id,
     actorName: actor.fullName,
     actorRole: actor.role,
     actionType: 'migration_run',
     entityType: 'system',
-    entityId: logRecord.id,
-    summaryFa: `مهاجرت موفق داده‌های پایتون v1 به اسکیمای ریلی v2 (${uCount} مسافر، ${eCount} پرسنل، ${lCount} خط، ${tCount} قطار)`,
-    summaryEn: `Successful migration of legacy Python v1 data to RailPulse v2 (${uCount} users, ${eCount} staff, ${lCount} lines, ${tCount} trains)`,
-    metadata: { ...logRecord },
+    entityId: logEntry.id,
+    summaryFa: `اجرای موفق پایپ‌لاین مهاجرت v1 پایتون به v2 (${diffSummary.join('، ')})`,
+    summaryEn: `Executed Python v1 to Enterprise v2 schema migration (${diffSummary.join(', ')})`,
+    metadata: { migrationId: logEntry.id, diffSummary },
     riskLevel: 'high',
     status: 'success',
   });
 
-  return {
-    success: true,
-    migratedUsers: uCount,
-    migratedEmployees: eCount,
-    migratedLines: lCount,
-    migratedTrains: tCount,
-    diffSummary,
-  };
+  return logEntry;
 }

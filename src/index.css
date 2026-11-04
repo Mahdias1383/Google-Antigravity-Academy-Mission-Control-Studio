@@ -2,15 +2,15 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ==========================================================================
-   Preloaded Web Fonts with font-display: swap & Metric-Adjusted CLS Fallbacks
+   Zero-CLS Web Font Architecture & Metric-Adjusted Fallbacks
    ========================================================================== */
+
 @font-face {
   font-family: 'Vazirmatn';
   font-style: normal;
   font-weight: 300 900;
   font-display: swap;
-  src: url('/fonts/vazirmatn-arabic.woff2') format('woff2'),
-       url('https://fonts.gstatic.com/s/vazirmatn/v16/Dxxo8j6PP2D_kU2muijlGMWWMmk.woff2') format('woff2');
+  src: url('/fonts/vazirmatn-arabic.woff2') format('woff2');
   unicode-range: U+0600-06FF, U+0750-077F, U+0870-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
 }
 
@@ -19,8 +19,7 @@
   font-style: normal;
   font-weight: 300 900;
   font-display: swap;
-  src: url('/fonts/vazirmatn-latin.woff2') format('woff2'),
-       url('https://fonts.gstatic.com/s/vazirmatn/v16/Dxxo8j6PP2D_kU2muijlHcWW.woff2') format('woff2');
+  src: url('/fonts/vazirmatn-latin.woff2') format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
@@ -29,57 +28,63 @@
   font-style: normal;
   font-weight: 400 700;
   font-display: swap;
-  src: url('/fonts/jetbrains-mono-latin.woff2') format('woff2'),
-       url('https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwg.woff2') format('woff2');
+  src: url('/fonts/jetbrains-mono-latin.woff2') format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
-/* Metric-compatible fallback fonts to minimize Cumulative Layout Shift (CLS) during swap */
 @font-face {
   font-family: 'Vazirmatn Fallback';
-  src: local('Tahoma'), local('Arial'), local('Segoe UI'), local('Roboto'), local('Helvetica Neue'), local('sans-serif');
-  font-display: swap;
-  size-adjust: 100%;
-  ascent-override: 105%;
-  descent-override: 50%;
+  font-style: normal;
+  font-weight: 400 700;
+  src: local('Segoe UI'), local('Tahoma'), local('Arial');
+  ascent-override: 95%;
+  descent-override: 25%;
   line-gap-override: 0%;
+  size-adjust: 100%;
 }
 
 @font-face {
   font-family: 'JetBrains Mono Fallback';
-  src: local('Consolas'), local('Menlo'), local('Monaco'), local('Liberation Mono'), local('Courier New'), local('monospace');
-  font-display: swap;
-  size-adjust: 100%;
-  ascent-override: 102%;
-  descent-override: 30%;
+  font-style: normal;
+  font-weight: 400 700;
+  src: local('Consolas'), local('Courier New'), monospace;
+  ascent-override: 90%;
+  descent-override: 22%;
   line-gap-override: 0%;
+  size-adjust: 100%;
 }
 
 @theme {
   --font-sans: 'Vazirmatn', 'Vazirmatn Fallback', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Vazirmatn', 'JetBrains Mono Fallback', ui-monospace, SFMono-Regular, monospace;
+  --font-mono: 'JetBrains Mono', 'JetBrains Mono Fallback', ui-monospace, SFMono-Regular, monospace;
 }
 
 @layer base {
   :root {
     --font-sans: 'Vazirmatn', 'Vazirmatn Fallback', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-    --font-mono: 'JetBrains Mono', 'Vazirmatn', 'JetBrains Mono Fallback', ui-monospace, SFMono-Regular, monospace;
-    --tracking-ui: -0.011em;
-    --tracking-heading: -0.02em;
+    --font-mono: 'JetBrains Mono', 'JetBrains Mono Fallback', ui-monospace, SFMono-Regular, monospace;
+    --tracking-ui: -0.01em;
+    --tracking-heading: -0.025em;
     --tracking-numeric: 0em;
   }
 
-  /* In RTL mode, prioritize Vazirmatn for all numeric characters and monospace badges to prevent font-switching inconsistencies */
   [dir="rtl"] {
-    --font-sans: 'Vazirmatn', 'Vazirmatn Fallback', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-    --font-mono: 'Vazirmatn', 'JetBrains Mono', 'Vazirmatn Fallback', ui-monospace, SFMono-Regular, monospace;
-    --tracking-ui: 0em;
-    --tracking-heading: 0em;
-    --tracking-numeric: 0em;
     font-family: var(--font-sans);
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum" 1;
-    letter-spacing: 0em;
+    letter-spacing: var(--tracking-ui);
+  }
+
+  [dir="rtl"] .tabular-nums {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    letter-spacing: var(--tracking-numeric);
+  }
+
+  [dir="ltr"] {
+    font-family: var(--font-sans);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
   }
 
   html,
@@ -87,47 +92,13 @@
     font-family: var(--font-sans);
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum" 1;
-    letter-spacing: var(--tracking-ui);
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
-  }
-
-  /* Global tabular-nums & consistent letter-spacing across all numerical, text, table, and interactive UI elements */
-  h1, h2, h3, h4, h5, h6 {
-    font-variant-numeric: tabular-nums;
-    font-feature-settings: "tnum" 1;
-    letter-spacing: var(--tracking-heading);
-  }
-
-  p, span, div, a, button, input, select, textarea, label, li, td, th, time, progress, meter {
-    font-variant-numeric: tabular-nums;
-    font-feature-settings: "tnum" 1;
-  }
-
-  button, select, input {
-    font-family: inherit;
   }
 
   input[type="date"] {
     direction: ltr;
     text-align: center;
-  }
-
-  ::selection {
-    background-color: rgba(59, 130, 246, 0.25);
-    color: inherit;
-  }
-
-  code, pre, kbd, samp, .ltr-code {
-    font-family: var(--font-mono);
-    direction: ltr;
-    text-align: left;
-    unicode-bidi: isolate;
-    font-variant-numeric: tabular-nums;
-    font-feature-settings: "tnum" 1;
-    letter-spacing: var(--tracking-numeric);
   }
 }
 
@@ -136,321 +107,119 @@
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   }
 
-  .ltr-inline {
-    font-family: var(--font-mono);
-    direction: ltr;
-    display: inline-block;
-    unicode-bidi: isolate;
-    text-align: left;
-    font-variant-numeric: tabular-nums;
-    font-feature-settings: "tnum" 1;
-    letter-spacing: var(--tracking-numeric);
-  }
-
-  .ltr-block {
-    font-family: var(--font-mono);
-    direction: ltr;
-    display: block;
-    width: 100%;
-    unicode-bidi: isolate;
-    text-align: left;
-    font-variant-numeric: tabular-nums;
-    font-feature-settings: "tnum" 1;
-    letter-spacing: var(--tracking-numeric);
-  }
-
   .bidi-ltr-run {
-    display: inline-block;
     direction: ltr;
     unicode-bidi: isolate;
-    text-align: left;
-    max-width: 100%;
-    font-variant-numeric: tabular-nums;
-    font-feature-settings: "tnum" 1;
-    letter-spacing: var(--tracking-numeric);
+    display: inline-block;
   }
-
-  .tabular-nums {
-    font-variant-numeric: tabular-nums !important;
-    font-feature-settings: "tnum" 1 !important;
-    letter-spacing: var(--tracking-numeric);
-  }
-
-  /* Guarantee Vazirmatn font family and zero letter-spacing distortion on all numeric and UI elements in RTL mode */
-  [dir="rtl"] .font-sans,
-  [dir="rtl"] .font-mono,
-  [dir="rtl"] .tabular-nums,
-  [dir="rtl"] .ltr-inline,
-  [dir="rtl"] .bidi-ltr-run {
-    font-family: 'Vazirmatn', 'JetBrains Mono', 'Vazirmatn Fallback', system-ui, sans-serif;
-    font-variant-numeric: tabular-nums;
-    font-feature-settings: "tnum" 1;
-    letter-spacing: 0em;
-  }
-
-  [dir="rtl"] .tracking-tighter,
-  [dir="rtl"] .tracking-tight,
-  [dir="rtl"] .tracking-normal,
-  [dir="rtl"] .tracking-wide,
-  [dir="rtl"] .tracking-wider,
-  [dir="rtl"] .tracking-widest {
-    letter-spacing: 0em !important;
-  }
-}
-
-/* Custom subtle scrollbars */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.25);
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.45);
 }
 
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
+  html,
+  body,
+  html[data-theme="deep-space"],
+  html[data-theme="deep-space"] body {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .no-print {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
   body * {
     visibility: hidden;
   }
+
   #scoped-pdf-print-root,
-  #scoped-pdf-print-root * {
-    visibility: visible;
+  #scoped-pdf-print-root *,
+  #admin-print-report-root,
+  #admin-print-report-root * {
+    visibility: visible !important;
   }
-  #scoped-pdf-print-root {
+
+  #scoped-pdf-print-root,
+  #admin-print-report-root {
+    display: block !important;
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
     background: #ffffff !important;
     color: #0f172a !important;
-    padding: 24px !important;
+    padding: 16px !important;
     margin: 0 !important;
     box-shadow: none !important;
+    border: none !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
-  pre, code, table, .avoid-break {
+
+  #admin-print-report-root table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  #admin-print-report-root th,
+  #admin-print-report-root td {
+    border: 1px solid #cbd5e1 !important;
+    color: #0f172a !important;
+    background: #ffffff !important;
+  }
+
+  #admin-print-report-root thead th {
+    background: #f1f5f9 !important;
+    font-weight: 700 !important;
+  }
+
+  pre,
+  code,
+  table,
+  tr,
+  .avoid-break,
+  .print-kpi-card {
     break-inside: avoid;
     page-break-inside: avoid;
   }
 }
 
-@keyframes milestone-confetti-drift {
-  0% {
-    transform: translateY(-18px) rotate(0deg) scale(0.85);
-    opacity: 0;
-  }
-  18% {
-    opacity: 0.92;
-  }
-  75% {
-    opacity: 0.65;
-  }
-  100% {
-    transform: translateY(155px) rotate(220deg) scale(0.95);
-    opacity: 0;
-  }
+/* Mission Control High-Contrast "Deep Space" Theme Overrides (WCAG AAA 21:1) */
+html[data-theme="deep-space"],
+html[data-theme="deep-space"] body,
+.theme-deep-space {
+  background-color: #000000 !important;
+  color: #ffffff !important;
 }
 
-.milestone-confetti-particle {
-  animation-name: milestone-confetti-drift;
-  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-  animation-iteration-count: infinite;
+html[data-theme="deep-space"] header {
+  background-color: rgba(2, 6, 16, 0.98) !important;
+  border-bottom-color: rgba(56, 189, 248, 0.45) !important;
+  box-shadow: 0 4px 24px -4px rgba(14, 165, 233, 0.2);
 }
 
-/* Linear & Raycast Grade Micro-animations & Aesthetics */
-@keyframes pulse-glow {
-  0%, 100% {
-    box-shadow: 0 0 15px -3px rgba(59, 130, 246, 0.3), 0 0 6px -2px rgba(59, 130, 246, 0.2);
-  }
-  50% {
-    box-shadow: 0 0 25px 2px rgba(99, 102, 241, 0.45), 0 0 12px 0px rgba(59, 130, 246, 0.35);
-  }
+html[data-theme="deep-space"] .bg-slate-900\/80,
+html[data-theme="deep-space"] .bg-slate-900\/70,
+html[data-theme="deep-space"] .bg-slate-900\/90,
+html[data-theme="deep-space"] .bg-slate-900\/95,
+html[data-theme="deep-space"] .bg-slate-900 {
+  background-color: #02050d !important;
+  border-color: rgba(56, 189, 248, 0.32) !important;
 }
 
-@keyframes shimmer-sweep {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
+html[data-theme="deep-space"] .bg-slate-950,
+html[data-theme="deep-space"] .bg-slate-950\/60,
+html[data-theme="deep-space"] .bg-slate-950\/70,
+html[data-theme="deep-space"] .bg-slate-950\/80,
+html[data-theme="deep-space"] .bg-slate-950\/90 {
+  background-color: #000000 !important;
+  border-color: rgba(56, 189, 248, 0.38) !important;
 }
-
-@keyframes float-gentle {
-  0%, 100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-4px);
-  }
-}
-
-@keyframes fade-in-up {
-  0% {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes scale-in {
-  0% {
-    opacity: 0;
-    transform: scale(0.96);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-.animate-shimmer {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.08) 50%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer-sweep 2.5s infinite;
-}
-
-.animate-float {
-  animation: float-gentle 4s ease-in-out infinite;
-}
-
-.animate-fade-in-up {
-  animation: fade-in-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.animate-scale-in {
-  animation: scale-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-/* Glassmorphism & Depth Layers */
-.glass-card {
-  background: rgba(17, 24, 39, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.card-interactive {
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.card-interactive:hover {
-  transform: translateY(-2px);
-  border-color: rgba(59, 130, 246, 0.4);
-  box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.08);
-}
-
-.text-gradient-primary {
-  background: linear-gradient(135deg, #60a5fa 0%, #818cf8 50%, #c084fc 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.text-gradient-gold {
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.text-gradient-emerald {
-  background: linear-gradient(135deg, #34d399 0%, #10b981 50%, #059669 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-/* Subtle Mission Success Micro-Interactions */
-@keyframes mission-float-up-fade {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, 6px) scale(0.85);
-  }
-  20% {
-    opacity: 1;
-    transform: translate(-50%, -2px) scale(1.08);
-  }
-  75% {
-    opacity: 0.95;
-    transform: translate(-50%, -10px) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translate(-50%, -22px) scale(0.92);
-  }
-}
-
-.animate-mission-float-up {
-  animation: mission-float-up-fade 2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-@keyframes mission-success-pop {
-  0% {
-    transform: scale(1);
-  }
-  30% {
-    transform: scale(0.96);
-  }
-  60% {
-    transform: scale(1.04);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-.animate-mission-success-pop {
-  animation: mission-success-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-@keyframes mission-glow-pulse {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
-  }
-  40% {
-    box-shadow: 0 0 18px 2px rgba(16, 185, 129, 0.35);
-  }
-}
-
-.animate-mission-glow-pulse {
-  animation: mission-glow-pulse 1.8s ease-out forwards;
-}
-
-@keyframes mission-sparkle-float {
-  0% {
-    opacity: 0;
-    transform: scale(0) translateY(0);
-  }
-  30% {
-    opacity: 1;
-    transform: scale(1.2) translateY(-6px);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(0.7) translateY(-18px);
-  }
-}
-
-.animate-mission-sparkle {
-  animation: mission-sparkle-float 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-
-

@@ -1,166 +1,282 @@
-import React from 'react';
-import { User, UserRole } from '../types/railpulse';
-import { Language, TRANSLATIONS } from '../i18n/translations';
+import React, { useState } from 'react';
 import {
-  Shield,
   Train,
-  User as UserIcon,
+  Shield,
+  Activity,
+  Ticket,
   FlaskConical,
   Globe,
-  Sun,
-  Moon,
+  Palette,
+  Clock,
+  Lock,
   Sparkles,
-  Wallet,
-  Activity,
-  Layers,
 } from 'lucide-react';
+import { PortalTab } from '../types/railpulse';
+import { Language } from '../i18n/translations';
+import { MissionThemePresetId } from '../services/themeSettingsService';
 
 interface QuickRoleSwitcherBarProps {
-  currentUser: User;
-  onSwitchRole: (role: UserRole) => void;
-  activePortal: 'admin' | 'operations' | 'passenger' | 'qa-suite';
-  onSelectPortal: (portal: 'admin' | 'operations' | 'passenger' | 'qa-suite') => void;
+  activePortal: PortalTab;
+  onSelectPortal: (portal: PortalTab) => void;
   language: Language;
   onToggleLanguage: () => void;
-  darkMode: boolean;
-  onToggleDarkMode: () => void;
+  themeMode: MissionThemePresetId;
+  onToggleThemeMode: (mode: MissionThemePresetId) => void;
+  idleRemainingFormatted: string;
+  onSimulateIdleLock: () => void;
 }
 
 export const QuickRoleSwitcherBar: React.FC<QuickRoleSwitcherBarProps> = ({
-  currentUser,
-  onSwitchRole,
   activePortal,
   onSelectPortal,
   language,
   onToggleLanguage,
-  darkMode,
-  onToggleDarkMode,
+  themeMode,
+  onToggleThemeMode,
+  idleRemainingFormatted,
+  onSimulateIdleLock,
 }) => {
-  const t = TRANSLATIONS[language];
-  const isRtl = language === 'fa';
+  const isFa = language === 'fa';
+  const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
+
+  const roles: Array<{
+    id: PortalTab;
+    labelFa: string;
+    labelEn: string;
+    badgeFa: string;
+    badgeEn: string;
+    icon: React.ReactNode;
+  }> = [
+    {
+      id: 'admin',
+      labelFa: 'پرتال مدیر ارشد سامانه',
+      labelEn: 'System Admin Portal',
+      badgeFa: 'حسابرسی و تحلیل',
+      badgeEn: 'Audit & Analytics',
+      icon: <Shield className="w-4 h-4" />,
+    },
+    {
+      id: 'operations',
+      labelFa: 'مرکز فرماندهی و عملیات خط',
+      labelEn: 'Operations & Dispatch',
+      badgeFa: 'ایمنی و گراف ماری',
+      badgeEn: 'Safety & Marey',
+      icon: <Activity className="w-4 h-4" />,
+    },
+    {
+      id: 'passenger',
+      labelFa: 'پرتال مسافر و رزرواسیون',
+      labelEn: 'Passenger Reservation',
+      badgeFa: 'کیف پول و بلیت QR',
+      badgeEn: 'Wallet & QR Ticket',
+      icon: <Ticket className="w-4 h-4" />,
+    },
+    {
+      id: 'qa',
+      labelFa: 'پنل تست و تضمین کیفیت مهندسی',
+      labelEn: 'Engineering QA Suite',
+      badgeFa: '۵ فاز تست خودکار',
+      badgeEn: '5-Phase Auto QA',
+      icon: <FlaskConical className="w-4 h-4" />,
+    },
+  ];
 
   return (
-    <header className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-700/80 shadow-md">
-      <div className="max-w-7xl mx-auto px-4 py-2.5 flex flex-col lg:flex-row items-center justify-between gap-3">
-        {/* Brand & System Identity */}
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 flex items-center justify-center text-white shadow-md shadow-blue-900/30 shrink-0">
-            <Train className="w-5 h-5" />
+    <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/90 no-print">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        {/* Brand Identity */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-600 flex items-center justify-center text-slate-950 shadow-lg shadow-emerald-950/50 shrink-0">
+              <Train className="w-5 h-5 stroke-[2.2]" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-base font-black tracking-tight text-white">
+                  {isFa ? 'ریل‌پالس اینترپرایز' : 'RailPulse Enterprise'}
+                </span>
+                <span
+                  dir="ltr"
+                  className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
+                >
+                  v2.4 LTS
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400">
+                {isFa
+                  ? 'سامانه یکپارچه فرماندهی ایمنی سیر، اعزام قطار و رزرواسیون هوشمند'
+                  : 'Integrated Railway Safety Dispatch, Operations & Ticketing Platform'}
+              </p>
+            </div>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-extrabold text-sm tracking-wide text-white font-mono">RAILPULSE</span>
-              <span className="text-[10px] px-1.5 py-0.5 leading-none rounded font-bold bg-blue-500/20 text-blue-300 border border-blue-400/30">
-                ENTERPRISE
+        </div>
+
+        {/* Role & Persona Switcher Buttons */}
+        <nav
+          aria-label={isFa ? 'انتخابگر سریع نقش و پرتال' : 'Quick Role Switcher'}
+          className="grid grid-cols-2 sm:grid-cols-4 gap-2"
+        >
+          {roles.map((role) => {
+            const isActive = activePortal === role.id;
+            return (
+              <button
+                key={role.id}
+                type="button"
+                data-testid={`role-switch-${role.id}`}
+                onClick={() => onSelectPortal(role.id)}
+                className={`h-11 px-3 rounded-xl border text-start flex items-center gap-2.5 transition cursor-pointer ${
+                  isActive
+                    ? 'bg-emerald-500/15 border-emerald-500/50 text-emerald-300 shadow-sm'
+                    : 'bg-slate-900/80 hover:bg-slate-800/80 border-slate-800 text-slate-300'
+                }`}
+              >
+                <div
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                    isActive
+                      ? 'bg-emerald-500 text-slate-950'
+                      : 'bg-slate-800 text-slate-400'
+                  }`}
+                >
+                  {role.icon}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-bold truncate">
+                    {isFa ? role.labelFa : role.labelEn}
+                  </div>
+                  <div className="text-[10px] text-slate-400 truncate">
+                    {isFa ? role.badgeFa : role.badgeEn}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Controls: Idle Security Timer, Theme Settings, Language Switcher */}
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {/* Idle Session Timer Badge & Lock Trigger */}
+          <div className="flex items-center rounded-xl bg-slate-900 border border-slate-800 p-1">
+            <div
+              data-testid="idle-timer-badge"
+              className="px-2.5 py-1 flex items-center gap-1.5 text-xs text-slate-300"
+              title={
+                isFa
+                  ? 'زمان باقی‌مانده تا قفل خودکار نشست (۱۵ دقیقه عدم فعالیت)'
+                  : 'Remaining time before 15-minute auto-lock'
+              }
+            >
+              <Clock className="w-3.5 h-3.5 text-emerald-400" />
+              <span dir="ltr" className="font-mono font-semibold text-emerald-300">
+                {idleRemainingFormatted}
               </span>
             </div>
-            <div className="text-[11px] text-slate-400 hidden sm:block">
-              {isRtl ? 'سامانه یکپارچه دیسپچینگ، ایمنی و رزرو' : 'Integrated Railway Operations & Audit Platform'}
-            </div>
+            <button
+              type="button"
+              data-testid="simulate-idle-lock-btn"
+              onClick={onSimulateIdleLock}
+              className="h-7 px-2.5 rounded-lg bg-slate-800 hover:bg-amber-500/20 hover:text-amber-300 text-slate-300 text-[11px] font-semibold inline-flex items-center gap-1 transition cursor-pointer"
+              title={isFa ? 'قفل فوری نشست امنیتی' : 'Lock Session Immediately'}
+            >
+              <Lock className="w-3 h-3" />
+              <span>{isFa ? 'قفل نشست' : 'Lock'}</span>
+            </button>
           </div>
-        </div>
 
-        {/* 1-Click Persona Switcher Toolbar */}
-        <div className="flex flex-wrap items-center justify-center gap-1.5 bg-slate-800/90 border border-slate-700/80 p-1 rounded-xl shadow-inner">
-          {/* Admin */}
-          <button
-            onClick={() => {
-              onSwitchRole('admin');
-              onSelectPortal('admin');
-            }}
-            className={`h-8 inline-flex items-center justify-center gap-1.5 px-3 rounded-lg text-xs font-semibold transition cursor-pointer whitespace-nowrap shrink-0 ${
-              currentUser.role === 'admin' && activePortal === 'admin'
-                ? 'bg-blue-600 text-white shadow'
-                : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
-            }`}
-            title="System Admin & Activity Monitor"
-          >
-            <Shield className="w-3.5 h-3.5 text-blue-300 shrink-0" />
-            <span className="hidden sm:inline">{t.personaAdmin}</span>
-            <span className="sm:hidden">{isRtl ? 'مدیر' : 'Admin'}</span>
-          </button>
-
-          {/* Operations Staff */}
-          <button
-            onClick={() => {
-              onSwitchRole('employee');
-              onSelectPortal('operations');
-            }}
-            className={`h-8 inline-flex items-center justify-center gap-1.5 px-3 rounded-lg text-xs font-semibold transition cursor-pointer whitespace-nowrap shrink-0 ${
-              currentUser.role === 'employee' && activePortal === 'operations'
-                ? 'bg-amber-600 text-white shadow'
-                : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
-            }`}
-            title="Train Operations & Marey Graph"
-          >
-            <Train className="w-3.5 h-3.5 text-amber-300 shrink-0" />
-            <span className="hidden sm:inline">{t.personaStaff}</span>
-            <span className="sm:hidden">{isRtl ? 'عملیات' : 'Staff'}</span>
-          </button>
-
-          {/* Passenger */}
-          <button
-            onClick={() => {
-              onSwitchRole('passenger');
-              onSelectPortal('passenger');
-            }}
-            className={`h-8 inline-flex items-center justify-center gap-1.5 px-3 rounded-lg text-xs font-semibold transition cursor-pointer whitespace-nowrap shrink-0 ${
-              currentUser.role === 'passenger' && activePortal === 'passenger'
-                ? 'bg-emerald-600 text-white shadow'
-                : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
-            }`}
-            title="Passenger Reservation & Digital Pass"
-          >
-            <UserIcon className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
-            <span className="hidden sm:inline">{t.personaPassenger}</span>
-            <span className="sm:hidden">{isRtl ? 'مسافر' : 'Passenger'}</span>
-          </button>
-
-          {/* QA Test Runner Suite */}
-          <button
-            onClick={() => onSelectPortal('qa-suite')}
-            className={`h-8 inline-flex items-center justify-center gap-1.5 px-3 rounded-lg text-xs font-semibold transition cursor-pointer whitespace-nowrap shrink-0 ${
-              activePortal === 'qa-suite'
-                ? 'bg-purple-600 text-white shadow'
-                : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
-            }`}
-            title="Run 5-Phase Automated Test Suite"
-          >
-            <FlaskConical className="w-3.5 h-3.5 text-purple-300 shrink-0" />
-            <span className="hidden sm:inline">{isRtl ? 'پنل تست و QA مهندسی' : 'QA Test Suite'}</span>
-            <span className="sm:hidden">QA</span>
-          </button>
-        </div>
-
-        {/* User Info, Language, Dark Mode */}
-        <div className="flex items-center gap-2 shrink-0">
-          {currentUser.role === 'passenger' && (
-            <div className="hidden lg:inline-flex h-8 items-center gap-1.5 px-2.5 rounded-lg bg-emerald-950/70 border border-emerald-600/40 text-[11px] font-mono text-emerald-300 whitespace-nowrap">
-              <Wallet className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+          {/* Theme Settings Panel Dropdown */}
+          <div className="relative">
+            <button
+              type="button"
+              data-testid="theme-settings-toggle-btn"
+              onClick={() => setThemeDropdownOpen((prev) => !prev)}
+              className="h-9 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 text-xs font-semibold inline-flex items-center gap-1.5 transition cursor-pointer"
+            >
+              <Palette className="w-3.5 h-3.5 text-cyan-400" />
               <span>
-                {currentUser.walletBalance.toLocaleString(isRtl ? 'fa-IR' : 'en-US')}{' '}
-                {isRtl ? 'تومان' : 'TMN'}
+                {themeMode === 'deep-space'
+                  ? isFa
+                    ? 'پوسته: فضای عمیق (کنتراست بالا)'
+                    : 'Theme: Deep Space'
+                  : isFa
+                  ? 'پوسته: نیمه‌شب (استاندارد)'
+                  : 'Theme: Midnight'}
               </span>
-            </div>
-          )}
+            </button>
 
-          {/* Language Switcher */}
+            {themeDropdownOpen && (
+              <div
+                data-testid="theme-settings-panel"
+                className="absolute end-0 mt-2 w-72 rounded-2xl bg-slate-900 border border-slate-700 p-3 shadow-2xl z-50"
+              >
+                <div className="text-xs font-bold text-white mb-2 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>
+                    {isFa
+                      ? 'تنظیمات پوسته اتاق فرماندهی (Theme Settings)'
+                      : 'Mission Control Theme Settings'}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    data-testid="theme-option-midnight"
+                    onClick={() => {
+                      onToggleThemeMode('midnight');
+                      setThemeDropdownOpen(false);
+                    }}
+                    className={`p-2.5 rounded-xl border text-start transition cursor-pointer ${
+                      themeMode === 'midnight'
+                        ? 'bg-emerald-500/15 border-emerald-500/50 text-white'
+                        : 'bg-slate-950/80 border-slate-800 text-slate-300 hover:bg-slate-800'
+                    }`}
+                  >
+                    <div className="text-xs font-bold">
+                      {isFa ? 'نیمه‌شب استاندارد (Midnight Dark)' : 'Midnight Default'}
+                    </div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">
+                      {isFa
+                        ? 'پوسته پیش‌فرض با کنتراست متوازن برای شیفت‌های روزانه'
+                        : 'Balanced slate-950 dark palette for standard shifts'}
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    data-testid="theme-option-deep-space"
+                    onClick={() => {
+                      onToggleThemeMode('deep-space');
+                      setThemeDropdownOpen(false);
+                    }}
+                    className={`p-2.5 rounded-xl border text-start transition cursor-pointer ${
+                      themeMode === 'deep-space'
+                        ? 'bg-cyan-500/15 border-cyan-400 text-white'
+                        : 'bg-slate-950/80 border-slate-800 text-slate-300 hover:bg-slate-800'
+                    }`}
+                  >
+                    <div className="text-xs font-bold">
+                      {isFa
+                        ? 'فضای عمیق کنتراست بالا (Deep Space OLED)'
+                        : 'Deep Space High-Contrast'}
+                    </div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">
+                      {isFa
+                        ? 'پس‌زمینه مشکی مطلق و کادرهای درخشان مخصوص اتاق کنترل کم‌نور'
+                        : 'Pure OLED black canvas with high-luminance borders for low-light rooms'}
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Language Toggle */}
           <button
+            type="button"
+            data-testid="language-toggle-btn"
             onClick={onToggleLanguage}
-            className="h-8 inline-flex items-center justify-center gap-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition cursor-pointer whitespace-nowrap shrink-0"
-            title="Toggle Language (Persian RTL / English LTR)"
+            className="h-9 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 text-xs font-bold inline-flex items-center gap-1.5 transition cursor-pointer"
           >
-            <Globe className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-            <span>{language === 'fa' ? 'EN' : 'فا'}</span>
-          </button>
-
-          {/* Dark Mode Toggle */}
-          <button
-            onClick={onToggleDarkMode}
-            className="w-8 h-8 inline-flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition cursor-pointer shrink-0"
-            title="Toggle Theme"
-          >
-            {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-blue-400" />}
+            <Globe className="w-3.5 h-3.5 text-emerald-400" />
+            <span>{isFa ? 'English (LTR)' : 'فارسی (RTL)'}</span>
           </button>
         </div>
       </div>

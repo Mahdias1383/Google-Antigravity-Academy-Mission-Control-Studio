@@ -8,27 +8,29 @@ export interface AdminPollingState {
   lastSyncedAtIso: string;
 }
 
+export interface AdminPollingOptions {
+  intervalMs?: number;
+  onRefreshData: () => void;
+  onStateChange?: (state: AdminPollingState) => void;
+}
+
 export interface AdminPollingController {
   start: () => void;
   stop: () => void;
-  triggerNow: () => void;
   setPaused: (paused: boolean) => void;
+  triggerNow: () => void;
   getState: () => AdminPollingState;
 }
 
-/**
- * Creates a lifecycle-safe polling controller that periodically invokes `onRefreshData`
- * every `intervalMs` (defaults to 60,000ms / 60 seconds) to keep Admin Portal dashboard
- * visualizations and audit logs synchronized without user intervention.
- */
-export function createAdminPollingController(options: {
-  onRefreshData: () => void;
-  onStateChange?: (state: AdminPollingState) => void;
-  intervalMs?: number;
-}): AdminPollingController {
-  const intervalMs = options.intervalMs ?? DEFAULT_ADMIN_POLL_INTERVAL_MS;
-  let timerId: ReturnType<typeof setInterval> | null = null;
+export function createAdminPollingController(
+  options: AdminPollingOptions
+): AdminPollingController {
+  const intervalMs =
+    options.intervalMs && options.intervalMs > 0
+      ? options.intervalMs
+      : DEFAULT_ADMIN_POLL_INTERVAL_MS;
 
+  let timerId: ReturnType<typeof setInterval> | null = null;
   const state: AdminPollingState = {
     isRunning: false,
     isPaused: false,
@@ -38,13 +40,10 @@ export function createAdminPollingController(options: {
   };
 
   const notify = () => {
-    if (options.onStateChange) {
-      options.onStateChange({ ...state });
-    }
+    options.onStateChange?.({ ...state });
   };
 
-  const executePoll = () => {
-    if (state.isPaused) return;
+  const executeTick = () => {
     state.syncCount += 1;
     state.lastSyncedAtIso = new Date().toISOString();
     options.onRefreshData();
@@ -52,32 +51,22 @@ export function createAdminPollingController(options: {
   };
 
   const start = () => {
-    if (timerId !== null) {
-      clearInterval(timerId);
-    }
+    if (timerId) clearInterval(timerId);
     state.isRunning = true;
-    timerId = setInterval(executePoll, state.intervalMs);
+    timerId = setInterval(() => {
+      if (!state.isPaused) {
+        executeTick();
+      }
+    }, state.intervalMs);
     notify();
   };
 
   const stop = () => {
-    if (timerId !== null) {
+    if (timerId) {
       clearInterval(timerId);
       timerId = null;
     }
     state.isRunning = false;
-    notify();
-  };
-
-  const triggerNow = () => {
-    state.syncCount += 1;
-    state.lastSyncedAtIso = new Date().toISOString();
-    options.onRefreshData();
-    // Reset interval timer so next automatic poll is a full 60s from now
-    if (state.isRunning && timerId !== null) {
-      clearInterval(timerId);
-      timerId = setInterval(executePoll, state.intervalMs);
-    }
     notify();
   };
 
@@ -86,13 +75,15 @@ export function createAdminPollingController(options: {
     notify();
   };
 
-  const getState = (): AdminPollingState => ({ ...state });
+  const triggerNow = () => {
+    executeTick();
+  };
 
   return {
     start,
     stop,
-    triggerNow,
     setPaused,
-    getState,
+    triggerNow,
+    getState: () => ({ ...state }),
   };
 }

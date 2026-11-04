@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   User,
   TrainLine,
@@ -6,18 +6,48 @@ import {
   Ticket,
   WalletTransaction,
   LegacyV1Schema,
+  AuditLog,
 } from '../types/railpulse';
 import { AuditLogViewer } from './AuditLogViewer';
+import { GlobalActivityTimeline } from './GlobalActivityTimeline';
 import { AdminGlobalSearchPanel } from './AdminGlobalSearchPanel';
 import { AdminPerformanceCharts } from './AdminPerformanceCharts';
-import { migrateLegacyV1Data, resetDatabaseToSeed, getDatabase, saveDatabase } from '../services/storageAndMigration';
-import { recordAuditAction } from '../services/auditLogService';
+import { AdminCommandPalette } from './AdminCommandPalette';
+import { AdminPrintableReport } from './AdminPrintableReport';
+import {
+  AdminViewTabId,
+  AdminQuickActionKey,
+  isCommandPaletteShortcut,
+} from '../services/commandPaletteService';
+import {
+  migrateLegacyV1Data,
+  resetDatabaseToSeed,
+  getDatabase,
+  saveDatabase,
+} from '../services/storageAndMigration';
+import {
+  recordAuditAction,
+  getStoredAuditLogs,
+  seedInitialAuditLogs,
+  subscribeToAuditLogs,
+} from '../services/auditLogService';
+import { buildAdminPrintableReport } from '../services/adminPrintReportService';
 import {
   DEFAULT_ADMIN_POLL_INTERVAL_MS,
   AdminPollingController,
   AdminPollingState,
   createAdminPollingController,
 } from '../services/adminPollingService';
+import {
+  LoadingFeedbackState,
+  LoadingOperationType,
+  createLoadingFeedbackState,
+  resolveAdminTabSkeletonVariant,
+} from '../services/loadingFeedbackService';
+import {
+  PortalProgressBar,
+  PortalLoadingSkeleton,
+} from './PortalLoadingFeedback';
 import { Language, TRANSLATIONS } from '../i18n/translations';
 import {
   ShieldCheck,
@@ -29,15 +59,15 @@ import {
   Database,
   RefreshCw,
   PlusCircle,
-  FileCode,
   CheckCircle,
-  AlertTriangle,
   Server,
   DollarSign,
-  Train,
   Clock,
   Pause,
   Play,
+  Command,
+  Settings,
+  Printer,
 } from 'lucide-react';
 
 interface AdminPortalProps {
@@ -55,30 +85,111 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   lines,
   schedules,
   tickets,
-  transactions,
   language,
   onRefreshData,
 }) => {
   const t = TRANSLATIONS[language];
   const isRtl = language === 'fa';
 
-  // Admin Portal Sub-Tabs: Default directly to 'activity-monitor' per user focus!
-  const [activeAdminTab, setActiveAdminTab] = useState<
-    'activity-monitor' | 'overview' | 'lines' | 'employees' | 'migration'
-  >('activity-monitor');
+  const [activeAdminTab, setActiveAdminTab] = useState<AdminViewTabId>('activity-monitor');
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
+  const [isPrintPreviewOpen, setIsPrintPreviewOpen] = useState<boolean>(false);
+  const [auditLogsForPrint, setAuditLogsForPrint] = useState<AuditLog[]>(() => {
+    seedInitialAuditLogs();
+    return getStoredAuditLogs();
+  });
 
-  // Employee Registration Form
+  useEffect(() => {
+    const unsub = subscribeToAuditLogs(() => {
+      setAuditLogsForPrint(getStoredAuditLogs());
+    });
+    return () => unsub();
+  }, []);
+
   const [showAddEmpModal, setShowAddEmpModal] = useState(false);
   const [empFullName, setEmpFullName] = useState('');
   const [empUsername, setEmpUsername] = useState('');
   const [empEmail, setEmpEmail] = useState('');
   const [empLineId, setEmpLineId] = useState(lines[0]?.id || '');
 
-  // Migration Demo State
   const [migrationRunning, setMigrationRunning] = useState(false);
   const [migrationResultToast, setMigrationResultToast] = useState<string | null>(null);
 
-  // 60-Second Periodic Polling State & Controller
+  const [loadingFeedback, setLoadingFeedback] = useState<LoadingFeedbackState>(() =>
+    createLoadingFeedbackState('admin_tab_transition', 0, false, false, false, 'timeline')
+  );
+  const loadingTimersRef = useRef<Array<ReturnType<typeof setTimeout>>>([]);
+
+  const clearLoadingTimers = () => {
+    loadingTimersRef.current.forEach((timerId) => clearTimeout(timerId));
+    loadingTimersRef.current = [];
+  };
+
+  const triggerAdminLoadingFeedback = (
+    operationType: LoadingOperationType,
+    targetTab: AdminViewTabId = activeAdminTab,
+    durationMs = 420
+  ) => {
+    clearLoadingTimers();
+    const variant = resolveAdminTabSkeletonVariant(targetTab);
+
+    setLoadingFeedback((prev) =>
+      createLoadingFeedbackState(operationType, 32, true, true, prev.isPinnedPreview, variant)
+    );
+
+    const stepMidTimer = setTimeout(() => {
+      setLoadingFeedback((prev) =>
+        createLoadingFeedbackState(operationType, 74, true, true, prev.isPinnedPreview, variant)
+      );
+    }, Math.round(durationMs * 0.45));
+
+    const stepFullTimer = setTimeout(() => {
+      setLoadingFeedback((prev) =>
+        createLoadingFeedbackState(operationType, 100, true, false, prev.isPinnedPreview, variant)
+      );
+    }, Math.round(durationMs * 0.8));
+
+    const completeTimer = setTimeout(() => {
+      setLoadingFeedback((prev) =>
+        createLoadingFeedbackState(
+          operationType,
+          prev.isPinnedPreview ? 68 : 100,
+          false,
+          false,
+          prev.isPinnedPreview,
+          variant
+        )
+      );
+    }, durationMs);
+
+    loadingTimersRef.current = [stepMidTimer, stepFullTimer, completeTimer];
+  };
+
+  useEffect(() => {
+    return () => clearLoadingTimers();
+  }, []);
+
+  const handleSelectAdminTab = (nextTab: AdminViewTabId) => {
+    setActiveAdminTab(nextTab);
+    triggerAdminLoadingFeedback('admin_tab_transition', nextTab, 380);
+  };
+
+  const handleToggleSkeletonPreview = () => {
+    clearLoadingTimers();
+    const variant = resolveAdminTabSkeletonVariant(activeAdminTab);
+    setLoadingFeedback((prev) => {
+      const nextPinned = !prev.isPinnedPreview;
+      return createLoadingFeedbackState(
+        'admin_data_sync',
+        nextPinned ? 68 : 0,
+        nextPinned,
+        nextPinned,
+        nextPinned,
+        variant
+      );
+    });
+  };
+
   const onRefreshDataRef = useRef(onRefreshData);
   useEffect(() => {
     onRefreshDataRef.current = onRefreshData;
@@ -116,7 +227,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     };
   }, []);
 
-  // 1-second UI countdown timer reflecting time until next 60s poll
   useEffect(() => {
     if (pollingState.isPaused) return;
     const countdownTimer = setInterval(() => {
@@ -125,7 +235,19 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     return () => clearInterval(countdownTimer);
   }, [pollingState.isPaused]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isCommandPaletteShortcut(e)) {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const handleManualPollSync = () => {
+    triggerAdminLoadingFeedback('admin_data_sync', activeAdminTab, 450);
     pollingControllerRef.current?.triggerNow();
     setSecondsRemaining(60);
   };
@@ -134,14 +256,48 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     pollingControllerRef.current?.setPaused(!pollingState.isPaused);
   };
 
-  // Compute Overview Stats
   const totalRevenue = tickets
     .filter((tk) => tk.status === 'confirmed')
     .reduce((sum, tk) => sum + tk.totalPrice, 0);
 
   const totalSeatsBooked = schedules.reduce((sum, s) => sum + s.bookedSeats, 0);
   const totalFleetCapacity = schedules.reduce((sum, s) => sum + s.totalCapacity, 0);
-  const fleetUtilization = totalFleetCapacity > 0 ? Math.round((totalSeatsBooked / totalFleetCapacity) * 100) : 0;
+  const fleetUtilization =
+    totalFleetCapacity > 0 ? Math.round((totalSeatsBooked / totalFleetCapacity) * 100) : 0;
+
+  useEffect(() => {
+    setAuditLogsForPrint(getStoredAuditLogs());
+  }, [refreshTick, schedules, tickets]);
+
+  const printableReportData = useMemo(
+    () =>
+      buildAdminPrintableReport({
+        lines,
+        schedules,
+        tickets,
+        auditLogs: auditLogsForPrint,
+        currentUser,
+      }),
+    [lines, schedules, tickets, auditLogsForPrint, currentUser]
+  );
+
+  const handleTriggerBrowserPrint = () => {
+    try {
+      if (typeof window !== 'undefined' && typeof window.print === 'function') {
+        window.print();
+      }
+    } catch {
+      // Ignore sandbox print restrictions
+    }
+  };
+
+  const handleOpenAndPrintReport = () => {
+    setAuditLogsForPrint(getStoredAuditLogs());
+    setIsPrintPreviewOpen(true);
+    setTimeout(() => {
+      handleTriggerBrowserPrint();
+    }, 60);
+  };
 
   const handleRegisterEmployee = (e: React.FormEvent) => {
     e.preventDefault();
@@ -187,8 +343,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
   const handleRunSampleMigration = () => {
     setMigrationRunning(true);
+    triggerAdminLoadingFeedback('admin_migration_pipeline', 'migration', 650);
     setTimeout(() => {
-      // Legacy Python Dict payload simulation
       const sampleLegacy: LegacyV1Schema = {
         user_dict: {
           u_legacy_1: {
@@ -239,17 +395,14 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   };
 
   const handleResetSeed = () => {
-    if (confirm(isRtl ? 'آیا از بازنشانی کلیه داده‌های پایگاه داده به داده‌های اولیه اطمینان دارید؟' : 'Reset database back to initial seed data?')) {
-      resetDatabaseToSeed();
-      onRefreshData();
-    }
+    resetDatabaseToSeed();
+    onRefreshData();
   };
 
   return (
     <div className="space-y-6">
-      {/* Toast */}
       {migrationResultToast && (
-        <div className="p-4 bg-indigo-950 border border-indigo-500/50 rounded-xl text-indigo-200 text-sm shadow-xl flex items-center justify-between animate-fade-in">
+        <div className="no-print p-4 bg-indigo-950 border border-indigo-500/50 rounded-xl text-indigo-200 text-sm shadow-xl flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CheckCircle className="w-5 h-5 text-indigo-400" />
             <span>{migrationResultToast}</span>
@@ -260,20 +413,20 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         </div>
       )}
 
-      {/* Real-Time Global Search Across Schedules, Tickets & Audit Logs */}
       <AdminGlobalSearchPanel
         lines={lines}
         schedules={schedules}
         tickets={tickets}
         language={language}
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
       />
 
       {/* Admin Sub-Tabs Navigation Bar */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 p-2 bg-slate-900 border border-slate-700/80 rounded-2xl shadow-lg">
+      <div className="no-print flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 p-2 bg-slate-900 border border-slate-700/80 rounded-2xl shadow-lg">
         <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
-          {/* Activity Monitor (Audit Log) - Highlighted as Requested */}
           <button
-            onClick={() => setActiveAdminTab('activity-monitor')}
+            data-testid="admin-tab-activity-monitor"
+            onClick={() => handleSelectAdminTab('activity-monitor')}
             className={`h-9 inline-flex items-center justify-center gap-1.5 px-3 rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap shrink-0 ${
               activeAdminTab === 'activity-monitor'
                 ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-900/30 ring-1 ring-blue-400/30'
@@ -288,7 +441,22 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           </button>
 
           <button
-            onClick={() => setActiveAdminTab('overview')}
+            type="button"
+            data-testid="admin-tab-global-timeline"
+            onClick={() => handleSelectAdminTab('global-timeline')}
+            className={`h-9 inline-flex items-center justify-center gap-1.5 px-3 rounded-xl text-xs font-semibold transition cursor-pointer whitespace-nowrap shrink-0 ${
+              activeAdminTab === 'global-timeline'
+                ? 'bg-gradient-to-r from-indigo-600 to-cyan-600 text-white shadow-lg shadow-indigo-900/30 ring-1 ring-cyan-400/30'
+                : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+            }`}
+          >
+            <Clock className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+            <span>{isRtl ? 'خط زمانی جامع فعالیت‌ها' : 'Global Activity Timeline'}</span>
+          </button>
+
+          <button
+            data-testid="admin-tab-overview"
+            onClick={() => handleSelectAdminTab('overview')}
             className={`h-9 inline-flex items-center justify-center gap-1.5 px-3 rounded-xl text-xs font-semibold transition cursor-pointer whitespace-nowrap shrink-0 ${
               activeAdminTab === 'overview'
                 ? 'bg-slate-800 text-white shadow border border-slate-700'
@@ -300,7 +468,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           </button>
 
           <button
-            onClick={() => setActiveAdminTab('lines')}
+            data-testid="admin-tab-lines"
+            onClick={() => handleSelectAdminTab('lines')}
             className={`h-9 inline-flex items-center justify-center gap-1.5 px-3 rounded-xl text-xs font-semibold transition cursor-pointer whitespace-nowrap shrink-0 ${
               activeAdminTab === 'lines'
                 ? 'bg-slate-800 text-white shadow border border-slate-700'
@@ -312,7 +481,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           </button>
 
           <button
-            onClick={() => setActiveAdminTab('employees')}
+            data-testid="admin-tab-employees"
+            onClick={() => handleSelectAdminTab('employees')}
             className={`h-9 inline-flex items-center justify-center gap-1.5 px-3 rounded-xl text-xs font-semibold transition cursor-pointer whitespace-nowrap shrink-0 ${
               activeAdminTab === 'employees'
                 ? 'bg-slate-800 text-white shadow border border-slate-700'
@@ -324,7 +494,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           </button>
 
           <button
-            onClick={() => setActiveAdminTab('migration')}
+            data-testid="admin-tab-migration"
+            onClick={() => handleSelectAdminTab('migration')}
             className={`h-9 inline-flex items-center justify-center gap-1.5 px-3 rounded-xl text-xs font-semibold transition cursor-pointer whitespace-nowrap shrink-0 ${
               activeAdminTab === 'migration'
                 ? 'bg-slate-800 text-white shadow border border-slate-700'
@@ -334,19 +505,46 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             <Layers className="w-3.5 h-3.5 text-amber-400 shrink-0" />
             <span>{t.tabMigration}</span>
           </button>
+
+          <button
+            type="button"
+            data-testid="admin-tab-system-settings"
+            onClick={() => handleSelectAdminTab('system-settings')}
+            className={`h-9 inline-flex items-center justify-center gap-1.5 px-3 rounded-xl text-xs font-semibold transition cursor-pointer whitespace-nowrap shrink-0 ${
+              activeAdminTab === 'system-settings'
+                ? 'bg-slate-800 text-white shadow border border-slate-700'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+            }`}
+          >
+            <Settings className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+            <span>{isRtl ? 'تنظیمات سامانه' : 'System Settings'}</span>
+          </button>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          {/* 60-Second Auto-Polling Status & Controls */}
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <button
+            type="button"
+            data-testid="open-command-palette-btn"
+            onClick={() => setIsCommandPaletteOpen(true)}
+            className="h-9 inline-flex items-center justify-center gap-1.5 px-3 rounded-xl text-xs font-bold bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 transition cursor-pointer whitespace-nowrap shrink-0"
+          >
+            <Command className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+            <span>{isRtl ? 'پالت فرمان' : 'Command Palette'}</span>
+            <kbd
+              dir="ltr"
+              className="px-1.5 py-0.5 rounded bg-indigo-950/90 border border-indigo-500/40 font-mono text-[10px] text-indigo-200"
+            >
+              Ctrl+K
+            </kbd>
+          </button>
+
           <div
             data-testid="admin-polling-status"
             className="h-9 inline-flex items-center gap-1.5 px-2.5 rounded-xl bg-slate-950/90 border border-emerald-500/30 text-[11px] text-slate-300 whitespace-nowrap shrink-0"
           >
             <span
               className={`w-2 h-2 rounded-full shrink-0 ${
-                pollingState.isPaused
-                  ? 'bg-amber-400'
-                  : 'bg-emerald-400 animate-pulse'
+                pollingState.isPaused ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'
               }`}
             />
             <Clock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
@@ -367,11 +565,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               data-testid="admin-poll-now-btn"
               onClick={handleManualPollSync}
               className="w-6 h-6 inline-flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-300 transition cursor-pointer shrink-0"
-              title={
-                isRtl
-                  ? 'همگام‌سازی فوری داده‌ها و لاگ‌ها'
-                  : 'Trigger immediate data & audit log refresh'
-              }
+              title={isRtl ? 'همگام‌سازی فوری داده‌ها و لاگ‌ها' : 'Trigger immediate data & audit log refresh'}
             >
               <RefreshCw className="w-3 h-3" />
             </button>
@@ -380,15 +574,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               data-testid="admin-poll-toggle-btn"
               onClick={handleTogglePollPause}
               className="w-6 h-6 inline-flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition cursor-pointer shrink-0"
-              title={
-                isRtl
-                  ? pollingState.isPaused
-                    ? 'ادامه بروزرسانی خودکار ۶۰ ثانیه‌ای'
-                    : 'توقف موقت بروزرسانی خودکار'
-                  : pollingState.isPaused
-                  ? 'Resume 60s Auto-Polling'
-                  : 'Pause 60s Auto-Polling'
-              }
+              title={isRtl ? 'توقف/ادامه بروزرسانی خودکار' : 'Pause/Resume 60s Auto-Polling'}
             >
               {pollingState.isPaused ? (
                 <Play className="w-3 h-3 text-amber-400" />
@@ -399,9 +585,49 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           </div>
 
           <button
+            type="button"
+            data-testid="admin-print-report-btn"
+            onClick={handleOpenAndPrintReport}
+            className={`h-9 inline-flex items-center justify-center gap-1.5 px-3 rounded-xl text-xs font-bold border transition cursor-pointer whitespace-nowrap shrink-0 ${
+              isPrintPreviewOpen
+                ? 'bg-emerald-600 text-white border-emerald-400 shadow-lg shadow-emerald-950/50'
+                : 'bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border-emerald-500/40'
+            }`}
+            title={
+              isRtl
+                ? 'چاپ گزارش جامع آمار عملکرد داشبورد و لاگ‌های حسابرسی (Print Report)'
+                : 'Print printer-friendly report of current audit logs and performance dashboard statistics'
+            }
+          >
+            <Printer className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
+            <span>{isRtl ? 'چاپ گزارش (Print Report)' : 'Print Report'}</span>
+          </button>
+
+          <button
+            type="button"
+            data-testid="admin-toggle-skeleton-preview-btn"
+            onClick={handleToggleSkeletonPreview}
+            className={`h-9 inline-flex items-center justify-center gap-1.5 px-3 rounded-xl text-[11px] font-semibold border transition cursor-pointer whitespace-nowrap shrink-0 ${
+              loadingFeedback.isPinnedPreview
+                ? 'bg-cyan-600/30 text-cyan-200 border-cyan-400/60 shadow-lg shadow-cyan-950/50'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+            }`}
+          >
+            <Server className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+            <span>
+              {loadingFeedback.isPinnedPreview
+                ? isRtl
+                  ? 'پایان پیش‌نمایش بارگذاری'
+                  : 'Exit Loading View'
+                : isRtl
+                ? 'تست اسکلت بارگذاری'
+                : 'Loading Skeleton'}
+            </span>
+          </button>
+
+          <button
             onClick={handleResetSeed}
             className="h-9 inline-flex items-center justify-center gap-1.5 px-3 rounded-xl text-[11px] font-semibold bg-slate-800 hover:bg-rose-950/70 text-slate-300 hover:text-rose-300 border border-slate-700 transition cursor-pointer whitespace-nowrap shrink-0"
-            title="Reset Database to Seed State"
           >
             <RefreshCw className="w-3.5 h-3.5 shrink-0" />
             <span>{isRtl ? 'بازنشانی (Seed)' : 'Reset Seed'}</span>
@@ -409,18 +635,58 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         </div>
       </div>
 
-      {/* SUB-TAB 1: DEDICATED ACTIVITY MONITOR (AUDIT LOG VIEWER) */}
+      {/* Printer-Friendly Report Sheet (Visible in @media print & when Print Report is triggered) */}
+      <AdminPrintableReport
+        report={printableReportData}
+        language={language}
+        isPreviewOpen={isPrintPreviewOpen}
+        onClosePreview={() => setIsPrintPreviewOpen(false)}
+        onTriggerBrowserPrint={handleTriggerBrowserPrint}
+      />
+
+      {/* Visual Progress Bar & Contextual Loading Skeleton */}
+      <PortalProgressBar
+        state={loadingFeedback}
+        language={language}
+        portalName="admin"
+      />
+      <PortalLoadingSkeleton
+        state={loadingFeedback}
+        language={language}
+        portalName="admin"
+      />
+
+      {/* SUB-TAB 1: ACTIVITY MONITOR */}
       {activeAdminTab === 'activity-monitor' && (
-        <AuditLogViewer
+        <div className="no-print space-y-6">
+          <GlobalActivityTimeline
+            language={language}
+            currentUser={currentUser}
+            refreshTick={refreshTick}
+            onRefreshData={onRefreshData}
+          />
+          <AuditLogViewer
+            language={language}
+            onRefreshData={onRefreshData}
+            refreshTick={refreshTick}
+            onPrintReport={handleOpenAndPrintReport}
+          />
+        </div>
+      )}
+
+      {/* SUB-TAB 1B: STANDALONE GLOBAL ACTIVITY TIMELINE */}
+      {activeAdminTab === 'global-timeline' && (
+        <GlobalActivityTimeline
           language={language}
-          onRefreshData={onRefreshData}
+          currentUser={currentUser}
           refreshTick={refreshTick}
+          onRefreshData={onRefreshData}
         />
       )}
 
       {/* SUB-TAB 2: EXECUTIVE DASHBOARD OVERVIEW */}
       {activeAdminTab === 'overview' && (
-        <div className="space-y-6">
+        <div className="no-print space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="p-5 rounded-2xl bg-slate-900 border border-slate-700/80 shadow flex flex-col justify-between min-h-[116px]">
               <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
@@ -432,7 +698,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 <span className="text-xs text-slate-400 font-normal">{isRtl ? 'تومان' : 'TMN'}</span>
               </div>
               <p className="text-[11px] text-slate-400">
-                {tickets.filter((tk) => tk.status === 'confirmed').length.toLocaleString(isRtl ? 'fa-IR' : 'en-US')} {isRtl ? 'بلیت قطعی صادرشده' : 'confirmed tickets'}
+                {tickets.filter((tk) => tk.status === 'confirmed').length.toLocaleString(isRtl ? 'fa-IR' : 'en-US')}{' '}
+                {isRtl ? 'بلیت قطعی صادرشده' : 'confirmed tickets'}
               </p>
             </div>
 
@@ -441,13 +708,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 <span>{isRtl ? 'ضریب اشغال ناوگان' : 'Fleet Utilization'}</span>
                 <TrendingUp className="w-4 h-4 text-blue-400 shrink-0" />
               </div>
-              <div className="text-2xl font-bold text-white font-mono my-1">
-                {isRtl
-                  ? `%${fleetUtilization.toLocaleString('fa-IR')}`
-                  : `${fleetUtilization}%`}
+              <div className="text-2xl font-bold text-white font-mono my-1" dir="ltr">
+                {fleetUtilization}%
               </div>
               <p className="text-[11px] text-slate-400">
-                {totalSeatsBooked.toLocaleString(isRtl ? 'fa-IR' : 'en-US')} / {totalFleetCapacity.toLocaleString(isRtl ? 'fa-IR' : 'en-US')} {isRtl ? 'صندلی پر شده' : 'seats occupied'}
+                {totalSeatsBooked.toLocaleString(isRtl ? 'fa-IR' : 'en-US')} /{' '}
+                {totalFleetCapacity.toLocaleString(isRtl ? 'fa-IR' : 'en-US')}{' '}
+                {isRtl ? 'صندلی پر شده' : 'seats occupied'}
               </p>
             </div>
 
@@ -460,7 +727,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 {lines.length.toLocaleString(isRtl ? 'fa-IR' : 'en-US')}{' '}
                 <span className="text-sm font-semibold">{isRtl ? 'کریدور سراسری' : 'lines'}</span>
               </div>
-              <p className="text-[11px] text-slate-400">{schedules.length.toLocaleString(isRtl ? 'fa-IR' : 'en-US')} {isRtl ? 'قطار زمان‌بندی‌شده' : 'scheduled trains'}</p>
+              <p className="text-[11px] text-slate-400">
+                {schedules.length.toLocaleString(isRtl ? 'fa-IR' : 'en-US')}{' '}
+                {isRtl ? 'قطار زمان‌بندی‌شده' : 'scheduled trains'}
+              </p>
             </div>
 
             <div className="p-5 rounded-2xl bg-slate-900 border border-slate-700/80 shadow flex flex-col justify-between min-h-[116px]">
@@ -468,14 +738,15 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 <span>{isRtl ? 'شاخص سلامت و ایمنی' : 'Safety Integrity Index'}</span>
                 <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
               </div>
-              <div className="text-2xl font-bold text-emerald-400 font-mono my-1">
-                {isRtl ? '۹۹.۸٪' : '99.8%'}
+              <div className="text-2xl font-bold text-emerald-400 font-mono my-1" dir="ltr">
+                99.8%
               </div>
-              <p className="text-[11px] text-slate-400">{isRtl ? 'موتور checkAccident برخط' : 'checkAccident engine active'}</p>
+              <p className="text-[11px] text-slate-400">
+                {isRtl ? 'موتور checkAccident برخط' : 'checkAccident engine active'}
+              </p>
             </div>
           </div>
 
-          {/* Visual Performance Analytics Dashboard (Recharts) */}
           <AdminPerformanceCharts
             lines={lines}
             schedules={schedules}
@@ -483,155 +754,57 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             language={language}
             refreshTick={refreshTick}
           />
-
-          {/* Quick Shortcuts */}
-          <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-700/80 shadow space-y-3">
-            <h3 className="text-sm font-bold text-white">{isRtl ? 'دسترسی سریع مدیر ارشد' : 'Admin Quick Actions'}</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <button
-                onClick={() => setActiveAdminTab('activity-monitor')}
-                className="h-10 px-4 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 text-xs font-semibold cursor-pointer inline-flex items-center justify-center gap-2 whitespace-nowrap transition"
-              >
-                <Activity className="w-4 h-4 text-blue-400 shrink-0" />
-                <span>{isRtl ? 'مشاهده Activity Monitor (لاگ‌های لحظه‌ای)' : 'Open Activity Monitor'}</span>
-              </button>
-
-              <button
-                onClick={() => setShowAddEmpModal(true)}
-                className="h-10 px-4 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 text-xs font-semibold cursor-pointer inline-flex items-center justify-center gap-2 whitespace-nowrap transition"
-              >
-                <PlusCircle className="w-4 h-4 text-purple-400 shrink-0" />
-                <span>{isRtl ? 'ثبت پرسنل عملیاتی جدید' : 'Register New Staff'}</span>
-              </button>
-
-              <button
-                onClick={() => setActiveAdminTab('migration')}
-                className="h-10 px-4 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/40 text-xs font-semibold cursor-pointer inline-flex items-center justify-center gap-2 whitespace-nowrap transition"
-              >
-                <Layers className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>{isRtl ? 'اجرای تست پایپ‌لاین مهاجرت پایتون v1' : 'Run Python v1 Migration'}</span>
-              </button>
-            </div>
-          </div>
         </div>
       )}
 
-      {/* SUB-TAB 3: LINES & INFRASTRUCTURE */}
+      {/* SUB-TAB 3: LINES */}
       {activeAdminTab === 'lines' && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {lines.map((line) => (
-              <div
-                key={line.id}
-                className="p-5 rounded-2xl bg-slate-900 border border-slate-700/80 shadow space-y-3"
-              >
-                <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-                  <span className="font-mono text-xs font-bold text-blue-400 bg-blue-950 px-2 py-0.5 rounded border border-blue-700/40">
-                    {line.code}
-                  </span>
-                  <span className="text-xs font-mono text-slate-300">{line.totalDistanceKm} km</span>
-                </div>
-
-                <div>
-                  <h4 className="text-sm font-bold text-white">{isRtl ? line.nameFa : line.nameEn}</h4>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    {line.stations.length} {isRtl ? 'ایستگاه و سکوی توقف' : 'stations along route'}
-                  </p>
-                </div>
-
-                <div className="space-y-1.5 pt-2 border-t border-slate-800">
-                  <div className="text-[11px] text-slate-400 font-semibold">{isRtl ? 'ایستگاه‌ها و فواصل (کیلومتر):' : 'Station Milestones:'}</div>
-                  <div className="space-y-1 max-h-40 overflow-y-auto pe-1">
-                    {line.stations.map((st, idx) => (
-                      <div
-                        key={st.id}
-                        className="flex items-center justify-between text-xs py-1 px-2 rounded bg-slate-800/60"
-                      >
-                        <span className="text-slate-200">
-                          {idx + 1}. {isRtl ? st.nameFa : st.nameEn}
-                        </span>
-                        <div className="flex items-center gap-2 text-slate-400 font-mono text-[11px]">
-                          <span>{st.kmFromStart} km</span>
-                          <span className="px-1.5 py-0.5 rounded bg-slate-700 text-blue-300 text-[10px]">
-                            {st.platformsCount} {isRtl ? 'سکو' : 'plat.'}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+        <div className="no-print grid grid-cols-1 md:grid-cols-3 gap-4">
+          {lines.map((line) => (
+            <div key={line.id} className="p-5 rounded-2xl bg-slate-900 border border-slate-700/80 shadow space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                <span className="font-mono text-xs font-bold text-blue-400 bg-blue-950 px-2 py-0.5 rounded border border-blue-700/40" dir="ltr">
+                  {line.code}
+                </span>
+                <span className="text-xs font-mono text-slate-300" dir="ltr">{line.totalDistanceKm} km</span>
               </div>
-            ))}
-          </div>
+              <h4 className="text-sm font-bold text-white">{isRtl ? line.nameFa : line.nameEn}</h4>
+            </div>
+          ))}
         </div>
       )}
 
-      {/* SUB-TAB 4: EMPLOYEES & STAFF MANAGEMENT */}
+      {/* SUB-TAB 4: EMPLOYEES */}
       {activeAdminTab === 'employees' && (
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <Users className="w-5 h-5 text-purple-400 shrink-0" />
-              <span>{isRtl ? 'فهرست پرسنل، راهبران و دسترسی‌های خطوط ریلی' : 'Operations Staff & Line Access'}</span>
+        <div className="no-print space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-bold text-white">
+              {isRtl ? 'فهرست پرسنل و دسترسی‌های خطوط ریلی' : 'Operations Staff & Line Access'}
             </h3>
             <button
               onClick={() => setShowAddEmpModal(true)}
-              className="h-9 inline-flex items-center justify-center gap-1.5 px-3.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-lg shadow-purple-900/30 transition cursor-pointer whitespace-nowrap shrink-0"
+              className="h-9 px-3.5 rounded-xl bg-purple-600 text-white text-xs font-semibold cursor-pointer"
             >
-              <PlusCircle className="w-4 h-4 shrink-0" />
-              <span>{isRtl ? 'تعریف پرسنل جدید' : 'Register Staff'}</span>
+              {isRtl ? '+ تعریف پرسنل جدید' : '+ Register Staff'}
             </button>
           </div>
-
-          <div className="overflow-x-auto rounded-2xl border border-slate-700/80 bg-slate-900 shadow">
-            <table className="w-full min-w-[760px] text-xs text-slate-200">
-              <thead className="bg-slate-800 text-slate-300 font-semibold border-b border-slate-700">
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-x-auto">
+            <table className="w-full text-xs text-slate-200">
+              <thead className="bg-slate-800 text-slate-300">
                 <tr>
-                  <th className="py-3.5 px-4 text-start whitespace-nowrap">{isRtl ? 'نام و نام خانوادگی' : 'Full Name'}</th>
-                  <th className="py-3.5 px-4 text-start whitespace-nowrap">{isRtl ? 'نام کاربری' : 'Username'}</th>
-                  <th className="py-3.5 px-4 text-start whitespace-nowrap">{isRtl ? 'پست الکترونیک' : 'Email'}</th>
-                  <th className="py-3.5 px-4 text-start whitespace-nowrap">{isRtl ? 'خطوط ریلی تحت هدایت' : 'Assigned Lines'}</th>
-                  <th className="py-3.5 px-4 text-center whitespace-nowrap">{isRtl ? 'سطح دسترسی' : 'Role'}</th>
+                  <th className="py-3 px-4 text-start">{isRtl ? 'نام و نام خانوادگی' : 'Full Name'}</th>
+                  <th className="py-3 px-4 text-start">{isRtl ? 'نام کاربری' : 'Username'}</th>
+                  <th className="py-3 px-4 text-start">{isRtl ? 'نقش' : 'Role'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800">
                 {getDatabase()
                   .users.filter((u) => u.role === 'employee' || u.role === 'admin')
                   .map((emp) => (
-                    <tr key={emp.id} className="hover:bg-slate-800/40">
-                      <td className="py-3.5 px-4 font-semibold text-white whitespace-nowrap">{emp.fullName}</td>
-                      <td className="py-3.5 px-4 font-mono text-slate-300 whitespace-nowrap">{emp.username}</td>
-                      <td className="py-3.5 px-4 font-mono text-slate-400 whitespace-nowrap">{emp.email}</td>
-                      <td className="py-3.5 px-4">
-                        <div className="flex flex-wrap gap-1">
-                          {emp.assignedLines && emp.assignedLines.length > 0 ? (
-                            emp.assignedLines.map((lid) => {
-                              const l = lines.find((x) => x.id === lid);
-                              return (
-                                <span
-                                  key={lid}
-                                  className="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-blue-300 text-[10px] whitespace-nowrap"
-                                >
-                                  {isRtl ? l?.nameFa : l?.nameEn}
-                                </span>
-                              );
-                            })
-                          ) : (
-                            <span className="text-slate-400 text-[11px]">{isRtl ? 'دسترسی سراسری' : 'All Lines'}</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                            emp.role === 'admin'
-                              ? 'bg-rose-950 text-rose-300 border border-rose-600/40'
-                              : 'bg-purple-950 text-purple-300 border border-purple-600/40'
-                          }`}
-                        >
-                          {emp.role}
-                        </span>
-                      </td>
+                    <tr key={emp.id}>
+                      <td className="py-3 px-4 font-semibold text-white">{emp.fullName}</td>
+                      <td className="py-3 px-4 font-mono" dir="ltr">{emp.username}</td>
+                      <td className="py-3 px-4 font-mono" dir="ltr">{emp.role}</td>
                     </tr>
                   ))}
               </tbody>
@@ -640,91 +813,74 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         </div>
       )}
 
-      {/* SUB-TAB 5: LEGACY PYTHON CLI V1 TO ENTERPRISE V2 MIGRATION */}
+      {/* SUB-TAB 5: MIGRATION */}
       {activeAdminTab === 'migration' && (
-        <div className="space-y-4">
-          <div className="p-5 rounded-2xl bg-slate-900 border border-slate-700/80 shadow space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <Database className="w-5 h-5 text-amber-400" />
-                  {isRtl
-                    ? 'پایپ‌لاین مهاجرت داده‌های کدبیس قدیمی پایتون به اسکیمای رابطه‌ای v2'
-                    : 'Legacy Python CLI v1 to Relational Schema v2 Migration Pipeline'}
-                </h3>
-                <p className="text-xs text-slate-400 mt-1">
-                  {isRtl
-                    ? 'تبدیل ساختار دیکشنری‌های پایتون (user_dict, employee_dict, line_dic, train_dic) به موجودیت‌های رابطه‌ای همراه با اعتبارسنجی و ثبت خودکار در Activity Monitor'
-                    : 'Transforms legacy Python CLI nested dictionaries into normalized relational entities with automated audit logging.'}
-                </p>
-              </div>
-
-              <button
-                disabled={migrationRunning}
-                onClick={handleRunSampleMigration}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs shadow-lg shadow-amber-900/30 transition cursor-pointer"
-              >
-                <RefreshCw className={`w-4 h-4 ${migrationRunning ? 'animate-spin' : ''}`} />
-                <span>{isRtl ? 'اجرای تست مهاجرت داده' : 'Run Migration Pipeline'}</span>
-              </button>
-            </div>
+        <div className="no-print p-5 rounded-2xl bg-slate-900 border border-slate-700/80 shadow flex items-center justify-between">
+          <div>
+            <h3 className="text-base font-bold text-white">
+              {isRtl
+                ? 'پایپ‌لاین مهاجرت داده‌های کدبیس قدیمی پایتون به اسکیمای رابطه‌ای v2'
+                : 'Legacy Python CLI v1 to Relational Schema v2 Migration Pipeline'}
+            </h3>
           </div>
+          <button
+            disabled={migrationRunning}
+            onClick={handleRunSampleMigration}
+            className="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs cursor-pointer"
+          >
+            {isRtl ? 'اجرای تست مهاجرت داده' : 'Run Migration Pipeline'}
+          </button>
+        </div>
+      )}
 
-          {/* Past Migration Logs */}
-          <div className="rounded-2xl border border-slate-700/80 bg-slate-900 p-5 shadow space-y-3">
-            <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-              {isRtl ? 'تاریخچه عملیات‌های مهاجرت ثبت‌شده:' : 'Migration Audit History:'}
-            </h4>
-
-            {getDatabase().migrationLogs.length === 0 ? (
-              <p className="text-xs text-slate-400 py-4 text-center">
-                {isRtl ? 'هنوز مهاجرت دستی انجام نشده است.' : 'No manual migrations executed yet.'}
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {getDatabase().migrationLogs.map((mlog) => (
-                  <div key={mlog.id} className="p-3.5 bg-slate-800/70 rounded-xl border border-slate-700 text-xs space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-emerald-400 font-bold">{mlog.id}</span>
-                      <span className="text-[11px] text-slate-400 font-mono">{new Date(mlog.timestamp).toLocaleString()}</span>
-                    </div>
-                    <div className="flex flex-wrap gap-2 text-[11px] text-slate-300">
-                      <span>{isRtl ? `کاربران انتقال‌یافته: ${mlog.migratedUsers}` : `Users: ${mlog.migratedUsers}`}</span>
-                      <span>•</span>
-                      <span>{isRtl ? `پرسنل: ${mlog.migratedEmployees}` : `Staff: ${mlog.migratedEmployees}`}</span>
-                      <span>•</span>
-                      <span>{isRtl ? `خطوط: ${mlog.migratedLines}` : `Lines: ${mlog.migratedLines}`}</span>
-                      <span>•</span>
-                      <span>{isRtl ? `قطارها: ${mlog.migratedTrains}` : `Trains: ${mlog.migratedTrains}`}</span>
-                    </div>
-                    <div className="p-2 bg-black/40 rounded border border-slate-800 text-[11px] text-slate-300">
-                      {mlog.diffSummary.join(' | ')}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+      {/* SUB-TAB 6: SYSTEM SETTINGS */}
+      {activeAdminTab === 'system-settings' && (
+        <div data-testid="admin-system-settings-view" className="no-print p-6 rounded-2xl bg-slate-900 border border-slate-700/80 shadow space-y-4">
+          <h3 className="text-base font-bold text-white">
+            {isRtl ? 'تنظیمات سامانه و پیکربندی مرکز فرماندهی' : 'System Settings & Command Center Configuration'}
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={handleManualPollSync}
+              className="h-9 px-4 rounded-xl bg-emerald-600/20 text-emerald-300 border border-emerald-500/40 text-xs font-semibold cursor-pointer"
+            >
+              {isRtl ? 'همگام‌سازی فوری اکنون' : 'Sync Data Now'}
+            </button>
+            <button
+              type="button"
+              onClick={handleOpenAndPrintReport}
+              className="h-9 px-4 rounded-xl bg-blue-600/20 text-blue-300 border border-blue-500/40 text-xs font-semibold cursor-pointer"
+            >
+              {isRtl ? 'چاپ گزارش رسمی (Print Report)' : 'Print Official Report'}
+            </button>
           </div>
         </div>
       )}
 
-      {/* Add Employee Modal */}
-      {showAddEmpModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 flex flex-col gap-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Users className="w-5 h-5 text-purple-400 shrink-0" />
-                <span>{isRtl ? 'ثبت پرسنل عملیات خطوط ریلی' : 'Register Operations Staff'}</span>
-              </h3>
-              <button
-                onClick={() => setShowAddEmpModal(false)}
-                className="text-slate-400 hover:text-white p-1.5 rounded-lg bg-slate-800 cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
+      <AdminCommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        activeTab={activeAdminTab}
+        onSelectTab={(targetTab) => handleSelectAdminTab(targetTab)}
+        onExecuteAction={(actionKey) => {
+          if (actionKey === 'register_staff') setShowAddEmpModal(true);
+          else if (actionKey === 'sync_now') handleManualPollSync();
+          else if (actionKey === 'toggle_polling') handleTogglePollPause();
+          else if (actionKey === 'run_migration') {
+            handleSelectAdminTab('migration');
+            handleRunSampleMigration();
+          } else if (actionKey === 'reset_seed') handleResetSeed();
+        }}
+        language={language}
+      />
 
+      {showAddEmpModal && (
+        <div className="no-print fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 space-y-4">
+            <h3 className="text-base font-bold text-white">
+              {isRtl ? 'ثبت پرسنل عملیات خطوط ریلی' : 'Register Operations Staff'}
+            </h3>
             <form onSubmit={handleRegisterEmployee} className="flex flex-col gap-4 text-xs">
               <div className="grid grid-cols-auto gap-4">
                 <div className="flex flex-col gap-1.5">
@@ -733,66 +889,34 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     type="text"
                     value={empFullName}
                     onChange={(e) => setEmpFullName(e.target.value)}
-                    placeholder="مهندس علیرضا فتاحی"
-                    className="w-full h-10 bg-slate-800 border border-slate-700 focus:border-purple-500 rounded-xl px-3 text-white focus:outline-none"
+                    className="h-10 bg-slate-800 border border-slate-700 rounded-xl px-3 text-white"
                     required
                   />
                 </div>
-
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-slate-300 font-semibold">{isRtl ? 'نام کاربری سیستم:' : 'Username:'}</label>
+                  <label className="text-slate-300 font-semibold">{isRtl ? 'نام کاربری:' : 'Username:'}</label>
                   <input
                     type="text"
                     value={empUsername}
                     onChange={(e) => setEmpUsername(e.target.value)}
-                    placeholder="alireza.dispatch"
-                    className="w-full h-10 bg-slate-800 border border-slate-700 focus:border-purple-500 rounded-xl px-3 text-white font-mono focus:outline-none"
+                    className="h-10 bg-slate-800 border border-slate-700 rounded-xl px-3 text-white font-mono"
                     required
                   />
                 </div>
               </div>
-
-              <div className="grid grid-cols-auto gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-slate-300 font-semibold">{isRtl ? 'پست الکترونیک سازمانی:' : 'Work Email:'}</label>
-                  <input
-                    type="email"
-                    value={empEmail}
-                    onChange={(e) => setEmpEmail(e.target.value)}
-                    placeholder="alireza.dispatch@railpulse.ir"
-                    className="w-full h-10 bg-slate-800 border border-slate-700 focus:border-purple-500 rounded-xl px-3 text-white font-mono focus:outline-none"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-slate-300 font-semibold">{isRtl ? 'تخصیص خط تحت هدایت:' : 'Assign Railway Line:'}</label>
-                  <select
-                    value={empLineId}
-                    onChange={(e) => setEmpLineId(e.target.value)}
-                    className="w-full h-10 bg-slate-800 border border-slate-700 focus:border-purple-500 rounded-xl px-3 text-white focus:outline-none cursor-pointer"
-                  >
-                    {lines.map((l) => (
-                      <option key={l.id} value={l.id}>
-                        {isRtl ? l.nameFa : l.nameEn}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-800">
+              <div className="flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setShowAddEmpModal(false)}
-                  className="h-9 px-4 inline-flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium cursor-pointer"
+                  className="h-9 px-4 rounded-xl bg-slate-800 text-slate-300"
                 >
                   {isRtl ? 'انصراف' : 'Cancel'}
                 </button>
                 <button
                   type="submit"
-                  className="h-9 px-5 inline-flex items-center justify-center rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold transition cursor-pointer shadow-lg shadow-purple-900/30"
+                  className="h-9 px-5 rounded-xl bg-purple-600 text-white font-semibold"
                 >
-                  {isRtl ? 'ثبت و صدور مجوز' : 'Register & Audit'}
+                  {isRtl ? 'ثبت' : 'Register'}
                 </button>
               </div>
             </form>

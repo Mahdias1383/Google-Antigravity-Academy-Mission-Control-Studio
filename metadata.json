@@ -1,6 +1,6 @@
 {
   "name": "Google Antigravity Academy & Mission Control Studio",
-  "description": "An interactive bilingual (Persian RTL / English LTR) masterclass, live Mission Control simulator, and engineering studio for mastering Google Antigravity Agent-First IDE architecture.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "description": "An elite developer platform, architectural masterclass, and live engineering simulator for Agent-First Systems, Deterministic Guardrails, FastMCP 2.0, and Autonomous Multi-Agent Workspaces with Google Antigravity.",
+  "requestFramePermissions": []
 }
+

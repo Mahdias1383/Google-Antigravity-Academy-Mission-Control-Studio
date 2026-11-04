@@ -6,6 +6,8 @@ import {
 } from '../types/railpulse';
 
 export type SalesTimeWindow = '7d' | '14d' | '30d';
+export type ForecastHorizon = '7d' | '14d';
+export type DemandScenario = 'baseline' | 'peak_holiday' | 'weather_disruption';
 
 export interface TicketSalesTrendPoint {
   isoDate: string;
@@ -39,25 +41,28 @@ export interface CorridorPerformanceMetric {
   estimatedRevenueMillions: number;
 }
 
-const PERSIAN_SHORT_MONTHS = [
-  'فروردین',
-  'اردیبهشت',
-  'خرداد',
-  'تیر',
-  'مرداد',
-  'شهریور',
-  'مهر',
-  'آبان',
-  'آذر',
-  'دی',
-  'بهمن',
-  'اسفند',
-];
+export interface DemandForecastPoint {
+  dayIndex: number;
+  dateLabelFa: string;
+  dateLabelEn: string;
+  isForecast: boolean;
+  actualTickets: number | null;
+  projectedTickets: number | null;
+  lowerBoundTickets: number | null;
+  upperBoundTickets: number | null;
+  projectedRevenueMillions: number;
+}
 
-/**
- * Builds deterministic + live-reactive time-series data for Ticket Sales & Revenue over time.
- * Live confirmed/cancelled tickets in the database are reflected in the current day's bucket.
- */
+export interface TicketDemandForecastResult {
+  horizonDays: number;
+  scenario: DemandScenario;
+  points: DemandForecastPoint[];
+  totalProjectedSeats: number;
+  totalProjectedRevenueMillions: number;
+  peakForecastSeats: number;
+  growthRatePercent: number;
+}
+
 export function buildTicketSalesTimeSeries(
   schedules: TrainSchedule[],
   tickets: Ticket[],
@@ -66,108 +71,58 @@ export function buildTicketSalesTimeSeries(
   const daysCount = window === '7d' ? 7 : window === '14d' ? 14 : 30;
   const points: TicketSalesTrendPoint[] = [];
 
-  // Calculate live fleet baseline from schedules and tickets
   const confirmedTickets = tickets.filter((t) => t.status === 'confirmed');
-  const cancelledTickets = tickets.filter((t) => t.status === 'cancelled');
-
   const liveConfirmedSeats = confirmedTickets.reduce((sum, t) => sum + t.seatCount, 0);
-  const liveConfirmedRevenue = confirmedTickets.reduce((sum, t) => sum + t.totalPrice, 0);
   const totalScheduleBookedSeats = schedules.reduce((sum, s) => sum + s.bookedSeats, 0);
-
   const baseNow = new Date('2026-11-03T12:00:00Z');
 
   for (let i = daysCount - 1; i >= 0; i--) {
     const d = new Date(baseNow.getTime() - i * 24 * 60 * 60 * 1000);
     const isoDate = d.toISOString().slice(0, 10);
-
-    // Deterministic daily curve based on day index
-    const seedIndex = daysCount - i;
-    const wave = Math.sin(seedIndex * 0.85) * 18 + Math.cos(seedIndex * 0.45) * 12;
-    const baselineSeats = Math.max(42, Math.round(95 + wave + (seedIndex % 5) * 9));
-    const avgTicketPrice = 420000;
-
-    const isLatestDay = i === 0;
-    const ticketsSold = isLatestDay
-      ? Math.max(baselineSeats, Math.round(totalScheduleBookedSeats * 0.18) + liveConfirmedSeats)
-      : baselineSeats;
-
-    const revenueTomans = isLatestDay
-      ? baselineSeats * avgTicketPrice + liveConfirmedRevenue
-      : baselineSeats * avgTicketPrice;
-
-    const cancellations = isLatestDay
-      ? Math.max(2, cancelledTickets.length + 2)
-      : Math.max(1, (seedIndex * 3) % 7);
-
-    // Format labels
-    const shamsiDay = ((12 - i + 29) % 30) + 1;
-    const shamsiMonth = i > 11 ? PERSIAN_SHORT_MONTHS[6] : PERSIAN_SHORT_MONTHS[7]; // مهر / آبان
-    const dateLabelFa = `${shamsiDay} ${shamsiMonth}`;
-    const dateLabelEn = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const wave = Math.round(Math.sin(i * 0.9) * 45 + (daysCount - i) * 6);
+    const ticketsSold = Math.max(
+      120,
+      Math.round(totalScheduleBookedSeats * 0.35 + liveConfirmedSeats * 4 + wave)
+    );
+    const revenueTomans = ticketsSold * 410000;
+    const revenueMillions = Number((revenueTomans / 1_000_000).toFixed(2));
 
     points.push({
       isoDate,
-      dateLabelFa,
-      dateLabelEn,
+      dateLabelFa: `${d.getUTCMonth() + 1}/${d.getUTCDate()}`,
+      dateLabelEn: isoDate.slice(5),
       ticketsSold,
       revenueTomans,
-      revenueMillions: Number((revenueTomans / 1_000_000).toFixed(2)),
-      cancellations,
+      revenueMillions,
+      cancellations: Math.max(2, Math.round(ticketsSold * 0.04)),
     });
   }
 
   return points;
 }
 
-/**
- * Builds time-series metrics for System Activity & Audit Log Operations over time.
- * Incorporates real stored AuditLog entries into the time buckets.
- */
 export function buildSystemActivityTimeSeries(
   auditLogs: AuditLog[]
 ): SystemActivityTimePoint[] {
-  const timeSlots = [
-    { labelFa: '۰۰:۰۰ - ۰۴:۰۰', labelEn: '00:00 - 04:00', baseRes: 4, baseSch: 1, baseSys: 3, baseRisk: 0 },
-    { labelFa: '۰۴:۰۰ - ۰۸:۰۰', labelEn: '04:00 - 08:00', baseRes: 14, baseSch: 5, baseSys: 6, baseRisk: 1 },
-    { labelFa: '۰۸:۰۰ - ۱۲:۰۰', labelEn: '08:00 - 12:00', baseRes: 28, baseSch: 8, baseSys: 11, baseRisk: 2 },
-    { labelFa: '۱۲:۰۰ - ۱۶:۰۰', labelEn: '12:00 - 16:00', baseRes: 22, baseSch: 6, baseSys: 9, baseRisk: 1 },
-    { labelFa: '۱۶:۰۰ - ۲۰:۰۰', labelEn: '16:00 - 20:00', baseRes: 31, baseSch: 7, baseSys: 12, baseRisk: 2 },
-    { labelFa: '۲۰:۰۰ - ۲۴:۰۰ (جاری)', labelEn: '20:00 - 24:00 (Live)', baseRes: 12, baseSch: 3, baseSys: 5, baseRisk: 1 },
+  const buckets = [
+    { fa: '۰۰:۰۰ - ۰۴:۰۰', en: '00:00 - 04:00', base: 14 },
+    { fa: '۰۴:۰۰ - ۰۸:۰۰', en: '04:00 - 08:00', base: 38 },
+    { fa: '۰۸:۰۰ - ۱۲:۰۰', en: '08:00 - 12:00', base: 64 },
+    { fa: '۱۲:۰۰ - ۱۶:۰۰', en: '12:00 - 16:00', base: 52 },
+    { fa: '۱۶:۰۰ - ۲۰:۰۰', en: '16:00 - 20:00', base: 71 },
+    { fa: '۲۰:۰۰ - ۲۴:۰۰', en: '20:00 - 24:00', base: 43 },
   ];
 
-  // Count live audit logs by category to add to the current live window
-  let liveRes = 0;
-  let liveSch = 0;
-  let liveSys = 0;
-  let liveRisk = 0;
+  const liveBoost = auditLogs.length;
 
-  for (const log of auditLogs) {
-    if (log.actionType === 'ticket_reservation' || log.actionType === 'ticket_cancellation') {
-      liveRes++;
-    } else if (
-      log.actionType === 'schedule_create' ||
-      log.actionType === 'schedule_update' ||
-      log.actionType === 'schedule_delete'
-    ) {
-      liveSch++;
-    } else {
-      liveSys++;
-    }
-    if (log.riskLevel === 'high' || log.riskLevel === 'critical') {
-      liveRisk++;
-    }
-  }
-
-  return timeSlots.map((slot, idx) => {
-    const isCurrentSlot = idx === timeSlots.length - 1;
-    const reservations = isCurrentSlot ? slot.baseRes + liveRes : slot.baseRes;
-    const scheduleOps = isCurrentSlot ? slot.baseSch + liveSch : slot.baseSch;
-    const systemAndWallet = isCurrentSlot ? slot.baseSys + liveSys : slot.baseSys;
-    const highRiskEvents = isCurrentSlot ? slot.baseRisk + liveRisk : slot.baseRisk;
-
+  return buckets.map((b, idx) => {
+    const reservations = Math.round(b.base * 0.55) + (idx === 2 ? liveBoost : 0);
+    const scheduleOps = Math.round(b.base * 0.25);
+    const systemAndWallet = Math.round(b.base * 0.2);
+    const highRiskEvents = Math.max(1, Math.round(b.base * 0.06));
     return {
-      bucketLabelFa: slot.labelFa,
-      bucketLabelEn: slot.labelEn,
+      bucketLabelFa: b.fa,
+      bucketLabelEn: b.en,
       reservations,
       scheduleOps,
       systemAndWallet,
@@ -177,25 +132,23 @@ export function buildSystemActivityTimeSeries(
   });
 }
 
-/**
- * Computes per-corridor seat occupancy and revenue metrics for comparative visualization.
- */
 export function buildCorridorPerformanceBreakdown(
   lines: TrainLine[],
   schedules: TrainSchedule[]
 ): CorridorPerformanceMetric[] {
   return lines.map((line) => {
-    const lineSchedules = schedules.filter(
-      (s) => s.lineId === line.id && s.status !== 'cancelled'
-    );
+    const lineSchedules = schedules.filter((s) => s.lineId === line.id);
     const bookedSeats = lineSchedules.reduce((sum, s) => sum + s.bookedSeats, 0);
     const totalCapacity = lineSchedules.reduce((sum, s) => sum + s.totalCapacity, 0);
     const availableSeats = Math.max(0, totalCapacity - bookedSeats);
     const occupancyPercent =
       totalCapacity > 0 ? Math.round((bookedSeats / totalCapacity) * 100) : 0;
-    const estimatedRevenueTomans = lineSchedules.reduce(
-      (sum, s) => sum + s.bookedSeats * s.ticketPrice,
-      0
+    const avgPrice =
+      lineSchedules.length > 0
+        ? lineSchedules.reduce((sum, s) => sum + s.ticketPrice, 0) / lineSchedules.length
+        : 380000;
+    const estimatedRevenueMillions = Number(
+      ((bookedSeats * avgPrice) / 1_000_000).toFixed(2)
     );
 
     return {
@@ -207,217 +160,83 @@ export function buildCorridorPerformanceBreakdown(
       availableSeats,
       totalCapacity,
       occupancyPercent,
-      estimatedRevenueMillions: Number((estimatedRevenueTomans / 1_000_000).toFixed(2)),
+      estimatedRevenueMillions,
     };
   });
 }
 
-export type ForecastHorizon = '7d' | '14d';
-export type DemandScenario = 'baseline' | 'peak_holiday' | 'weather_disruption';
-
-export interface TicketDemandForecastPoint {
-  isoDate: string;
-  dateLabelFa: string;
-  dateLabelEn: string;
-  isForecast: boolean;
-  actualTickets: number | null;
-  projectedTickets: number | null;
-  lowerBoundTickets: number | null;
-  upperBoundTickets: number | null;
-  projectedRevenueMillions: number | null;
-  fleetCapacityLimit: number;
-  capacityUtilizationPct: number;
-}
-
-export interface DemandForecastSummary {
-  points: TicketDemandForecastPoint[];
-  horizonDays: number;
-  scenario: DemandScenario;
-  totalProjectedSeats: number;
-  totalProjectedRevenueMillions: number;
-  dailyTrendSlope: number;
-  growthRatePercent: number;
-  peakForecastDayFa: string;
-  peakForecastDayEn: string;
-  peakForecastSeats: number;
-  capacityBottleneckDays: number;
-  confidenceLevelPercent: number;
-}
-
-/**
- * Projects future ticket demand based on historical time-series trends using
- * Ordinary Least Squares (OLS) linear regression + cyclical day-of-week seasonality
- * and 95% confidence intervals.
- */
 export function buildTicketDemandForecast(
   schedules: TrainSchedule[],
   tickets: Ticket[],
   horizon: ForecastHorizon = '7d',
   scenario: DemandScenario = 'baseline'
-): DemandForecastSummary {
-  const historical14 = buildTicketSalesTimeSeries(schedules, tickets, '14d');
-  const n = historical14.length;
+): TicketDemandForecastResult {
+  const historical7d = buildTicketSalesTimeSeries(schedules, tickets, '7d');
   const horizonDays = horizon === '7d' ? 7 : 14;
-
-  // Compute OLS linear regression (y = intercept + slope * x) over the 14-day history
-  let sumX = 0;
-  let sumY = 0;
-  let sumXY = 0;
-  let sumX2 = 0;
-
-  for (let i = 0; i < n; i++) {
-    const x = i;
-    const y = historical14[i].ticketsSold;
-    sumX += x;
-    sumY += y;
-    sumXY += x * y;
-    sumX2 += x * x;
-  }
-
-  const denominator = n * sumX2 - sumX * sumX;
-  const rawSlope = denominator !== 0 ? (n * sumXY - sumX * sumY) / denominator : 1.5;
-  const intercept = (sumY - rawSlope * sumX) / n;
-  const historicalAvg = sumY / n;
-
-  // Compute residual standard deviation for confidence intervals
-  let sumSquaredResiduals = 0;
-  for (let i = 0; i < n; i++) {
-    const fitted = intercept + rawSlope * i;
-    const diff = historical14[i].ticketsSold - fitted;
-    sumSquaredResiduals += diff * diff;
-  }
-  const residualStdDev = Math.max(8, Math.sqrt(sumSquaredResiduals / Math.max(1, n - 2)));
-
-  // Active daily fleet capacity ceiling (scaled for daily multi-dispatch operations)
-  const rawScheduleCapacity = schedules
-    .filter((s) => s.status !== 'cancelled')
-    .reduce((sum, s) => sum + s.totalCapacity, 0);
-  const fleetCapacityLimit = Math.max(140, Math.round(rawScheduleCapacity * 0.1));
-
-  // Scenario multiplier
   const scenarioMultiplier =
-    scenario === 'peak_holiday'
-      ? 1.28
-      : scenario === 'weather_disruption'
-      ? 0.82
-      : 1.0;
+    scenario === 'peak_holiday' ? 1.28 : scenario === 'weather_disruption' ? 0.78 : 1.0;
 
-  const avgTicketPriceMillions = 0.44; // 440,000 Tomans per ticket in Millions
+  const points: DemandForecastPoint[] = [];
 
-  const points: TicketDemandForecastPoint[] = [];
-
-  // Include last 7 historical days for visual continuity on the chart
-  const recentHistory = historical14.slice(-7);
-  recentHistory.forEach((h, idx) => {
-    const isBridgeDay = idx === recentHistory.length - 1;
-    const utilPct = Math.min(
-      100,
-      Math.round((h.ticketsSold / fleetCapacityLimit) * 100)
-    );
+  historical7d.forEach((h, idx) => {
+    const isBridge = idx === historical7d.length - 1;
     points.push({
-      isoDate: h.isoDate,
+      dayIndex: idx,
       dateLabelFa: h.dateLabelFa,
       dateLabelEn: h.dateLabelEn,
       isForecast: false,
       actualTickets: h.ticketsSold,
-      // Bridge point connects actual line to forecast line seamlessly
-      projectedTickets: isBridgeDay ? h.ticketsSold : null,
-      lowerBoundTickets: isBridgeDay ? h.ticketsSold : null,
-      upperBoundTickets: isBridgeDay ? h.ticketsSold : null,
-      projectedRevenueMillions: isBridgeDay ? h.revenueMillions : null,
-      fleetCapacityLimit,
-      capacityUtilizationPct: utilPct,
+      projectedTickets: isBridge ? h.ticketsSold : null,
+      lowerBoundTickets: isBridge ? h.ticketsSold : null,
+      upperBoundTickets: isBridge ? h.ticketsSold : null,
+      projectedRevenueMillions: h.revenueMillions,
     });
   });
 
-  const baseNow = new Date('2026-11-03T12:00:00Z');
+  const lastActual = historical7d[historical7d.length - 1]?.ticketsSold || 320;
   let totalProjectedSeats = 0;
   let totalProjectedRevenueMillions = 0;
   let peakForecastSeats = 0;
-  let peakForecastDayFa = '';
-  let peakForecastDayEn = '';
-  let capacityBottleneckDays = 0;
 
-  for (let step = 1; step <= horizonDays; step++) {
-    const futureDate = new Date(baseNow.getTime() + step * 24 * 60 * 60 * 1000);
-    const isoDate = futureDate.toISOString().slice(0, 10);
-
-    const xFuture = n - 1 + step;
-    // Cyclical weekend/midweek demand harmonic + positive trend drift
-    const seasonalWave =
-      Math.sin((xFuture + 2) * 0.9) * 14 + Math.cos(xFuture * 0.5) * 8;
-    const trendProjection = intercept + Math.max(0.8, rawSlope) * xFuture + step * 1.6;
-    const rawProjected = (trendProjection + seasonalWave) * scenarioMultiplier;
-    const projectedTickets = Math.max(35, Math.round(rawProjected));
-
-    // Confidence band widens slightly with sqrt(step) into the future
-    const margin = Math.round(1.45 * residualStdDev * Math.sqrt(1 + step * 0.18));
-    const lowerBoundTickets = Math.max(20, projectedTickets - margin);
-    const upperBoundTickets = projectedTickets + margin;
-
-    const projectedRevenueMillions = Number(
-      (projectedTickets * avgTicketPriceMillions).toFixed(2)
+  for (let f = 1; f <= horizonDays; f++) {
+    const trendStep = f * 12;
+    const wave = Math.sin(f * 0.8) * 18;
+    const projected = Math.max(
+      80,
+      Math.round((lastActual + trendStep + wave) * scenarioMultiplier)
     );
-    const capacityUtilizationPct = Math.round(
-      (projectedTickets / fleetCapacityLimit) * 100
+    const margin = Math.round(projected * (0.08 + f * 0.005));
+    const lower = Math.max(40, projected - margin);
+    const upper = projected + margin;
+    const revMillions = Number(((projected * 410000) / 1_000_000).toFixed(2));
+
+    totalProjectedSeats += projected;
+    totalProjectedRevenueMillions = Number(
+      (totalProjectedRevenueMillions + revMillions).toFixed(2)
     );
-
-    // Format future Shamsi & Gregorian labels
-    const shamsiDay = ((12 + step - 1) % 30) + 1;
-    const shamsiMonth =
-      12 + step > 30 ? PERSIAN_SHORT_MONTHS[8] : PERSIAN_SHORT_MONTHS[7]; // آبان / آذر
-    const dateLabelFa = `${shamsiDay} ${shamsiMonth}`;
-    const dateLabelEn = futureDate.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-    });
-
-    totalProjectedSeats += projectedTickets;
-    totalProjectedRevenueMillions += projectedRevenueMillions;
-
-    if (projectedTickets > peakForecastSeats) {
-      peakForecastSeats = projectedTickets;
-      peakForecastDayFa = dateLabelFa;
-      peakForecastDayEn = dateLabelEn;
-    }
-
-    if (projectedTickets >= fleetCapacityLimit * 0.85) {
-      capacityBottleneckDays++;
-    }
+    if (projected > peakForecastSeats) peakForecastSeats = projected;
 
     points.push({
-      isoDate,
-      dateLabelFa,
-      dateLabelEn,
+      dayIndex: historical7d.length - 1 + f,
+      dateLabelFa: `+${f} روز`,
+      dateLabelEn: `+${f}d`,
       isForecast: true,
       actualTickets: null,
-      projectedTickets,
-      lowerBoundTickets,
-      upperBoundTickets,
-      projectedRevenueMillions,
-      fleetCapacityLimit,
-      capacityUtilizationPct,
+      projectedTickets: projected,
+      lowerBoundTickets: lower,
+      upperBoundTickets: upper,
+      projectedRevenueMillions: revMillions,
     });
   }
 
-  const forecastDailyAvg = totalProjectedSeats / horizonDays;
-  const growthRatePercent = Number(
-    (((forecastDailyAvg - historicalAvg) / Math.max(1, historicalAvg)) * 100).toFixed(1)
-  );
-
   return {
-    points,
     horizonDays,
     scenario,
+    points,
     totalProjectedSeats,
-    totalProjectedRevenueMillions: Number(totalProjectedRevenueMillions.toFixed(1)),
-    dailyTrendSlope: Number(rawSlope.toFixed(2)),
-    growthRatePercent,
-    peakForecastDayFa,
-    peakForecastDayEn,
+    totalProjectedRevenueMillions,
     peakForecastSeats,
-    capacityBottleneckDays,
-    confidenceLevelPercent: scenario === 'baseline' ? 95 : 90,
+    growthRatePercent:
+      scenario === 'peak_holiday' ? 24.5 : scenario === 'weather_disruption' ? -14.2 : 8.4,
   };
 }
-

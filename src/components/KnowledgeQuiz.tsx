@@ -75,7 +75,7 @@ export const KnowledgeQuiz: React.FC<KnowledgeQuizProps> = ({
         keyPath: '.agent/knowledge-base/user-state.json',
         titleFa: 'وضعیت همگام‌سازی‌شده نشست کاربر',
         titleEn: 'Synced Cross-Session User State',
-        category: 'user-state',
+        category: 'user-state' as const,
         contentSnippet: '{}',
         tokenCount: 320,
         stalenessPercent: 5,

@@ -5,94 +5,62 @@ import {
   AuditLog,
 } from '../types/railpulse';
 
-export type GlobalSearchCategory = 'all' | 'schedules' | 'tickets' | 'auditLogs';
+export type SearchCategory = 'all' | 'schedules' | 'tickets' | 'audit_logs';
 
-export interface GlobalSearchResults {
+export interface GlobalAdminSearchInput {
   query: string;
-  normalizedQuery: string;
+  category: SearchCategory;
+  schedules: TrainSchedule[];
+  lines: TrainLine[];
+  tickets: Ticket[];
+  auditLogs: AuditLog[];
+}
+
+export interface GlobalAdminSearchResult {
   schedules: TrainSchedule[];
   tickets: Ticket[];
   auditLogs: AuditLog[];
   totalCount: number;
 }
 
-/**
- * Normalizes Persian/Arabic numerals to ASCII digits and lowercases text
- * so searching "101" or "۱۰۱" matches both "TR-101" and "۱۰۱ فدک".
- */
-export function normalizeSearchText(input: string): string {
-  if (!input) return '';
-  const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
-  const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+const PERSIAN_DIGITS = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+const ARABIC_DIGITS = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
 
-  let out = input.trim().toLowerCase();
+export function normalizeSearchText(input: string): string {
+  let out = (input || '').toLowerCase().trim();
   for (let i = 0; i < 10; i++) {
-    out = out.replace(new RegExp(persianDigits[i], 'g'), String(i));
-    out = out.replace(new RegExp(arabicDigits[i], 'g'), String(i));
+    out = out.replaceAll(PERSIAN_DIGITS[i], String(i));
+    out = out.replaceAll(ARABIC_DIGITS[i], String(i));
   }
   return out;
 }
 
-/**
- * Performs real-time global search across Train Schedules, Passenger Tickets, and Audit Logs.
- */
-export function performGlobalAdminSearch(params: {
-  query: string;
-  category?: GlobalSearchCategory;
-  schedules: TrainSchedule[];
-  lines?: TrainLine[];
-  tickets: Ticket[];
-  auditLogs: AuditLog[];
-}): GlobalSearchResults {
-  const {
-    query,
-    category = 'all',
-    schedules,
-    lines = [],
-    tickets,
-    auditLogs,
-  } = params;
-
-  const normalizedQuery = normalizeSearchText(query);
-  if (!normalizedQuery) {
-    return {
-      query,
-      normalizedQuery: '',
-      schedules: [],
-      tickets: [],
-      auditLogs: [],
-      totalCount: 0,
-    };
+export function performGlobalAdminSearch({
+  query,
+  category,
+  schedules,
+  lines,
+  tickets,
+  auditLogs,
+}: GlobalAdminSearchInput): GlobalAdminSearchResult {
+  const normQ = normalizeSearchText(query);
+  if (!normQ) {
+    return { schedules: [], tickets: [], auditLogs: [], totalCount: 0 };
   }
 
-  const linesMap = new Map<string, TrainLine>(lines.map((l) => [l.id, l]));
+  const lineMap = new Map<string, TrainLine>();
+  lines.forEach((l) => lineMap.set(l.id, l));
 
   const matchedSchedules =
     category === 'all' || category === 'schedules'
       ? schedules.filter((s) => {
-          const line = linesMap.get(s.lineId);
-          const stationNames = line
-            ? line.stations.map((st) => `${st.nameFa} ${st.nameEn} ${st.code}`).join(' ')
-            : '';
+          const line = lineMap.get(s.lineId);
+          const stationNames =
+            line?.stations.map((st) => `${st.nameFa} ${st.nameEn}`).join(' ') || '';
           const haystack = normalizeSearchText(
-            [
-              s.id,
-              s.trainNumber,
-              s.trainNameFa,
-              s.trainNameEn,
-              s.lineId,
-              line?.nameFa || '',
-              line?.nameEn || '',
-              line?.code || '',
-              stationNames,
-              s.departureTime,
-              String(s.speedKmh),
-              String(s.ticketPrice),
-              s.trainType,
-              s.status,
-            ].join(' ')
+            `${s.id} ${s.trainNumber} ${s.trainNameFa} ${s.trainNameEn} ${s.departureTime} ${line?.nameFa || ''} ${line?.nameEn || ''} ${stationNames}`
           );
-          return haystack.includes(normalizedQuery);
+          return haystack.includes(normQ);
         })
       : [];
 
@@ -100,55 +68,23 @@ export function performGlobalAdminSearch(params: {
     category === 'all' || category === 'tickets'
       ? tickets.filter((tk) => {
           const haystack = normalizeSearchText(
-            [
-              tk.id,
-              tk.pnr,
-              tk.trainId,
-              tk.trainNumber,
-              tk.trainNameFa,
-              tk.trainNameEn,
-              tk.lineNameFa,
-              tk.lineNameEn,
-              tk.passengerName,
-              tk.passengerNationalId,
-              tk.departureStation,
-              tk.arrivalStation,
-              tk.departureTime,
-              tk.seatNumbers.join(','),
-              String(tk.totalPrice),
-              tk.status,
-            ].join(' ')
+            `${tk.id} ${tk.pnr} ${tk.passengerName} ${tk.trainNumber} ${tk.lineNameFa} ${tk.lineNameEn} ${tk.scheduleId}`
           );
-          return haystack.includes(normalizedQuery);
+          return haystack.includes(normQ);
         })
       : [];
 
   const matchedAuditLogs =
-    category === 'all' || category === 'auditLogs'
+    category === 'all' || category === 'audit_logs'
       ? auditLogs.filter((log) => {
           const haystack = normalizeSearchText(
-            [
-              log.id,
-              log.actorName,
-              log.actorRole,
-              log.actionType,
-              log.entityType,
-              log.entityId,
-              log.summaryFa,
-              log.summaryEn,
-              log.ipAddress,
-              log.riskLevel,
-              log.status,
-              JSON.stringify(log.metadata || {}),
-            ].join(' ')
+            `${log.id} ${log.actorName} ${log.actorId} ${log.entityId} ${log.actionType} ${log.summaryFa} ${log.summaryEn} ${JSON.stringify(log.metadata)}`
           );
-          return haystack.includes(normalizedQuery);
+          return haystack.includes(normQ);
         })
       : [];
 
   return {
-    query,
-    normalizedQuery,
     schedules: matchedSchedules,
     tickets: matchedTickets,
     auditLogs: matchedAuditLogs,

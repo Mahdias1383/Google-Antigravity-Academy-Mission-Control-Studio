@@ -30,6 +30,7 @@ import {
   MISSION_ARCHIVE_UPDATED_EVENT,
 } from '../utils/missionArchive';
 import { DailyMissionTargetSection } from '../utils/generators';
+import { formatLocalizedNumber } from '../utils/bidiText';
 
 interface MissionArchiveViewProps {
   onNavigateToSection?: (section: DailyMissionTargetSection) => void;
@@ -169,8 +170,8 @@ export const MissionArchiveView: React.FC<MissionArchiveViewProps> = ({
               <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 {isEn ? 'Completed' : 'مأموریت‌های تکمیل'}
               </div>
-              <div className="text-xl font-mono font-black text-slate-900 dark:text-white mt-0.5">
-                {stats.totalCompleted}
+              <div className="text-xl font-black text-slate-900 dark:text-white mt-0.5 tabular-nums">
+                {formatLocalizedNumber(stats.totalCompleted, language)}
               </div>
             </div>
 
@@ -181,8 +182,9 @@ export const MissionArchiveView: React.FC<MissionArchiveViewProps> = ({
               <div className="text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
                 {isEn ? 'Earned XP' : 'مجموع امتیاز XP'}
               </div>
-              <div className="text-xl font-mono font-black text-amber-500 mt-0.5">
-                +{stats.totalXpEarned} <span className="text-xs font-sans font-normal">XP</span>
+              <div className="text-xl font-black text-amber-500 mt-0.5 tabular-nums">
+                +{formatLocalizedNumber(stats.totalXpEarned, language)}{' '}
+                <span className="text-xs font-sans font-normal">XP</span>
               </div>
             </div>
 
@@ -190,8 +192,8 @@ export const MissionArchiveView: React.FC<MissionArchiveViewProps> = ({
               <div className="text-[11px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
                 {isEn ? 'Artifacts Touched' : 'آرتیفکت‌های ویرایش'}
               </div>
-              <div className="text-xl font-mono font-black text-blue-500 mt-0.5">
-                {stats.distinctArtifactsCount}
+              <div className="text-xl font-black text-blue-500 mt-0.5 tabular-nums">
+                {formatLocalizedNumber(stats.distinctArtifactsCount, language)}
               </div>
             </div>
           </div>
@@ -341,8 +343,8 @@ export const MissionArchiveView: React.FC<MissionArchiveViewProps> = ({
 
                   {/* Right: XP Earned & Verified Status */}
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono font-black text-amber-500 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20">
-                      +{entry.xpEarned} XP
+                    <span className="text-xs font-black text-amber-500 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20 tabular-nums">
+                      +{formatLocalizedNumber(entry.xpEarned, language)} XP
                     </span>
 
                     <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">

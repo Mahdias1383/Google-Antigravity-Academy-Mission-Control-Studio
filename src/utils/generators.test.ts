@@ -62,6 +62,16 @@ import {
   getLayoutDirection,
 } from './translations';
 import {
+  createInitialDailyObjective,
+  getStoredDailyObjective,
+  saveStoredDailyObjective,
+  evaluateDailyObjective,
+  changeDailyObjectiveMission,
+  claimDailyObjective,
+  findDailyMissionById,
+  DAILY_OBJECTIVE_STORAGE_KEY,
+} from './dailyObjectives';
+import {
   getEnglishModuleContent,
   ENGLISH_CURRICULUM_CONTENT,
 } from './curriculumEnglishContent';
@@ -2956,6 +2966,98 @@ test('Milestone History & Vertical Timeline: buildMilestoneTimelineHistory compu
   assert.equal(fullHistory.every((m) => m.progressPercent === 100), true);
   assert.equal(fullHistory.every((m) => m.remainingXpToUnlock === 0), true);
 });
+
+test('Daily Objectives Engine: tracks daily mission, supports switching tasks, and integrates streak multiplier for boosted XP rewards', () => {
+  class MemoryStorage {
+    private store = new Map<string, string>();
+    getItem(key: string) { return this.store.get(key) ?? null; }
+    setItem(key: string, value: string) { this.store.set(key, String(value)); }
+    removeItem(key: string) { this.store.delete(key); }
+    clear() { this.store.clear(); }
+    get length() { return this.store.size; }
+    key(i: number) { return Array.from(this.store.keys())[i] ?? null; }
+  }
+
+  const mockStorage = new MemoryStorage() as unknown as Storage;
+  const testDate = '2026-10-31';
+
+  // 1. Initial State: Creates initial daily objective for today
+  const initial = getStoredDailyObjective(mockStorage, testDate);
+  assert.equal(initial.dateIso, testDate);
+  assert.equal(initial.completed, false);
+  assert.ok(initial.missionId.startsWith('mission-'));
+  assert.ok(initial.baseXp >= 140);
+  assert.equal(initial.awardedXp, 0);
+
+  // 2. Evaluation with Streak Multiplier
+  // Streak = 14 days -> Fortified Architect (1.5x multiplier)
+  const eval14d = evaluateDailyObjective(initial, 14);
+  assert.equal(eval14d.currentStreakDays, 14);
+  assert.equal(eval14d.streakMultiplier, 1.5);
+  assert.equal(eval14d.streakTierLabel, '1.5x');
+  assert.equal(eval14d.canClaim, true);
+  const expectedFinalXp14d = Math.round(initial.baseXp * 1.5);
+  const expectedBonusXp14d = expectedFinalXp14d - initial.baseXp;
+  assert.equal(eval14d.potentialFinalXp, expectedFinalXp14d);
+  assert.equal(eval14d.potentialBonusXp, expectedBonusXp14d);
+
+  // Streak = 3 days -> Steady Builder (1.1x multiplier)
+  const eval3d = evaluateDailyObjective(initial, 3);
+  assert.equal(eval3d.streakMultiplier, 1.1);
+  assert.equal(eval3d.potentialFinalXp, Math.round(initial.baseXp * 1.1));
+
+  // 3. User switches daily objective to mission-turbo-workflow
+  const targetMission = findDailyMissionById('mission-turbo-workflow');
+  assert.equal(targetMission.id, 'mission-turbo-workflow');
+  assert.equal(targetMission.code, 'ADM-05');
+  assert.equal(targetMission.xpReward, 140);
+
+  const switched = changeDailyObjectiveMission('mission-turbo-workflow', mockStorage, testDate);
+  assert.equal(switched.missionId, 'mission-turbo-workflow');
+  assert.equal(switched.baseXp, 140);
+  assert.equal(switched.completed, false);
+
+  // Verify persistence in storage
+  const loadedSwitched = getStoredDailyObjective(mockStorage, testDate);
+  assert.equal(loadedSwitched.missionId, 'mission-turbo-workflow');
+  assert.equal(loadedSwitched.baseXp, 140);
+
+  // 4. Claim Daily Objective with 14-day streak (1.5x multiplier)
+  // Base XP = 140 -> 140 * 1.5 = 210 XP (70 bonus XP)
+  const claimResult = claimDailyObjective('mission-turbo-workflow', 14, mockStorage, testDate);
+  assert.equal(claimResult.success, true);
+  assert.equal(claimResult.alreadyCompleted, false);
+  assert.equal(claimResult.awardedXp, 210);
+  assert.equal(claimResult.bonusXp, 70);
+  assert.equal(claimResult.multiplier, 1.5);
+  assert.equal(claimResult.objective.completed, true);
+  assert.equal(claimResult.objective.streakDaysAtClaim, 14);
+
+  // Verify storage has completed record
+  const afterClaim = getStoredDailyObjective(mockStorage, testDate);
+  assert.equal(afterClaim.completed, true);
+  assert.equal(afterClaim.awardedXp, 210);
+  assert.ok(afterClaim.completedAtIso);
+
+  // 5. Duplicate Claim Prevention: attempting to claim again on the same day returns alreadyCompleted: true with 0 new XP
+  const secondClaim = claimDailyObjective('mission-turbo-workflow', 14, mockStorage, testDate);
+  assert.equal(secondClaim.success, false);
+  assert.equal(secondClaim.alreadyCompleted, true);
+  assert.equal(secondClaim.awardedXp, 210);
+
+  // 6. Switching mission is blocked once completed today
+  const trySwitchAfterDone = changeDailyObjectiveMission('mission-fastmcp-readonly', mockStorage, testDate);
+  assert.equal(trySwitchAfterDone.missionId, 'mission-turbo-workflow'); // Still the completed mission!
+  assert.equal(trySwitchAfterDone.completed, true);
+
+  // 7. Date Rollover: When the next day arrives, initializes fresh daily objective
+  const nextDay = '2026-11-01';
+  const nextDayObjective = getStoredDailyObjective(mockStorage, nextDay);
+  assert.equal(nextDayObjective.dateIso, nextDay);
+  assert.equal(nextDayObjective.completed, false);
+  assert.equal(nextDayObjective.awardedXp, 0);
+});
+
 
 
 

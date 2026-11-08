@@ -24,6 +24,31 @@ export function formatLocalizedNumber(
 }
 
 /**
+ * Converts all ASCII digits inside any string (e.g. "1.25x", "25:00", "0/1") to Persian digits when lang === 'fa'.
+ */
+export function localizeDigits(
+  value: string | number,
+  lang: AppLanguage
+): string {
+  return lang === 'fa' ? toPersianDigits(value) : String(value);
+}
+
+/**
+ * Formats an integer with localized thousand separators and digits (e.g. 2950 -> '۲٬۹۵۰' in fa, '2,950' in en).
+ */
+export function formatLocalizedThousand(
+  num: number,
+  lang: AppLanguage
+): string {
+  const safe = Number.isFinite(num) ? Math.floor(num) : 0;
+  const enFormatted = safe.toLocaleString('en-US');
+  if (lang === 'fa') {
+    return toPersianDigits(enFormatted).replace(/,/g, '٬');
+  }
+  return enFormatted;
+}
+
+/**
  * Localizes reading time strings such as "18 min read" -> "۱۸ دقیقه مطالعه" in Persian mode.
  */
 export function formatLocalizedReadingTime(

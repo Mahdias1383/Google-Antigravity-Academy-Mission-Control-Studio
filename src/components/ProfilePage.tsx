@@ -38,7 +38,12 @@ import {
   KnowledgeCheckModuleScoreRecord,
   DailyMissionTargetSection,
 } from '../utils/generators';
-import { formatLocalizedNumber, renderBidiText } from '../utils/bidiText';
+import {
+  formatLocalizedNumber,
+  formatLocalizedThousand,
+  localizeDigits,
+  renderBidiText,
+} from '../utils/bidiText';
 import { MissionArchiveView } from './MissionArchiveView';
 import {
   getStoredMissionArchive,
@@ -313,8 +318,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
                   {isEn ? profile.displayNameEn : profile.displayNameFa}
                 </h1>
-                <span className="text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-                  Level {currentLevel} · {isEn ? 'Principal Track' : 'معمار ارشد'}
+                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                  {isEn
+                    ? `Level ${currentLevel} · Principal Track`
+                    : `سطح ${formatLocalizedNumber(currentLevel, 'fa')} · معمار ارشد`}
                 </span>
               </div>
 
@@ -322,7 +329,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 {isEn ? profile.titleEn : profile.titleFa}
               </p>
 
-              <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500 font-mono pt-0.5">
+              <div dir="ltr" className="ltr-inline flex flex-wrap items-center gap-3 text-[11px] text-slate-500 font-mono pt-0.5">
                 <span>ID: {profile.studentId}</span>
                 <span>·</span>
                 <span>{profile.email}</span>
@@ -465,13 +472,13 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             <Target className="w-3.5 h-3.5" />
             <span>{isEn ? 'Mission Archive' : 'آرشیو مأموریت‌ها'}</span>
             <span
-              className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full font-black ${
+              className={`text-[10px] px-1.5 py-0.2 rounded-full font-black tabular-nums ${
                 activeTab === 'missions'
                   ? 'bg-black/20 text-slate-950'
                   : 'bg-amber-500/15 text-amber-500'
               }`}
             >
-              {storedMissionsCount}
+              {formatLocalizedNumber(storedMissionsCount, language)}
             </span>
           </button>
 
@@ -527,8 +534,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
               <div className="space-y-0.5">
                 <div className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                   <span>{isEn ? 'Architect Daily Mission Archive' : 'آرشیو مأموریت‌های روزانه معمار'}</span>
-                  <span className="text-[10px] font-mono font-bold bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded-full">
-                    {storedMissionsCount} {isEn ? 'Completed' : 'تکمیل‌شده'}
+                  <span className="text-[10px] font-bold bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded-full tabular-nums">
+                    {formatLocalizedNumber(storedMissionsCount, language)} {isEn ? 'Completed' : 'تکمیل‌شده'}
                   </span>
                 </div>
                 <p className="text-xs text-slate-600 dark:text-slate-400">
@@ -560,13 +567,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             <Award className="w-4 h-4 text-blue-500" />
           </div>
           <div>
-            <div className="text-2xl font-black font-mono text-slate-900 dark:text-white">
-              {userXp} <span className="text-xs font-sans text-slate-500 font-normal">XP</span>
+            <div className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">
+              {formatLocalizedThousand(userXp, language)}{' '}
+              <span className="text-xs font-sans text-slate-500 font-normal">XP</span>
             </div>
             <div className="text-[11px] text-blue-600 dark:text-blue-400 font-medium mt-0.5">
               {isEn
-                ? `${nextLevelXp - userXp} XP to Level 5 (Principal Architect)`
-                : `${nextLevelXp - userXp} XP تا سطح ۵ (معمار پرینسیپال)`}
+                ? `${Math.max(0, nextLevelXp - userXp)} XP to Level 5 (Principal Architect)`
+                : `${formatLocalizedNumber(Math.max(0, nextLevelXp - userXp), 'fa')} XP تا سطح ۵ (معمار پرینسیپال)`}
             </div>
           </div>
           <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-white/[0.06] overflow-hidden">
@@ -580,15 +588,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
               <button
                 type="button"
                 onClick={() => onRewardXp(500)}
-                className="px-2 py-0.5 rounded text-[10px] font-mono font-medium border border-blue-500/30 bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors cursor-pointer"
+                className="px-2 py-0.5 rounded text-[10px] font-bold border border-blue-500/30 bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors cursor-pointer"
                 title="Add +500 XP"
               >
-                +500 XP
+                {isEn ? '+500 XP' : '+۵۰۰ XP'}
               </button>
               <button
                 type="button"
                 onClick={() => onRewardXp(Math.max(100, 5000 - userXp))}
-                className="px-2 py-0.5 rounded text-[10px] font-mono font-medium border border-amber-500/30 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 transition-colors cursor-pointer"
+                className="px-2 py-0.5 rounded text-[10px] font-bold border border-amber-500/30 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 transition-colors cursor-pointer"
                 title="Reach 5,000 XP Milestone Threshold"
               >
                 {isEn ? '→ 5K Milestone' : '← نشان ۵ هزار XP'}
@@ -596,7 +604,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
               <button
                 type="button"
                 onClick={() => onRewardXp(Math.max(100, 10000 - userXp))}
-                className="px-2 py-0.5 rounded text-[10px] font-mono font-medium border border-emerald-500/30 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors cursor-pointer"
+                className="px-2 py-0.5 rounded text-[10px] font-bold border border-emerald-500/30 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors cursor-pointer"
                 title="Reach 10,000 XP Milestone Threshold"
               >
                 {isEn ? '→ 10K Milestone' : '← نشان ۱۰ هزار XP'}
@@ -614,7 +622,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           <div>
             <div
               data-testid="profile-active-streak-days"
-              className="text-2xl font-black font-mono text-slate-900 dark:text-white tabular-nums"
+              className="text-2xl font-black text-slate-900 dark:text-white tabular-nums"
             >
               {formatLocalizedNumber(activeStreakDays, language)}{' '}
               <span className="text-xs font-sans text-slate-500 font-normal">
@@ -637,11 +645,17 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             <BookOpen className="w-4 h-4 text-emerald-500" />
           </div>
           <div>
-            <div className="text-2xl font-black font-mono text-slate-900 dark:text-white tabular-nums">
-              {completedModules.length} / {ALL_CURRICULUM_MODULES.length}
+            <div className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">
+              {isEn
+                ? `${completedModules.length} / ${ALL_CURRICULUM_MODULES.length}`
+                : `${formatLocalizedNumber(completedModules.length, 'fa')} از ${formatLocalizedNumber(ALL_CURRICULUM_MODULES.length, 'fa')}`}
             </div>
             <div className="text-[11px] text-emerald-500 font-medium mt-0.5">
-              {Math.round((completedModules.length / ALL_CURRICULUM_MODULES.length) * 100)}% {isEn ? 'Mastery Path' : 'مسیر طی شده'}
+              {formatLocalizedNumber(
+                Math.round((completedModules.length / ALL_CURRICULUM_MODULES.length) * 100),
+                language
+              )}
+              {isEn ? '% Mastery Path' : '٪ مسیر طی شده'}
             </div>
           </div>
           <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-white/[0.06] overflow-hidden">
@@ -661,8 +675,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             <CheckCircle2 className="w-4 h-4 text-cyan-500" />
           </div>
           <div>
-            <div className="text-2xl font-black font-mono text-slate-900 dark:text-white tabular-nums">
-              {averageAccuracy}%
+            <div className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">
+              {formatLocalizedNumber(averageAccuracy, language)}
+              {isEn ? '%' : '٪'}
             </div>
             <div className="text-[11px] text-cyan-500 font-medium mt-0.5">
               {isEn ? 'Knowledge Check Precision' : 'درجه تسلط تحلیلی بر مفاهیم'}
@@ -720,11 +735,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                     <IconComp className="w-5 h-5" />
                   </span>
                   {badge.unlocked ? (
-                    <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
                       {isEn ? 'Unlocked' : 'کسب شده'}
                     </span>
                   ) : (
-                    <span className="text-[10px] font-mono text-slate-400 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full">
+                    <span className="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full">
                       {isEn ? 'In Progress' : 'در حال تکمیل'}
                     </span>
                   )}
@@ -740,8 +755,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 </div>
 
                 {badge.unlockDate && (
-                  <div className="text-[10px] font-mono text-slate-400 pt-1 border-t border-slate-100 dark:border-white/[0.04]">
-                    {isEn ? `Earned: ${badge.unlockDate}` : `تاریخ صدور: ${badge.unlockDate}`}
+                  <div className="text-[10px] font-medium text-slate-400 pt-1 border-t border-slate-100 dark:border-white/[0.04]">
+                    {isEn
+                      ? `Earned: ${badge.unlockDate}`
+                      : `تاریخ صدور: ${localizeDigits(badge.unlockDate, 'fa')}`}
                   </div>
                 )}
               </div>
@@ -808,37 +825,47 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
                   return (
                     <tr key={mod.id} className="hover:bg-slate-50/70 dark:hover:bg-white/[0.02] transition-colors">
-                      <td className="py-3 px-3 font-mono font-bold text-blue-600 dark:text-blue-400">
-                        MOD-0{mod.number}
+                      <td className="py-3 px-3 font-bold text-blue-600 dark:text-blue-400 whitespace-nowrap">
+                        {isEn
+                          ? `MOD-0${mod.number}`
+                          : `فصل ${formatLocalizedNumber(mod.number, 'fa', true)}`}
                       </td>
                       <td className="py-3 px-3 font-medium text-slate-900 dark:text-white">
                         {isEn ? mod.titleEn : mod.titleFa}
                       </td>
-                      <td className="py-3 px-3">
+                      <td className="py-3 px-3 whitespace-nowrap">
                         {rec ? (
                           <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold text-[11px] bg-emerald-500/10 px-2 py-0.5 rounded-full">
                             <CheckCircle2 className="w-3 h-3" />
                             <span>{isEn ? 'Passed' : 'قبول شده'}</span>
                           </span>
                         ) : (
-                          <span className="text-[11px] font-mono text-slate-400 bg-slate-100 dark:bg-white/[0.05] px-2 py-0.5 rounded-full">
+                          <span className="text-[11px] font-medium text-slate-400 bg-slate-100 dark:bg-white/[0.05] px-2 py-0.5 rounded-full">
                             {isEn ? 'Pending' : 'در انتظار آزمون'}
                           </span>
                         )}
                       </td>
-                      <td className="py-3 px-3 font-mono">
+                      <td className="py-3 px-3 tabular-nums whitespace-nowrap">
                         {rec ? (
                           <span className="font-bold text-slate-800 dark:text-slate-200">
-                            {rec.correctCount} / {rec.totalQuestions} ({Math.round((rec.correctCount / rec.totalQuestions) * 100)}%)
+                            {formatLocalizedNumber(rec.correctCount, language)} /{' '}
+                            {formatLocalizedNumber(rec.totalQuestions, language)} (
+                            {formatLocalizedNumber(
+                              Math.round((rec.correctCount / rec.totalQuestions) * 100),
+                              language
+                            )}
+                            {isEn ? '%' : '٪'})
                           </span>
                         ) : (
                           <span className="text-slate-400">—</span>
                         )}
                       </td>
-                      <td className="py-3 px-3 font-mono font-bold text-emerald-500">
-                        {rec ? `+${rec.earnedXp} XP` : '0 XP'}
+                      <td className="py-3 px-3 font-bold text-emerald-500 tabular-nums whitespace-nowrap">
+                        {rec
+                          ? `+${formatLocalizedNumber(rec.earnedXp, language)} XP`
+                          : `${formatLocalizedNumber(0, language)} XP`}
                       </td>
-                      <td className="py-3 px-3 text-end">
+                      <td className="py-3 px-3 text-end whitespace-nowrap">
                         <button
                           type="button"
                           onClick={() => onNavigateToModule(mod.id)}

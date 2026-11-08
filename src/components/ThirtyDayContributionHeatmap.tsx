@@ -9,8 +9,6 @@ import {
   Sparkles,
   Target,
   BookOpen,
-  Terminal,
-  TrendingUp,
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import {
@@ -25,7 +23,11 @@ import {
   getStoredDailyStreak,
   STREAK_UPDATED_EVENT,
 } from '../utils/streakMultiplier';
-import { formatLocalizedNumber } from '../utils/bidiText';
+import {
+  formatLocalizedNumber,
+  formatLocalizedThousand,
+  localizeDigits,
+} from '../utils/bidiText';
 
 interface ThirtyDayContributionHeatmapProps {
   completedModulesCount: number;
@@ -163,11 +165,11 @@ export const ThirtyDayContributionHeatmap: React.FC<
           ? '30-Day Daily Activity Streak Contribution Heatmap'
           : 'هیت‌مپ ۳۰ روزه پیوستگی و مشارکت روزانه معمار'
       }
-      className="p-6 sm:p-7 rounded-3xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0c121e] space-y-6 shadow-xs relative overflow-hidden"
+      className="p-6 sm:p-7 rounded-3xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0c121e] space-y-6 shadow-xs relative overflow-hidden font-sans"
     >
       {/* 1. Header Bar: Title, Streak Multiplier Status & Quick Check-In Action */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-200/70 dark:border-white/[0.06] pb-5">
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-2.5">
             <Calendar className="w-4 h-4 text-emerald-500 shrink-0" />
             <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">
@@ -175,11 +177,11 @@ export const ThirtyDayContributionHeatmap: React.FC<
                 ? '30-Day Contribution & Daily Activity Streak Heatmap'
                 : 'هیت‌مپ مشارکت و استمرار فعالیت روزانه (۳۰ روز اخیر)'}
             </h2>
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-mono tabular-nums">
-              · {tier.multiplierLabel} XP ({isEn ? tier.badgeTitleEn : tier.badgeTitleFa})
+            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold tabular-nums">
+              · <bdi dir="ltr">{localizeDigits(tier.multiplierLabel, language)} XP</bdi> ({isEn ? tier.badgeTitleEn : tier.badgeTitleFa})
             </span>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
+          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
             {isEn
               ? 'Visualizes your daily engineering momentum over the last 30 days. Active streak days are highlighted in emerald to gamify consistent engagement.'
               : 'نمایش بصری پیوستگی مهندسی شما در ۳۰ روز گذشته؛ روزهای زنجیره استمرار فعال با رنگ سبز زمردی متمایز شده‌اند تا استمرار روزانه پاداش بگیرد.'}
@@ -190,7 +192,7 @@ export const ThirtyDayContributionHeatmap: React.FC<
           {justLoggedBoost && (
             <span
               data-testid="heatmap-boost-confirmation"
-              className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 animate-scale-in tabular-nums"
+              className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 animate-scale-in tabular-nums"
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>
@@ -225,40 +227,47 @@ export const ThirtyDayContributionHeatmap: React.FC<
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
         <div
           data-testid="heatmap-kpi-current-streak"
-          className="p-4 rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-slate-50/60 dark:bg-white/[0.02] space-y-1"
+          className="p-4 rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-slate-50/60 dark:bg-white/[0.02] space-y-1.5"
         >
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
             <span>{isEn ? 'Current Daily Streak' : 'زنجیره استمرار فعلی'}</span>
-            <Flame className="w-4 h-4 text-amber-500" />
+            <Flame className="w-4 h-4 text-amber-500 shrink-0" />
           </div>
-          <div className="text-xl sm:text-2xl font-black font-mono text-slate-900 dark:text-white tabular-nums">
+          <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tabular-nums">
             {formatLocalizedNumber(heatmapSummary.currentStreakDays, language)}{' '}
-            <span className="text-xs font-sans font-normal text-slate-500">
+            <span className="text-xs font-normal text-slate-500">
               {isEn ? 'Days' : 'روز متوالی'}
             </span>
           </div>
-          <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium tabular-nums">
-            {nextTier
-              ? isEn
-                ? `${heatmapSummary.streakEvaluation.daysToNextTier}d to ${nextTier.multiplierLabel} (${nextTier.badgeTitleEn})`
-                : `${formatLocalizedNumber(heatmapSummary.streakEvaluation.daysToNextTier, 'fa')} روز تا ضریب ${nextTier.multiplierLabel}`
-              : isEn
-              ? 'Max 2.0x XP Multiplier Unlocked'
-              : 'حداکثر ضریب ۲.۰x فعال است'}
+          <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold tabular-nums">
+            {nextTier ? (
+              isEn ? (
+                `${heatmapSummary.streakEvaluation.daysToNextTier}d to ${nextTier.multiplierLabel} (${nextTier.badgeTitleEn})`
+              ) : (
+                <>
+                  {formatLocalizedNumber(heatmapSummary.streakEvaluation.daysToNextTier, 'fa')} روز تا ضریب{' '}
+                  <bdi dir="ltr">{localizeDigits(nextTier.multiplierLabel, 'fa')}</bdi>
+                </>
+              )
+            ) : isEn ? (
+              'Max 2.0x XP Multiplier Unlocked'
+            ) : (
+              'حداکثر ضریب ۲.۰x فعال است'
+            )}
           </div>
         </div>
 
         <div
           data-testid="heatmap-kpi-longest-streak"
-          className="p-4 rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-slate-50/60 dark:bg-white/[0.02] space-y-1"
+          className="p-4 rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-slate-50/60 dark:bg-white/[0.02] space-y-1.5"
         >
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
             <span>{isEn ? 'Best 30-Day Streak' : 'بهترین رکورد ۳۰ روزه'}</span>
-            <Award className="w-4 h-4 text-blue-500" />
+            <Award className="w-4 h-4 text-blue-500 shrink-0" />
           </div>
-          <div className="text-xl sm:text-2xl font-black font-mono text-slate-900 dark:text-white tabular-nums">
+          <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tabular-nums">
             {formatLocalizedNumber(heatmapSummary.longestStreakInWindow, language)}{' '}
-            <span className="text-xs font-sans font-normal text-slate-500">
+            <span className="text-xs font-normal text-slate-500">
               {isEn ? 'Days' : 'روز'}
             </span>
           </div>
@@ -271,17 +280,18 @@ export const ThirtyDayContributionHeatmap: React.FC<
 
         <div
           data-testid="heatmap-kpi-active-days"
-          className="p-4 rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-slate-50/60 dark:bg-white/[0.02] space-y-1"
+          className="p-4 rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-slate-50/60 dark:bg-white/[0.02] space-y-1.5"
         >
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
             <span>{isEn ? '30-Day Consistency' : 'ضریب حضور ۳۰ روزه'}</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
           </div>
-          <div className="text-xl sm:text-2xl font-black font-mono text-slate-900 dark:text-white tabular-nums">
-            {formatLocalizedNumber(heatmapSummary.activeDaysCount, language)} /{' '}
-            {formatLocalizedNumber(30, language)}{' '}
-            <span className="text-xs font-sans font-normal text-slate-500">
-              ({formatLocalizedNumber(heatmapSummary.consistencyPercent, language)}%)
+          <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tabular-nums">
+            {isEn
+              ? `${heatmapSummary.activeDaysCount} / 30`
+              : `${formatLocalizedNumber(heatmapSummary.activeDaysCount, 'fa')} از ${formatLocalizedNumber(30, 'fa')}`}{' '}
+            <span className="text-xs font-normal text-slate-500">
+              ({formatLocalizedNumber(heatmapSummary.consistencyPercent, language)}{isEn ? '%' : '٪'})
             </span>
           </div>
           <div className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
@@ -293,15 +303,15 @@ export const ThirtyDayContributionHeatmap: React.FC<
 
         <div
           data-testid="heatmap-kpi-window-xp"
-          className="p-4 rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-slate-50/60 dark:bg-white/[0.02] space-y-1"
+          className="p-4 rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-slate-50/60 dark:bg-white/[0.02] space-y-1.5"
         >
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
             <span>{isEn ? '30-Day XP & Focus' : 'امتیاز و تمرکز ۳۰ روزه'}</span>
-            <Zap className="w-4 h-4 text-cyan-500" />
+            <Zap className="w-4 h-4 text-cyan-500 shrink-0" />
           </div>
-          <div className="text-xl sm:text-2xl font-black font-mono text-slate-900 dark:text-white tabular-nums">
+          <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tabular-nums">
             +{formatLocalizedNumber(heatmapSummary.totalXpInWindow, language)}{' '}
-            <span className="text-xs font-sans font-normal text-slate-500">XP</span>
+            <span className="text-xs font-normal text-slate-500">XP</span>
           </div>
           <div className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
             {isEn
@@ -339,7 +349,7 @@ export const ThirtyDayContributionHeatmap: React.FC<
         </div>
 
         {/* Intensity & Streak Legend */}
-        <div className="flex flex-wrap items-center gap-4 text-[11px] text-slate-500 dark:text-slate-400 font-mono tabular-nums">
+        <div className="flex flex-wrap items-center gap-4 text-[11px] text-slate-500 dark:text-slate-400 font-medium tabular-nums">
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-xs bg-emerald-500 inline-block" />
             <span>{isEn ? 'Active Streak Chain' : 'زنجیره استمرار فعال'}</span>
@@ -360,7 +370,7 @@ export const ThirtyDayContributionHeatmap: React.FC<
         </div>
       </div>
 
-      {/* 4. 30-Day Contribution Grid (6 columns x 5 rows on mobile, 10x3 on tablet, 15x2 on desktop) */}
+      {/* 4. 30-Day Contribution Grid */}
       <div
         data-testid="heatmap-30day-grid"
         className="grid grid-cols-6 sm:grid-cols-10 lg:grid-cols-15 gap-2"
@@ -381,17 +391,17 @@ export const ThirtyDayContributionHeatmap: React.FC<
                 cell.isPartOfCurrentStreak ? ', active streak' : ''
               }`}
               aria-pressed={isSelected}
-              className={`group relative p-2 rounded-xl border transition-all cursor-pointer flex flex-col items-center justify-between min-h-[58px] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${cellColorClass} ${
+              className={`group relative p-2 rounded-xl border transition-all cursor-pointer flex flex-col items-center justify-between min-h-[60px] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${cellColorClass} ${
                 isSelected
-                  ? 'ring-2 ring-slate-900 dark:ring-white scale-[1.04] z-10'
-                  : 'hover:scale-[1.03]'
+                  ? 'ring-2 ring-slate-900 dark:ring-white scale-[1.03] z-10'
+                  : 'hover:scale-[1.02]'
               }`}
             >
-              {/* Top row: Short Day Number & Streak Flame indicator */}
-              <div className="w-full flex items-center justify-between gap-0.5 text-[10px] font-mono opacity-85 tabular-nums">
-                <span>{cell.dateIso.slice(8, 10)}</span>
+              {/* Top row: Localized Short Day Number & Streak Flame indicator */}
+              <div className="w-full flex items-center justify-between gap-0.5 text-[10px] font-semibold opacity-90 tabular-nums">
+                <span>{localizeDigits(cell.dateIso.slice(8, 10), language)}</span>
                 {cell.isToday ? (
-                  <span className="text-[9px] font-extrabold uppercase">
+                  <span className="text-[9px] font-extrabold">
                     {isEn ? 'TDY' : 'امروز'}
                   </span>
                 ) : cell.isPartOfCurrentStreak ? (
@@ -400,12 +410,12 @@ export const ThirtyDayContributionHeatmap: React.FC<
               </div>
 
               {/* Center: Contribution count */}
-              <div className="text-xs sm:text-sm font-black font-mono tabular-nums my-0.5">
+              <div className="text-xs sm:text-sm font-black tabular-nums my-0.5">
                 {formatLocalizedNumber(cell.filteredContributions, language)}
               </div>
 
               {/* Bottom: Short weekday */}
-              <div className="text-[9px] font-medium opacity-75 truncate max-w-full">
+              <div className="text-[9px] font-medium opacity-80 truncate max-w-full">
                 {isEn ? cell.weekdayShortEn : cell.weekdayShortFa}
               </div>
             </button>
@@ -413,7 +423,7 @@ export const ThirtyDayContributionHeatmap: React.FC<
         })}
       </div>
 
-      {/* 5. Interactive Selected Day Breakdown & Gamified Streak Progress Bar */}
+      {/* 5. Interactive Selected Day Breakdown */}
       <div
         data-testid="heatmap-selected-day-inspector"
         className="p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-white/[0.07] bg-slate-50/70 dark:bg-white/[0.02] flex flex-col lg:flex-row lg:items-center justify-between gap-4"
@@ -422,11 +432,11 @@ export const ThirtyDayContributionHeatmap: React.FC<
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <span
               data-testid="heatmap-inspector-date"
-              className="font-extrabold text-slate-900 dark:text-white font-mono tabular-nums"
+              className="font-extrabold text-slate-900 dark:text-white tabular-nums"
             >
               {isEn
                 ? `${selectedCell.weekdayShortEn}, ${selectedCell.shortDateEn} (${selectedCell.dateIso})`
-                : `${selectedCell.weekdayShortFa}، ${selectedCell.shortDateFa} (${selectedCell.dateIso})`}
+                : `${selectedCell.weekdayShortFa}، ${selectedCell.shortDateFa} (${localizeDigits(selectedCell.dateIso, 'fa')})`}
             </span>
             <span aria-hidden="true" className="text-slate-400">·</span>
             <span
@@ -466,9 +476,9 @@ export const ThirtyDayContributionHeatmap: React.FC<
         </div>
 
         {/* Selected Day Granular Breakdown Counters */}
-        <div className="flex flex-wrap items-center gap-4 text-xs font-mono tabular-nums shrink-0">
+        <div className="flex flex-wrap items-center gap-4 text-xs font-semibold tabular-nums shrink-0">
           <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
-            <Target className="w-3.5 h-3.5 text-amber-500" />
+            <Target className="w-3.5 h-3.5 text-amber-500 shrink-0" />
             <span>
               {formatLocalizedNumber(
                 selectedCell.breakdown.missionsCompleted,
@@ -479,7 +489,7 @@ export const ThirtyDayContributionHeatmap: React.FC<
           </div>
           <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">·</span>
           <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
-            <BookOpen className="w-3.5 h-3.5 text-blue-500" />
+            <BookOpen className="w-3.5 h-3.5 text-blue-500 shrink-0" />
             <span>
               {formatLocalizedNumber(
                 selectedCell.breakdown.modulesCompleted +
@@ -491,7 +501,7 @@ export const ThirtyDayContributionHeatmap: React.FC<
           </div>
           <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">·</span>
           <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
-            <Clock className="w-3.5 h-3.5 text-rose-500" />
+            <Clock className="w-3.5 h-3.5 text-rose-500 shrink-0" />
             <span>
               {formatLocalizedNumber(selectedCell.minutesStudied, language)}
               {isEn ? 'm Focus' : ' دقیقه'}

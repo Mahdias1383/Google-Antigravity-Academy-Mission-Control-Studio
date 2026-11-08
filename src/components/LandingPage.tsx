@@ -35,7 +35,12 @@ import {
   buildKnowledgeCheckTop5Leaderboard,
   selectArchitectDailyMission,
 } from '../utils/generators';
-import { formatLocalizedNumber, renderBidiText } from '../utils/bidiText';
+import {
+  formatLocalizedNumber,
+  formatLocalizedThousand,
+  localizeDigits,
+  renderBidiText,
+} from '../utils/bidiText';
 
 interface LandingPageProps {
   onStartCurriculum: (moduleId?: string) => void;
@@ -177,12 +182,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   {isEn ? 'Your Academy Standing:' : 'وضعیت تحصیلی شما:'}
                 </span>
               </div>
-              <div className="flex items-center gap-2 font-mono font-bold">
+              <div className="flex items-center gap-2 font-bold tabular-nums">
                 <span className="text-blue-600 dark:text-blue-400">
-                  {completedModules.length}/{totalModules} {isEn ? 'Modules' : 'فصل'}
+                  {formatLocalizedNumber(completedModules.length, language)}/
+                  {formatLocalizedNumber(totalModules, language)} {isEn ? 'Modules' : 'فصل'}
                 </span>
                 <span className="text-slate-400">·</span>
-                <span className="text-emerald-500">{userXp} XP</span>
+                <span className="text-emerald-500">
+                  {formatLocalizedThousand(userXp, language)} XP
+                </span>
               </div>
             </div>
           </div>
@@ -194,7 +202,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             {
               labelEn: 'Curriculum Chapters',
               labelFa: 'سرفصل تخصصی معماری',
-              value: '8',
+              valueEn: '8',
+              valueFa: '۸',
               unitEn: 'Deep Modules',
               unitFa: 'ماژول عمیق',
               colorClass: 'text-blue-500 border-blue-500/20 bg-blue-500/5',
@@ -203,7 +212,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             {
               labelEn: 'Interactive Studios',
               labelFa: 'استودیوی شبیه‌سازی زنده',
-              value: '4',
+              valueEn: '4',
+              valueFa: '۴',
               unitEn: 'Real-time Sandboxes',
               unitFa: 'میز کار تعاملی',
               colorClass: 'text-emerald-500 border-emerald-500/20 bg-emerald-500/5',
@@ -212,7 +222,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             {
               labelEn: 'Verifiable Assertions',
               labelFa: 'تست خودکار و ممیزی',
-              value: '46+',
+              valueEn: '46+',
+              valueFa: '+۴۶',
               unitEn: 'Automated Tests',
               unitFa: 'آزمون تضمین کیفیت',
               colorClass: 'text-cyan-500 border-cyan-500/20 bg-cyan-500/5',
@@ -221,7 +232,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             {
               labelEn: 'Cohort Average XP',
               labelFa: 'میانگین امتیاز نخبگان',
-              value: '2,900+',
+              valueEn: '2,900+',
+              valueFa: '+۲٬۹۰۰',
               unitEn: 'Mastery Points',
               unitFa: 'امتیاز تسلط',
               colorClass: 'text-amber-500 border-amber-500/20 bg-amber-500/5',
@@ -241,8 +253,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   <IconComp className="w-4 h-4 opacity-70" />
                 </div>
                 <div className="flex items-baseline gap-1.5">
-                  <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-slate-900 dark:text-white">
-                    {item.value}
+                  <span className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white tabular-nums">
+                    {isEn ? item.valueEn : item.valueFa}
                   </span>
                   <span className="text-[11px] text-slate-500 font-medium">
                     {isEn ? item.unitEn : item.unitFa}
@@ -361,8 +373,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
                 {/* Footer Action */}
                 <div className="pt-2 border-t border-slate-100 dark:border-white/[0.05] flex items-center justify-between gap-3">
-                  <span className="text-[11px] text-slate-500 font-mono">
-                    MOD-0{mod.number}
+                  <span className="text-[11px] text-slate-500 font-bold">
+                    {isEn
+                      ? `MOD-0${mod.number}`
+                      : `فصل ${formatLocalizedNumber(mod.number, 'fa', true)}`}
                   </span>
                   <button
                     type="button"
@@ -526,7 +540,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             >
               <div className="flex items-center gap-2.5 min-w-0">
                 <span
-                  className={`w-7 h-7 rounded-lg font-mono text-xs font-black flex items-center justify-center shrink-0 ${
+                  className={`w-7 h-7 rounded-lg text-xs font-black flex items-center justify-center shrink-0 tabular-nums ${
                     student.rank === 1
                       ? 'bg-amber-500 text-white shadow-xs'
                       : student.rank === 2
@@ -534,24 +548,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       : 'bg-amber-700 text-white'
                   }`}
                 >
-                  #{student.rank}
+                  #{formatLocalizedNumber(student.rank, language)}
                 </span>
                 <div className="min-w-0">
                   <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
                     {isEn ? student.displayNameEn : student.displayNameFa}
                   </div>
-                  <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400 truncate">
+                  <div className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate">
                     {student.topSpecialtyBadge}
                   </div>
                 </div>
               </div>
 
-              <div className="text-end shrink-0">
-                <div className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400">
-                  {student.cumulativeScoreXp} XP
+              <div className="text-end shrink-0 tabular-nums">
+                <div className="text-xs font-bold text-blue-600 dark:text-blue-400">
+                  {formatLocalizedThousand(student.cumulativeScoreXp, language)} XP
                 </div>
-                <div className="text-[10px] text-emerald-500 font-semibold font-mono">
-                  {student.averageAccuracyPercent}% {isEn ? 'Acc' : 'دقت'}
+                <div className="text-[10px] text-emerald-500 font-semibold">
+                  {formatLocalizedNumber(student.averageAccuracyPercent, language)}
+                  {isEn ? '% Acc' : '٪ دقت'}
                 </div>
               </div>
             </div>
@@ -572,8 +587,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <span className="text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">
                 {isEn ? "Architect's Daily Mission" : 'ماموریت روزانه معمار'}
               </span>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-600 dark:text-blue-400">
-                +{dailyMission.xpReward} XP
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-600 dark:text-blue-400 tabular-nums">
+                +{formatLocalizedNumber(dailyMission.xpReward, language)} XP
               </span>
             </div>
             <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">

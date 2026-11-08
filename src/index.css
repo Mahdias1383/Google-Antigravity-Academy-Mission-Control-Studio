@@ -56,13 +56,13 @@
 
 @theme {
   --font-sans: 'Vazirmatn', 'Vazirmatn Fallback', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: 'JetBrains Mono', 'JetBrains Mono Fallback', ui-monospace, SFMono-Regular, monospace;
+  --font-mono: 'JetBrains Mono', 'Vazirmatn', 'JetBrains Mono Fallback', 'Vazirmatn Fallback', ui-monospace, SFMono-Regular, monospace;
 }
 
 @layer base {
   :root {
     --font-sans: 'Vazirmatn', 'Vazirmatn Fallback', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-    --font-mono: 'JetBrains Mono', 'JetBrains Mono Fallback', ui-monospace, SFMono-Regular, monospace;
+    --font-mono: 'JetBrains Mono', 'Vazirmatn', 'JetBrains Mono Fallback', 'Vazirmatn Fallback', ui-monospace, SFMono-Regular, monospace;
     --tracking-ui: -0.01em;
     --tracking-heading: -0.025em;
     --tracking-numeric: 0em;

@@ -59,6 +59,7 @@ export const ANTIGRAVITY_ACADEMY_WHITELIST_CONFIG: DomainFileWhitelistConfig = {
     'dist/fonts',
     'dev-dist',
     'node_modules',
+    '.playwright-cli',
   ],
   allowedExactFiles: [
     'package.json',

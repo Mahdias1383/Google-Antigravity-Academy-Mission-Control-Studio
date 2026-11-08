@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import * as d3 from 'd3';
 import {
   Flame,
@@ -74,6 +74,14 @@ import {
   PrintableDocumentPayload,
 } from './CodeAndPdfTools';
 import { useLanguage } from '../context/LanguageContext';
+import {
+  XP_MILESTONES_STORAGE_KEY,
+  XP_MILESTONE_THRESHOLDS,
+  getStoredReachedXpMilestones,
+  buildMilestoneTimelineHistory,
+  syncReachedMilestonesWithCurrentXp,
+  MilestoneHistoryEntry,
+} from '../utils/generators';
 
 const DAY_LABEL_EN_MAP: Record<string, string> = {
   'یکشنبه': 'Sun',
@@ -310,6 +318,24 @@ export const AchievementsCertificationView: React.FC<{
     Record<string, { active: boolean; minutesStudied: number; studioRuns: number }>
   >({});
 
+  // Reached XP Milestones State (synced from storage key ag_reached_xp_milestones_v1)
+  const [reachedMilestones, setReachedMilestones] = useState<number[]>(() => {
+    return getStoredReachedXpMilestones();
+  });
+  const [milestoneFilter, setMilestoneFilter] = useState<'all' | 'unlocked' | 'locked'>('all');
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setReachedMilestones(getStoredReachedXpMilestones());
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  const handleRefreshMilestonesFromStorage = () => {
+    setReachedMilestones(getStoredReachedXpMilestones());
+  };
+
   useEffect(() => {
     const unsubscribe = subscribeToAuthChanges(async (user) => {
       setFirebaseUser(user);
@@ -434,6 +460,36 @@ export const AchievementsCertificationView: React.FC<{
     unlockedStreakMilestonesCount: streakMilestoneEval.unlockedMilestoneCount,
     unlockedTrophiesCount: trophyCase.unlockedCount,
   });
+
+  const timelineMilestones = useMemo(() => {
+    let activeTotalXp = xpProgression.totalCombinedXp;
+    try {
+      const stored = localStorage.getItem('ag_user_xp');
+      if (stored && !isNaN(parseInt(stored, 10))) {
+        activeTotalXp = Math.max(activeTotalXp, parseInt(stored, 10));
+      }
+    } catch {}
+
+    const entries = buildMilestoneTimelineHistory(activeTotalXp, reachedMilestones);
+    if (milestoneFilter === 'unlocked') {
+      return entries.filter((m) => m.isUnlocked);
+    }
+    if (milestoneFilter === 'locked') {
+      return entries.filter((m) => !m.isUnlocked);
+    }
+    return entries;
+  }, [xpProgression.totalCombinedXp, reachedMilestones, milestoneFilter]);
+
+  const unlockedMilestonesCount = useMemo(() => {
+    let activeTotalXp = xpProgression.totalCombinedXp;
+    try {
+      const stored = localStorage.getItem('ag_user_xp');
+      if (stored && !isNaN(parseInt(stored, 10))) {
+        activeTotalXp = Math.max(activeTotalXp, parseInt(stored, 10));
+      }
+    } catch {}
+    return buildMilestoneTimelineHistory(activeTotalXp, reachedMilestones).filter((m) => m.isUnlocked).length;
+  }, [xpProgression.totalCombinedXp, reachedMilestones]);
   const heatmapSummary = buildStudyStreakHeatmapData(
     studyDays,
     studioUsageItems,
@@ -3410,6 +3466,284 @@ export const AchievementsCertificationView: React.FC<{
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* Section 2.5: Reached Milestone History & Vertical Timeline Component       */}
+      {/* ========================================================================= */}
+      <div
+        className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/80 backdrop-blur-md p-6 sm:p-8 space-y-6 shadow-sm"
+        data-testid="milestone-history-section"
+      >
+        {/* Section Header & Storage Telemetry */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-5">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold uppercase tracking-wider bg-cyan-500/10 border border-cyan-500/30 text-cyan-600 dark:text-cyan-400">
+                VERIFIED XP MILESTONES
+              </span>
+              <span className="hidden sm:inline-block text-slate-400">·</span>
+              <span
+                dir="ltr"
+                className="hidden sm:inline-block ltr-inline text-[11px] font-mono text-slate-500 dark:text-slate-400"
+              >
+                Key: {XP_MILESTONES_STORAGE_KEY}
+              </span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2.5 mt-1">
+              <Trophy className="w-5 h-5 text-amber-500 shrink-0" />
+              <span>
+                {language === 'en'
+                  ? 'Milestone History & Vertical Timeline'
+                  : 'تاریخچه نقاط عطف و خط زمانی عمودی XP (Milestone History)'}
+              </span>
+            </h2>
+            <p className="text-xs text-slate-600 dark:text-slate-400 max-w-3xl leading-relaxed">
+              {language === 'en'
+                ? 'Chronological progression of verified Antigravity XP milestone thresholds and architectural principles fetched from persistent storage keys.'
+                : 'مسیر زمانی پیشرفت نقاط عطف امتیاز تجربه (XP) و اصول معماری Antigravity که مستقیماً از کلیدهای ذخیره‌سازی پایدار مرورگر فراخوانی شده است.'}
+            </p>
+          </div>
+
+          {/* Quick Metrics & Storage Sync Button */}
+          <div className="flex flex-wrap items-center gap-2.5 self-start lg:self-center">
+            {/* Unlocked Counter Pill */}
+            <div className="px-3 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-mono font-bold flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4" />
+              <span>
+                {unlockedMilestonesCount} / {XP_MILESTONE_THRESHOLDS.length}{' '}
+                {language === 'en' ? 'Unlocked' : 'نقطه عطف ثبت‌شده'}
+              </span>
+            </div>
+
+            {/* Storage Refresh Button */}
+            <button
+              type="button"
+              onClick={handleRefreshMilestonesFromStorage}
+              data-testid="refresh-milestones-btn"
+              title={language === 'en' ? 'Refresh from Storage' : 'بازخوانی از حافظه محلی'}
+              className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-cyan-500 transition-colors cursor-pointer"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Filter Controls Row */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 text-xs">
+            <button
+              type="button"
+              onClick={() => setMilestoneFilter('all')}
+              className={`px-3 py-1.5 rounded-lg font-semibold transition-colors cursor-pointer ${
+                milestoneFilter === 'all'
+                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              {language === 'en'
+                ? `All (${XP_MILESTONE_THRESHOLDS.length})`
+                : `همه (${XP_MILESTONE_THRESHOLDS.length})`}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMilestoneFilter('unlocked')}
+              className={`px-3 py-1.5 rounded-lg font-semibold transition-colors cursor-pointer ${
+                milestoneFilter === 'unlocked'
+                  ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              {language === 'en'
+                ? `Reached (${unlockedMilestonesCount})`
+                : `آزادشده (${unlockedMilestonesCount})`}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMilestoneFilter('locked')}
+              className={`px-3 py-1.5 rounded-lg font-semibold transition-colors cursor-pointer ${
+                milestoneFilter === 'locked'
+                  ? 'bg-white dark:bg-slate-800 text-amber-600 dark:text-amber-400 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              {language === 'en'
+                ? `Upcoming (${XP_MILESTONE_THRESHOLDS.length - unlockedMilestonesCount})`
+                : `در انتظار (${XP_MILESTONE_THRESHOLDS.length - unlockedMilestonesCount})`}
+            </button>
+          </div>
+
+          <div className="text-[11px] font-mono text-slate-500 dark:text-slate-400 flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
+            <span>{language === 'en' ? 'Synced with Local Storage' : 'همگام با حافظه کلاینت'}</span>
+          </div>
+        </div>
+
+        {/* The Vertical Timeline Component */}
+        <div
+          className="relative pt-4 pb-2"
+          data-testid="milestone-vertical-timeline"
+        >
+          {/* Vertical Backbone Line */}
+          <div
+            aria-hidden="true"
+            className="absolute top-8 bottom-8 start-5 sm:start-7 w-0.5 -translate-x-1/2 rtl:translate-x-1/2 bg-gradient-to-b from-cyan-500 via-emerald-500 to-slate-300 dark:to-slate-800"
+          />
+
+          <div className="space-y-6">
+            {timelineMilestones.map((item) => {
+              return (
+                <div
+                  key={item.badgeCode}
+                  data-testid={`milestone-timeline-item-${item.threshold}`}
+                  className="relative flex items-start gap-4 sm:gap-6 group"
+                >
+                  {/* Vertical Timeline Node Circle */}
+                  <div className="relative z-10 shrink-0">
+                    <div
+                      className={`w-10 h-10 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center font-mono font-bold text-xs sm:text-sm border-2 transition-transform duration-200 group-hover:scale-105 shadow-md ${
+                        item.isUnlocked
+                          ? 'border-emerald-500 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 ring-4 ring-emerald-500/20'
+                          : item.progressPercent > 0
+                          ? 'border-cyan-500/60 bg-cyan-500/10 text-cyan-500 ring-4 ring-cyan-500/15'
+                          : 'border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-400'
+                      }`}
+                    >
+                      {item.isUnlocked ? (
+                        <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6" />
+                      ) : item.progressPercent > 0 ? (
+                        <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400 animate-pulse" />
+                      ) : (
+                        <Lock className="w-4 h-4 text-slate-400" />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Milestone Card Content */}
+                  <div
+                    className={`flex-1 rounded-2xl border p-5 sm:p-6 space-y-3.5 transition-all duration-200 ${
+                      item.isUnlocked
+                        ? 'border-emerald-500/35 bg-gradient-to-br from-emerald-500/5 via-slate-50 dark:via-slate-900/90 to-blue-500/5 shadow-md'
+                        : 'border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/40'
+                    }`}
+                  >
+                    {/* Header Row: Badge Code, XP Tag, Status */}
+                    <div className="flex flex-wrap items-center justify-between gap-2.5">
+                      <div className="flex items-center gap-2">
+                        <span
+                          dir="ltr"
+                          className={`ltr-inline px-2.5 py-1 rounded-lg text-xs font-mono font-bold border ${
+                            item.isUnlocked
+                              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                              : 'bg-slate-200/60 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-500'
+                          }`}
+                        >
+                          {item.badgeCode}
+                        </span>
+
+                        <span
+                          dir="ltr"
+                          className="ltr-inline text-xs font-mono font-extrabold text-amber-500 dark:text-amber-400"
+                        >
+                          +{item.threshold.toLocaleString()} XP
+                        </span>
+                      </div>
+
+                      {/* Status Badge */}
+                      {item.isUnlocked ? (
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded-lg">
+                          <Check className="w-3.5 h-3.5" />
+                          <span>
+                            {language === 'en'
+                              ? 'Reached & Storage Verified'
+                              : 'تاییدشده در حافظه پایدار'}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-200/50 dark:bg-slate-800/60 border border-slate-300/40 dark:border-slate-700/60 px-2.5 py-1 rounded-lg">
+                          <Lock className="w-3.5 h-3.5" />
+                          <span>
+                            {language === 'en'
+                              ? `${item.remainingXpToUnlock.toLocaleString()} XP to unlock`
+                              : `${item.remainingXpToUnlock.toLocaleString()} XP تا بازگشایی`}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Milestone Titles & Module Link */}
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <h3 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">
+                          {language === 'en' ? item.titleEn : item.titleFa}
+                        </h3>
+                        <div
+                          dir="ltr"
+                          className="ltr-inline text-xs font-mono text-cyan-600 dark:text-cyan-400 mt-0.5 block"
+                        >
+                          {language === 'en' ? item.titleFa : item.titleEn}
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => onNavigateToModule(`module-${item.moduleNumber}`)}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-cyan-400 transition-colors cursor-pointer shrink-0"
+                      >
+                        <span>
+                          {language === 'en'
+                            ? `Module 0${item.moduleNumber} Curriculum`
+                            : `فصل ۰${item.moduleNumber} آموزشی`}
+                        </span>
+                        <ArrowUpRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Progress Bar for Locked / In-Progress Milestones */}
+                    {!item.isUnlocked && (
+                      <div className="space-y-1.5 pt-1">
+                        <div className="flex items-center justify-between text-[11px] font-mono text-slate-500">
+                          <span>{language === 'en' ? 'Threshold Progress' : 'پیشرفت تا آستانه'}</span>
+                          <span>{item.progressPercent}%</span>
+                        </div>
+                        <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-500"
+                            style={{ width: `${item.progressPercent}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Architectural Principle & Quote Card */}
+                    <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white/70 dark:bg-slate-950/60 space-y-2 text-xs">
+                      <div className="flex items-center justify-between gap-2">
+                        <span
+                          dir="ltr"
+                          className="ltr-inline text-[11px] font-mono font-bold text-indigo-500 dark:text-indigo-400"
+                        >
+                          {item.principleEn}
+                        </span>
+                        <span className="text-[10px] text-slate-400">· Antigravity Principle</span>
+                      </div>
+
+                      <p className="text-slate-700 dark:text-slate-300 italic leading-relaxed">
+                        {language === 'en' ? `“${item.quoteEn}”` : `«${item.quoteFa}»`}
+                      </p>
+
+                      <div
+                        dir="ltr"
+                        className="ltr-inline text-[10px] font-mono text-slate-400 dark:text-slate-500 pt-1"
+                      >
+                        — {item.authorRoleEn}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 

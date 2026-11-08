@@ -1342,6 +1342,58 @@ export function checkAndTriggerXpMilestones(options: CheckXpMilestonesOptions): 
   };
 }
 
+export interface MilestoneHistoryEntry extends XpMilestoneDefinition {
+  isUnlocked: boolean;
+  progressPercent: number;
+  remainingXpToUnlock: number;
+  unlockedAtDateLabel?: string;
+}
+
+export function buildMilestoneTimelineHistory(
+  currentXp: number,
+  reachedThresholds: number[]
+): MilestoneHistoryEntry[] {
+  return XP_MILESTONE_THRESHOLDS.map((milestone, idx) => {
+    const isUnlocked =
+      reachedThresholds.includes(milestone.threshold) || currentXp >= milestone.threshold;
+    const prevThreshold = idx === 0 ? 0 : XP_MILESTONE_THRESHOLDS[idx - 1].threshold;
+    const progressPercent = isUnlocked
+      ? 100
+      : Math.max(
+          0,
+          Math.min(
+            99,
+            Math.round(
+              ((Math.max(0, currentXp - prevThreshold)) /
+                (milestone.threshold - prevThreshold)) *
+                100
+            )
+          )
+        );
+    const remainingXpToUnlock = Math.max(0, milestone.threshold - currentXp);
+
+    return {
+      ...milestone,
+      isUnlocked,
+      progressPercent,
+      remainingXpToUnlock,
+      unlockedAtDateLabel: isUnlocked ? 'Verified in Storage' : undefined,
+    };
+  });
+}
+
+export function syncReachedMilestonesWithCurrentXp(currentXp: number): number[] {
+  const stored = getStoredReachedXpMilestones();
+  const qualifying = XP_MILESTONE_THRESHOLDS
+    .filter((m) => currentXp >= m.threshold)
+    .map((m) => m.threshold);
+  const merged = Array.from(new Set([...stored, ...qualifying])).sort((a, b) => a - b);
+  if (merged.length !== stored.length) {
+    saveStoredReachedXpMilestones(merged);
+  }
+  return merged;
+}
+
 export interface KnowledgeBaseBundleDocument {
   schemaVersion: '1.0.0';
   bundleType: 'google-antigravity-knowledge-base-export';

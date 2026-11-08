@@ -34,6 +34,8 @@ import {
   evaluateUnreachedXpMilestones,
   buildXpMilestonePayload,
   checkAndTriggerXpMilestones,
+  buildMilestoneTimelineHistory,
+  syncReachedMilestonesWithCurrentXp,
 } from './generators';
 import {
   CURATED_KNOWLEDGE_QUIZ_BANK,
@@ -2909,6 +2911,50 @@ test('XP Milestone Automatic Trigger & Local Storage Persistence: triggers Missi
   });
   assert.equal(res6.triggered, false);
   assert.equal(triggeredPayloads.length, 2); // No duplicate toasts!
+});
+
+test('Milestone History & Vertical Timeline: buildMilestoneTimelineHistory computes chronological entries, unlock states, and progress percent', () => {
+  // Scenario 1: User with 3,500 XP and [1000, 2500] in storage keys
+  const history = buildMilestoneTimelineHistory(3500, [1000, 2500]);
+  assert.equal(history.length, XP_MILESTONE_THRESHOLDS.length);
+
+  // Milestone 1: 1000 XP -> Unlocked
+  assert.equal(history[0].threshold, 1000);
+  assert.equal(history[0].isUnlocked, true);
+  assert.equal(history[0].progressPercent, 100);
+  assert.equal(history[0].remainingXpToUnlock, 0);
+
+  // Milestone 2: 2500 XP -> Unlocked
+  assert.equal(history[1].threshold, 2500);
+  assert.equal(history[1].isUnlocked, true);
+  assert.equal(history[1].progressPercent, 100);
+  assert.equal(history[1].remainingXpToUnlock, 0);
+
+  // Milestone 3: 5000 XP -> Locked, in progress
+  // Current XP: 3500. Range: [2500 to 5000] = 2500 XP span. User has 1000 XP into range.
+  // 1000 / 2500 = 40% progress
+  assert.equal(history[2].threshold, 5000);
+  assert.equal(history[2].isUnlocked, false);
+  assert.equal(history[2].progressPercent, 40);
+  assert.equal(history[2].remainingXpToUnlock, 1500);
+
+  // Milestone 4: 7500 XP -> Locked, 0% of its immediate range
+  assert.equal(history[3].threshold, 7500);
+  assert.equal(history[3].isUnlocked, false);
+  assert.equal(history[3].progressPercent, 0);
+  assert.equal(history[3].remainingXpToUnlock, 4000);
+
+  // Milestone 5: 10000 XP -> Locked
+  assert.equal(history[4].threshold, 10000);
+  assert.equal(history[4].isUnlocked, false);
+  assert.equal(history[4].progressPercent, 0);
+  assert.equal(history[4].remainingXpToUnlock, 6500);
+
+  // Scenario 2: User with 10,000 XP
+  const fullHistory = buildMilestoneTimelineHistory(10000, [1000, 2500, 5000, 7500, 10000]);
+  assert.equal(fullHistory.every((m) => m.isUnlocked), true);
+  assert.equal(fullHistory.every((m) => m.progressPercent === 100), true);
+  assert.equal(fullHistory.every((m) => m.remainingXpToUnlock === 0), true);
 });
 
 

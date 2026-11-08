@@ -334,7 +334,7 @@ export interface KnowledgeBaseUserStateInput {
   worktree: string;
   executionMode: 'Planning Mode' | 'Fast Mode';
   executionStage: 'planning-review' | 'executing' | 'completed';
-  activeArtifactTab: 'task.md' | 'implementation_plan.md' | 'walkthrough.md';
+  activeArtifactTab: 'task.md' | 'implementation_plan.md' | 'walkthrough.md' | 'dashboard';
   inlineComments: { line: number; comment: string }[];
   tasks: { id: string; text: string; doneAfterExec: boolean }[];
   completedModules: string[];
@@ -355,7 +355,7 @@ export interface KnowledgeBaseUserStateDocument {
     taskId: string;
     titleEn: string;
     titleFa: string;
-    activeArtifactTab: 'task.md' | 'implementation_plan.md' | 'walkthrough.md';
+    activeArtifactTab: 'task.md' | 'implementation_plan.md' | 'walkthrough.md' | 'dashboard';
     inlineReviewComments: { line: number; comment: string }[];
     checklistProgress: {
       id: string;
@@ -1120,6 +1120,225 @@ export function buildMissionMilestoneNotification(input: {
     isFullAcademyMastery,
     quote,
     confettiParticles,
+  };
+}
+
+export const XP_MILESTONES_STORAGE_KEY = 'ag_reached_xp_milestones_v1';
+
+export interface XpMilestoneDefinition {
+  threshold: number;
+  badgeCode: string;
+  titleFa: string;
+  titleEn: string;
+  moduleNumber: number;
+  quoteFa: string;
+  quoteEn: string;
+  authorRoleEn: string;
+  principleEn: string;
+}
+
+export const XP_MILESTONE_THRESHOLDS: XpMilestoneDefinition[] = [
+  {
+    threshold: 1000,
+    badgeCode: 'XP-1000',
+    titleFa: 'مهندس پرامپت و اورکستریشن مقدماتی',
+    titleEn: 'Prompt Engineer & Orchestration Apprentice',
+    moduleNumber: 1,
+    quoteFa:
+      'نخستین قدم در دنیای Antigravity، گذار از پرسش‌های تصادفی به پرامپت‌های ساختاریافته و قابل تکرار است.',
+    quoteEn:
+      'The first step into Antigravity is transitioning from random queries to structured, reproducible intent.',
+    authorRoleEn: 'Mission Systems Director · Antigravity',
+    principleEn: 'PRINCIPLE XP-1000 · REPRODUCIBLE PROMPTING',
+  },
+  {
+    threshold: 2500,
+    badgeCode: 'XP-2500',
+    titleFa: 'متخصص ابزارهای FastMCP و پروتکل کانتکست',
+    titleEn: 'FastMCP Specialist & Context Integrator',
+    moduleNumber: 3,
+    quoteFa:
+      'ابزارهای استاندارد پروتکل کانتکست مدل (MCP) ستون فقرات ارکستراسیون ایجنت‌های مدرن سازمانی هستند.',
+    quoteEn:
+      'Standard Model Context Protocol tooling provides the bedrock for resilient autonomous agent actions.',
+    authorRoleEn: 'Principal Protocol Engineer · FastMCP',
+    principleEn: 'PRINCIPLE XP-2500 · PROTOCOL HARDENING',
+  },
+  {
+    threshold: 5000,
+    badgeCode: 'XP-5000',
+    titleFa: 'معمار سامانه‌های ایجنتیک خودکار',
+    titleEn: 'Autonomous Agent Systems Architect',
+    moduleNumber: 5,
+    quoteFa:
+      'رسیدن به ۵۰۰۰ امتیاز تجربه نشان‌دهنده تسلط عمیق بر جریان‌های کاری خودکار و حل مسائل پیچیده سازمانی است.',
+    quoteEn:
+      'Surpassing 5,000 XP marks true mastery over declarative workflows, zero context rot, and agent self-correction.',
+    authorRoleEn: 'Chief Architect · Google Antigravity Lab',
+    principleEn: 'PRINCIPLE XP-5000 · AUTONOMOUS AGENT MASTERY',
+  },
+  {
+    threshold: 7500,
+    badgeCode: 'XP-7500',
+    titleFa: 'استاد گاردریل‌ها و ایمنی دترمینستیک',
+    titleEn: 'Deterministic Guardrails & Safety Master',
+    moduleNumber: 7,
+    quoteFa:
+      'ایمنی و ممیزی بلادرنگ تفاوت میان یک آزمایش ایجنتی و یک سامانه تولیدی در کلاس جهانی را رقم می‌زنند.',
+    quoteEn:
+      'Deterministic policy enforcement distinguishes toys from mission-critical autonomous enterprise infrastructure.',
+    authorRoleEn: 'Lead Safety & Guardrails Fellow',
+    principleEn: 'PRINCIPLE XP-7500 · ZERO-BREACH RUNTIMES',
+  },
+  {
+    threshold: 10000,
+    badgeCode: 'XP-10000',
+    titleFa: 'فرمانده ارشد و استاد تمام Antigravity',
+    titleEn: 'Antigravity Principal Centurion',
+    moduleNumber: 8,
+    quoteFa:
+      'مرز ۱۰٬۰۰۰ XP بالاترین نشان شایستگی مهندسی است؛ رهبری ارکسترهای بزرگ ایجنت‌ها در مقیاس کلود.',
+    quoteEn:
+      'The 10,000 XP milestone represents the summit of agentic engineering—orchestrating fleets of autonomous models at planetary scale.',
+    authorRoleEn: 'Distinguished Fellow · Google Antigravity Academy',
+    principleEn: 'PRINCIPLE XP-10000 · PLANETARY SCALE AUTONOMY',
+  },
+];
+
+export function evaluateUnreachedXpMilestones(
+  currentXp: number,
+  alreadyReachedThresholds: number[]
+): XpMilestoneDefinition[] {
+  return XP_MILESTONE_THRESHOLDS.filter(
+    (m) => currentXp >= m.threshold && !alreadyReachedThresholds.includes(m.threshold)
+  );
+}
+
+export function buildXpMilestonePayload(
+  definition: XpMilestoneDefinition,
+  completedModulesCount: number = 0,
+  totalModules: number = 8
+): MissionMilestonePayload {
+  const safeTotal = Math.max(1, totalModules);
+  const completionPercent = Math.min(
+    100,
+    Math.round((completedModulesCount / safeTotal) * 100)
+  );
+  const isFullAcademyMastery = definition.threshold >= 10000;
+
+  const palette = ['#f59e0b', '#3b82f6', '#10b981', '#6366f1', '#ec4899', '#06b6d4'];
+  const shapes: ('rect' | 'diamond' | 'circle')[] = ['rect', 'diamond', 'circle'];
+
+  const confettiParticles: MissionMilestoneConfettiParticle[] = Array.from(
+    { length: 28 },
+    (_, idx) => ({
+      id: idx + 1,
+      leftPercent: Math.round(((idx * 17 + 7) % 92) + 4),
+      delayMs: (idx % 6) * 90,
+      durationMs: 1800 + (idx % 5) * 260,
+      colorHex: palette[idx % palette.length],
+      rotationDeg: (idx * 37) % 360,
+      shape: shapes[idx % shapes.length],
+    })
+  );
+
+  return {
+    moduleId: `xp-milestone-${definition.threshold}`,
+    moduleNumber: definition.moduleNumber,
+    moduleTitleFa: `پیشرفت امتیاز: ${definition.titleFa} (${definition.threshold.toLocaleString('fa-IR')} XP)`,
+    moduleTitleEn: `XP Milestone: ${definition.titleEn} (${definition.threshold} XP)`,
+    completedCount: completedModulesCount,
+    totalModules: safeTotal,
+    completionPercent,
+    xpAwarded: definition.threshold,
+    isFullAcademyMastery,
+    quote: {
+      moduleNumber: definition.moduleNumber,
+      quoteFa: definition.quoteFa,
+      quoteEn: definition.quoteEn,
+      authorRoleEn: definition.authorRoleEn,
+      engineeringPrincipleEn: definition.principleEn,
+    },
+    confettiParticles,
+  };
+}
+
+export function getStoredReachedXpMilestones(): number[] {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return [];
+  }
+  try {
+    const raw = localStorage.getItem(XP_MILESTONES_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((n) => typeof n === 'number') : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveStoredReachedXpMilestones(milestones: number[]): void {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return;
+  }
+  try {
+    const unique = Array.from(new Set(milestones)).sort((a, b) => a - b);
+    localStorage.setItem(XP_MILESTONES_STORAGE_KEY, JSON.stringify(unique));
+  } catch {}
+}
+
+export interface CheckXpMilestonesOptions {
+  currentXp: number;
+  completedModulesCount?: number;
+  totalModules?: number;
+  onTriggerMilestone: (payload: MissionMilestonePayload) => void;
+  getStored?: () => number[];
+  saveStored?: (thresholds: number[]) => void;
+}
+
+export function checkAndTriggerXpMilestones(options: CheckXpMilestonesOptions): {
+  triggered: boolean;
+  newlyUnlocked: XpMilestoneDefinition[];
+  allReached: number[];
+  payload: MissionMilestonePayload | null;
+} {
+  const getFn = options.getStored || getStoredReachedXpMilestones;
+  const saveFn = options.saveStored || saveStoredReachedXpMilestones;
+
+  const alreadyReached = getFn();
+  const unreached = evaluateUnreachedXpMilestones(options.currentXp, alreadyReached);
+
+  if (unreached.length === 0) {
+    return {
+      triggered: false,
+      newlyUnlocked: [],
+      allReached: alreadyReached,
+      payload: null,
+    };
+  }
+
+  // Record all newly unlocked thresholds to prevent duplicate toasts/overlays
+  const newlyReachedThresholds = unreached.map((m) => m.threshold);
+  const updatedAllReached = Array.from(
+    new Set([...alreadyReached, ...newlyReachedThresholds])
+  ).sort((a, b) => a - b);
+  saveFn(updatedAllReached);
+
+  // Trigger overlay for the highest newly reached milestone
+  const highest = unreached[unreached.length - 1];
+  const payload = buildXpMilestonePayload(
+    highest,
+    options.completedModulesCount ?? 0,
+    options.totalModules ?? 8
+  );
+
+  options.onTriggerMilestone(payload);
+
+  return {
+    triggered: true,
+    newlyUnlocked: unreached,
+    allReached: updatedAllReached,
+    payload,
   };
 }
 

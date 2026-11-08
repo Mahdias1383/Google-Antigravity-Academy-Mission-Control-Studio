@@ -57,6 +57,7 @@ interface ProfilePageProps {
   completedModules: string[];
   userXp: number;
   initialTab?: 'overview' | 'missions' | 'transcripts' | 'all';
+  onRewardXp?: (amount: number) => void;
 }
 
 interface UserProfileState {
@@ -94,6 +95,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   completedModules,
   userXp,
   initialTab = 'overview',
+  onRewardXp,
 }) => {
   const { language, isRTL } = useLanguage();
   const isEn = language === 'en';
@@ -573,6 +575,34 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
               style={{ width: `${levelProgressPercent}%` }}
             />
           </div>
+          {onRewardXp && (
+            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+              <button
+                type="button"
+                onClick={() => onRewardXp(500)}
+                className="px-2 py-0.5 rounded text-[10px] font-mono font-medium border border-blue-500/30 bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors cursor-pointer"
+                title="Add +500 XP"
+              >
+                +500 XP
+              </button>
+              <button
+                type="button"
+                onClick={() => onRewardXp(Math.max(100, 5000 - userXp))}
+                className="px-2 py-0.5 rounded text-[10px] font-mono font-medium border border-amber-500/30 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 transition-colors cursor-pointer"
+                title="Reach 5,000 XP Milestone Threshold"
+              >
+                {isEn ? '→ 5K Milestone' : '← نشان ۵ هزار XP'}
+              </button>
+              <button
+                type="button"
+                onClick={() => onRewardXp(Math.max(100, 10000 - userXp))}
+                className="px-2 py-0.5 rounded text-[10px] font-mono font-medium border border-emerald-500/30 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors cursor-pointer"
+                title="Reach 10,000 XP Milestone Threshold"
+              >
+                {isEn ? '→ 10K Milestone' : '← نشان ۱۰ هزار XP'}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Metric 2: Study Streak */}

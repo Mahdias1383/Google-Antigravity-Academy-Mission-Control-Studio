@@ -41,6 +41,10 @@ import {
   buildSidebarModulePathGraph,
   getStoredKnowledgeCheckScores,
   MissionMilestonePayload,
+  XP_MILESTONES_STORAGE_KEY,
+  XP_MILESTONE_THRESHOLDS,
+  saveStoredReachedXpMilestones,
+  checkAndTriggerXpMilestones,
 } from './utils/generators';
 import { formatLocalizedNumber } from './utils/bidiText';
 import {
@@ -126,6 +130,49 @@ function AntigravityAcademyContent() {
     recordDailyStreakCheckIn();
     setStreakData(getStoredDailyStreak());
   }, []);
+
+  // Award XP helper that updates state and syncs to localStorage
+  const awardXp = useCallback((amount: number) => {
+    setUserXp((prev) => {
+      const next = prev + amount;
+      try {
+        localStorage.setItem('ag_user_xp', next.toString());
+      } catch {}
+      return next;
+    });
+  }, []);
+
+  // On initial mount: if ag_reached_xp_milestones_v1 is empty, seed all thresholds strictly below current XP
+  // so existing starting XP doesn't trigger unexpected retro toasts on page launch.
+  const isInitialMountRef = React.useRef(true);
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        if (localStorage.getItem(XP_MILESTONES_STORAGE_KEY) === null) {
+          const historical = XP_MILESTONE_THRESHOLDS
+            .filter((m) => m.threshold <= userXp)
+            .map((m) => m.threshold);
+          saveStoredReachedXpMilestones(historical);
+        }
+      } catch {}
+    }
+    isInitialMountRef.current = false;
+  }, []);
+
+  // Automatically check & trigger MissionMilestoneOverlay when reaching XP thresholds (e.g. 5000 XP, 10000 XP)
+  // and store reached milestones in local storage to prevent duplicate toasts.
+  useEffect(() => {
+    if (isInitialMountRef.current) return;
+
+    checkAndTriggerXpMilestones({
+      currentXp: userXp,
+      completedModulesCount: completedModules.length,
+      totalModules: ALL_CURRICULUM_MODULES.length,
+      onTriggerMilestone: (payload) => {
+        setMilestone(payload);
+      },
+    });
+  }, [userXp, completedModules.length]);
 
   // Sync Activity Log
   const navigateToSection = useCallback(
@@ -570,11 +617,15 @@ function AntigravityAcademyContent() {
               module={currentModule}
               isCompleted={completedModules.includes(currentModule.id)}
               onToggleComplete={(modId) => {
-                const nextCompleted = completedModules.includes(modId)
-                  ? completedModules.filter((id) => id !== modId)
-                  : [...completedModules, modId];
+                const isCompleting = !completedModules.includes(modId);
+                const nextCompleted = isCompleting
+                  ? [...completedModules, modId]
+                  : completedModules.filter((id) => id !== modId);
                 setCompletedModules(nextCompleted);
                 localStorage.setItem('ag_completed_modules', JSON.stringify(nextCompleted));
+                if (isCompleting) {
+                  awardXp(350);
+                }
               }}
               onSelectModule={handleModuleSelect}
               totalModules={ALL_CURRICULUM_MODULES.length}
@@ -590,6 +641,7 @@ function AntigravityAcademyContent() {
               onNavigateToModule={handleModuleSelect}
               onNavigateToCurriculum={() => navigateToSection('curriculum')}
               onNavigateToSection={(sec) => navigateToSection(sec)}
+              onRewardXp={awardXp}
             />
           )}
 
@@ -598,16 +650,24 @@ function AntigravityAcademyContent() {
               allModules={ALL_CURRICULUM_MODULES}
               completedModules={completedModules}
               onToggleModuleComplete={(modId) => {
-                const nextCompleted = completedModules.includes(modId)
-                  ? completedModules.filter((id) => id !== modId)
-                  : [...completedModules, modId];
+                const isCompleting = !completedModules.includes(modId);
+                const nextCompleted = isCompleting
+                  ? [...completedModules, modId]
+                  : completedModules.filter((id) => id !== modId);
                 setCompletedModules(nextCompleted);
                 localStorage.setItem('ag_completed_modules', JSON.stringify(nextCompleted));
+                if (isCompleting) {
+                  awardXp(350);
+                }
               }}
               onCompleteAllModules={() => {
                 const allIds = ALL_CURRICULUM_MODULES.map((m) => m.id);
+                const newlyCompleted = allIds.filter((id) => !completedModules.includes(id)).length;
                 setCompletedModules(allIds);
                 localStorage.setItem('ag_completed_modules', JSON.stringify(allIds));
+                if (newlyCompleted > 0) {
+                  awardXp(newlyCompleted * 350);
+                }
               }}
               onNavigateToModule={handleModuleSelect}
               onExportPdf={handleExportPdf}
@@ -685,13 +745,7 @@ function AntigravityAcademyContent() {
         completedModulesCount={completedModules.length}
         totalModulesCount={ALL_CURRICULUM_MODULES.length}
         userXp={userXp}
-        onRewardXp={(amt) => {
-          setUserXp((prev) => {
-            const next = prev + amt;
-            localStorage.setItem('ag_user_xp', next.toString());
-            return next;
-          });
-        }}
+        onRewardXp={awardXp}
       />
 
       <ScopedPdfExportModal

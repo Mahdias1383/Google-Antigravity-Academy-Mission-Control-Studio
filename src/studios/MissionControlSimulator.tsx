@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Play,
   MessageSquarePlus,
@@ -15,7 +15,24 @@ import {
   Database,
   Copy,
   Check,
+  TrendingUp,
+  Award,
+  Zap,
+  Activity,
+  BarChart2,
+  Calendar,
 } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  AreaChart,
+  Area,
+} from 'recharts';
 import {
   ExportSectionPdfButton,
   PrintableDocumentPayload,
@@ -150,7 +167,69 @@ export const MissionControlSimulator: React.FC<{
   const { language, isRTL, t } = useLanguage();
   const [selectedTaskId, setSelectedTaskId] = useState<string>(SIMULATOR_TASKS[0].id);
   const [executionMode, setExecutionMode] = useState<'Planning Mode' | 'Fast Mode'>('Planning Mode');
-  const [activeArtifactTab, setActiveArtifactTab] = useState<'task.md' | 'implementation_plan.md' | 'walkthrough.md'>('implementation_plan.md');
+  const [activeArtifactTab, setActiveArtifactTab] = useState<
+    'task.md' | 'implementation_plan.md' | 'walkthrough.md' | 'dashboard'
+  >('implementation_plan.md');
+  const [timeframeView, setTimeframeView] = useState<'30days' | 'milestones'>('30days');
+
+  // Compute progressive timeline data for XP Growth over time mapping last 30 days and key milestones
+  const thirtyDayXpHistory = useMemo(() => {
+    let currentTotalXp = 2450;
+    try {
+      const stored = localStorage.getItem('ag_user_xp');
+      if (stored && !isNaN(parseInt(stored, 10))) {
+        currentTotalXp = Math.max(2450, parseInt(stored, 10));
+      }
+    } catch {}
+
+    const completedCount = completedModules.length;
+    const baseTargetXp = currentTotalXp + (completedCount * 120);
+    const startXp = Math.max(150, Math.round(baseTargetXp * 0.12));
+
+    const today = new Date('2026-11-04T00:00:00.000Z');
+    const dayPoints = [];
+
+    // Milestone reference events for tooltips and badges
+    const milestoneEvents: Record<number, { en: string; fa: string; icon?: string }> = {
+      2: { en: 'Cadet Setup & Tooling', fa: 'راه‌اندازی ابزارها و محیط کار' },
+      7: { en: 'Module 01: Core Agents Mastered', fa: 'فصل ۱: تسلط بر ایجنت‌های پایه' },
+      13: { en: 'Module 02: Guardrails Activated', fa: 'فصل ۲: فعال‌سازی گاردریل‌های .agent/rules' },
+      19: { en: 'FastMCP 2.0 Protocol Integrated', fa: 'فصل ۳: پروتکل FastMCP 2.0' },
+      25: { en: 'Mission Control PR Review Approved', fa: 'تایید ممیزی و مانیتورینگ Mission Control' },
+      29: { en: 'Autonomous Subagents & Browser Verified', fa: 'صحت‌سنجی ساب‌ایجنت‌ها با Browser Subagent' },
+    };
+
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const dayIndex = 29 - i; // 0 to 29
+      const progressRatio = Math.pow(dayIndex / 29, 1.25); // smooth exponential accumulation
+      
+      const xpVal = Math.round(startXp + (baseTargetXp - startXp) * progressRatio);
+      const bonusXpVal = Math.round(xpVal * 0.22);
+      const dailyDelta = dayIndex === 0 ? startXp : Math.round((baseTargetXp / 29) * (0.8 + (dayIndex % 3) * 0.25));
+
+      const monthNamesEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const dateLabel = `${monthNamesEn[d.getMonth()]} ${d.getDate() < 10 ? '0' : ''}${d.getDate()}`;
+      const isoDate = d.toISOString().split('T')[0];
+
+      const milestone = milestoneEvents[dayIndex] || null;
+
+      dayPoints.push({
+        dayIndex,
+        dateIso: isoDate,
+        dateLabel,
+        xp: xpVal,
+        bonusXp: bonusXpVal,
+        dailyGain: dailyDelta,
+        hasMilestone: Boolean(milestone),
+        milestoneEn: milestone ? milestone.en : undefined,
+        milestoneFa: milestone ? milestone.fa : undefined,
+      });
+    }
+
+    return dayPoints;
+  }, [completedModules]);
   const [selectedLineNumber, setSelectedLineNumber] = useState<number | null>(8);
   const [commentDraft, setCommentDraft] = useState<string>('Use heartbeat ping interval of 15s and enforce Pydantic extra="forbid" on incoming frames.');
   const [inlineComments, setInlineComments] = useState<{ line: number; comment: string }[]>([
@@ -520,6 +599,21 @@ export const MissionControlSimulator: React.FC<{
                   {tab}
                 </button>
               ))}
+
+              {/* Progress & XP Growth Dashboard Tab */}
+              <button
+                type="button"
+                onClick={() => setActiveArtifactTab('dashboard')}
+                data-testid="mission-control-dashboard-tab"
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  activeArtifactTab === 'dashboard'
+                    ? 'bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-sm'
+                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:text-cyan-500'
+                }`}
+              >
+                <TrendingUp className="w-3.5 h-3.5" />
+                <span>{language === 'en' ? 'Dashboard & XP Growth' : 'داشبورد پیشرفت و رشد XP'}</span>
+              </button>
             </div>
 
             <div className="flex items-center gap-2">
@@ -695,6 +789,273 @@ export const MissionControlSimulator: React.FC<{
                 </div>
                 <div dir="ltr" className="ltr-code p-4 rounded-lg bg-slate-950 border border-slate-800 text-xs font-mono text-slate-200 overflow-x-auto">
                   <pre><code>{currentTask.walkthroughReport}</code></pre>
+                </div>
+              </div>
+            )}
+
+            {/* Dashboard & XP Growth Over Time View */}
+            {activeArtifactTab === 'dashboard' && (
+              <div
+                className="space-y-5"
+                data-testid="mission-control-progress-dashboard"
+              >
+                {/* Header description */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
+                  <div>
+                    <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4 text-cyan-500" />
+                      <span>
+                        {language === 'en'
+                          ? 'Architect XP Growth & Progression Analytics'
+                          : 'تحلیل رشد امتیاز تجربی (XP) و پیشرفت معماری کاربر'}
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      {language === 'en'
+                        ? 'Visualizing cumulative experience points and bonus milestones achieved across simulation phases.'
+                        : 'نمایش بصری رشد تصاعدی XP و نقاط عطف کسب‌شده در فازهای مختلف شبیه‌ساز.'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 self-start sm:self-center">
+                    <span
+                      dir="ltr"
+                      className="ltr-inline text-xs font-mono font-bold px-2.5 py-1 rounded-md bg-cyan-500/10 border border-cyan-500/30 text-cyan-500 dark:text-cyan-400"
+                    >
+                      {thirtyDayXpHistory[thirtyDayXpHistory.length - 1].xp.toLocaleString()} XP TOTAL
+                    </span>
+                  </div>
+                </div>
+
+                {/* KPI Metrics Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                  <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-950/60 flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-cyan-500/15 text-cyan-500 flex items-center justify-center shrink-0">
+                      <Zap className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                        {language === 'en' ? 'Current Velocity' : 'سرعت رشد XP'}
+                      </div>
+                      <div className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
+                        +350 XP / stage
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-950/60 flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-emerald-500/15 text-emerald-500 flex items-center justify-center shrink-0">
+                      <Award className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                        {language === 'en' ? 'Modules Mastered' : 'فصل‌های تکمیل‌شده'}
+                      </div>
+                      <div className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
+                        {completedModules.length} / {totalModules} ({Math.round((completedModules.length / totalModules) * 100)}%)
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-950/60 flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-indigo-500/15 text-indigo-500 flex items-center justify-center shrink-0">
+                      <Activity className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                        {language === 'en' ? 'Current Rank' : 'رتبه در آکادمی'}
+                      </div>
+                      <div className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
+                        {language === 'en' ? 'Principal Architect' : 'معمار ارشد ایجنت‌ها'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Line Chart Container (via Recharts) - Mapping 30-Day XP Growth */}
+                <div
+                  className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/80 space-y-3"
+                  data-testid="xp-growth-line-chart-container"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3 pb-1 border-b border-slate-200/60 dark:border-slate-800/60">
+                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                      <BarChart2 className="w-4 h-4 text-cyan-500" />
+                      <span>
+                        {language === 'en'
+                          ? '30-Day XP Accumulation Trajectory & Milestones'
+                          : 'نمودار ۳۰ روزه انباشت امتیاز تجربی (XP) و نقاط عطف'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1 p-0.5 rounded-lg bg-slate-200/60 dark:bg-slate-900 border border-slate-300/50 dark:border-slate-800 text-[11px]">
+                        <button
+                          type="button"
+                          onClick={() => setTimeframeView('30days')}
+                          className={`px-2.5 py-1 rounded-md font-semibold transition-colors cursor-pointer ${
+                            timeframeView === '30days'
+                              ? 'bg-cyan-500 text-slate-950'
+                              : 'text-slate-600 dark:text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          {language === 'en' ? '30 Days Full' : 'نمای کامل ۳۰ روز'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setTimeframeView('milestones')}
+                          className={`px-2.5 py-1 rounded-md font-semibold transition-colors cursor-pointer ${
+                            timeframeView === 'milestones'
+                              ? 'bg-cyan-500 text-slate-950'
+                              : 'text-slate-600 dark:text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          {language === 'en' ? 'Key Milestones' : 'نقاط عطف اصلی'}
+                        </button>
+                      </div>
+
+                      <div className="hidden sm:flex items-center gap-3 text-[11px] font-mono text-slate-500">
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-0.5 bg-cyan-400 rounded-full" />
+                          <span>Cumulative XP</span>
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-emerald-500/30" />
+                          <span>Milestone</span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div dir="ltr" className="ltr-code w-full h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={thirtyDayXpHistory}
+                        margin={{ top: 14, right: 20, left: -10, bottom: 6 }}
+                      >
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          stroke="rgba(148, 163, 184, 0.12)"
+                          vertical={false}
+                        />
+                        <XAxis
+                          dataKey="dateLabel"
+                          tick={{ fill: '#94a3b8', fontSize: 10, fontFamily: 'JetBrains Mono, monospace' }}
+                          axisLine={{ stroke: 'rgba(148, 163, 184, 0.25)' }}
+                          tickLine={false}
+                          interval={4}
+                        />
+                        <YAxis
+                          tick={{ fill: '#94a3b8', fontSize: 10, fontFamily: 'JetBrains Mono, monospace' }}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <Tooltip
+                          content={({ active, payload }) => {
+                            if (!active || !payload || !payload.length) return null;
+                            const point = payload[0].payload as typeof thirtyDayXpHistory[0];
+                            return (
+                              <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 text-slate-100 text-xs shadow-xl space-y-1.5 min-w-[200px]">
+                                <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-1 font-mono text-cyan-400 font-bold">
+                                  <span>{point.dateLabel}</span>
+                                  <span className="text-slate-400 text-[10px]">Day {point.dayIndex + 1}</span>
+                                </div>
+                                <div className="flex items-center justify-between text-slate-300">
+                                  <span>{language === 'en' ? 'Cumulative XP:' : 'مجموع امتیاز XP:'}</span>
+                                  <span className="font-bold text-cyan-400 font-mono">{point.xp.toLocaleString()} XP</span>
+                                </div>
+                                <div className="flex items-center justify-between text-slate-400 text-[11px]">
+                                  <span>{language === 'en' ? 'Daily Gain:' : 'رشد روزانه:'}</span>
+                                  <span className="font-mono text-emerald-400">+{point.dailyGain} XP</span>
+                                </div>
+                                {point.hasMilestone && (
+                                  <div className="pt-1 border-t border-slate-800 text-[11px] text-amber-300 flex items-center gap-1 font-semibold">
+                                    <Award className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                    <span>{language === 'en' ? point.milestoneEn : point.milestoneFa}</span>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="xp"
+                          name={language === 'en' ? 'Cumulative XP' : 'مجموع XP'}
+                          stroke="#06b6d4"
+                          strokeWidth={2.8}
+                          dot={(props) => {
+                            const { cx, cy, payload } = props;
+                            if (payload.hasMilestone) {
+                              return (
+                                <g key={`dot-${payload.dayIndex}`}>
+                                  <circle cx={cx} cy={cy} r={6} fill="#10b981" stroke="#042f2e" strokeWidth={2} />
+                                  <circle cx={cx} cy={cy} r={2.5} fill="#ffffff" />
+                                </g>
+                              );
+                            }
+                            return (
+                              <circle
+                                key={`dot-${payload.dayIndex}`}
+                                cx={cx}
+                                cy={cy}
+                                r={2}
+                                fill="#06b6d4"
+                                opacity={payload.dayIndex % 5 === 0 ? 0.8 : 0}
+                              />
+                            );
+                          }}
+                          activeDot={{ r: 7, fill: '#22d3ee', stroke: '#083344', strokeWidth: 2 }}
+                          isAnimationActive={false}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="bonusXp"
+                          name={language === 'en' ? 'Bonus XP' : 'امتیاز پاداش'}
+                          stroke="#818cf8"
+                          strokeWidth={1.5}
+                          strokeDasharray="4 4"
+                          dot={false}
+                          isAnimationActive={false}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* 30-Day Milestone Progression Cards */}
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
+                    <span className="flex items-center gap-1.5">
+                      <Award className="w-3.5 h-3.5 text-amber-500" />
+                      <span>{language === 'en' ? 'Key Milestones Achieved Over 30 Days' : 'نقاط عطف اصلی ثبت‌شده در ۳۰ روز اخیر'}</span>
+                    </span>
+                    <span dir="ltr" className="ltr-inline text-[11px] font-mono text-cyan-500 font-bold">
+                      6 Key Architectural Milestones
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                    {thirtyDayXpHistory
+                      .filter((item) => item.hasMilestone)
+                      .map((item, idx) => (
+                        <div
+                          key={idx}
+                          className="p-3 rounded-xl border border-slate-200 dark:border-slate-800/90 bg-white dark:bg-slate-900/60 flex items-start gap-3 hover:border-cyan-500/40 transition-colors"
+                        >
+                          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                            <Award className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between gap-1 text-[11px] font-mono">
+                              <span className="text-slate-400 font-bold">{item.dateLabel}</span>
+                              <span className="text-cyan-500 font-bold tabular-nums">{item.xp.toLocaleString()} XP</span>
+                            </div>
+                            <div className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-1 leading-snug">
+                              {language === 'en' ? item.milestoneEn : item.milestoneFa}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
                 </div>
               </div>
             )}

@@ -29,6 +29,11 @@ import {
   computeReadingEstimateForModule,
   buildBreadcrumbDescriptorWithTooltips,
   getStoredKnowledgeCheckScores,
+  XP_MILESTONES_STORAGE_KEY,
+  XP_MILESTONE_THRESHOLDS,
+  evaluateUnreachedXpMilestones,
+  buildXpMilestonePayload,
+  checkAndTriggerXpMilestones,
 } from './generators';
 import {
   CURATED_KNOWLEDGE_QUIZ_BANK,
@@ -2757,6 +2762,153 @@ test('Repository Structure Audit: validateFileListAgainstDomainWhitelist and aud
   assert.equal(liveReport.flaggedIssuesCount, 0);
   assert.ok(liveReport.validFilesCount >= 35);
   assert.equal(liveReport.auditedDomain, 'Google-Antigravity-Academy-Mission-Control-Studio');
+});
+
+test('Mission Control Simulator: user-state JSON supports dashboard tab for XP growth tracking', () => {
+  const jsonWithDashboard = buildKnowledgeBaseUserStateJson({
+    exportedAtIso: '2026-11-04T01:00:00.000Z',
+    workspaceName: 'google-antigravity-academy-workspace',
+    taskId: 'task-sqlalchemy-nplus1',
+    titleEn: 'SQLAlchemy 2.0 N+1 Optimization',
+    titleFa: 'بهینه‌سازی N+1 در SQLAlchemy 2.0',
+    worktree: 'worktrees/feature-nplus1-fix',
+    executionMode: 'Planning Mode',
+    executionStage: 'completed',
+    activeArtifactTab: 'dashboard',
+    inlineComments: [{ line: 8, comment: 'Use selectinload for 1:N relations' }],
+    tasks: [{ id: 't1', text: 'Benchmark merchant report query', doneAfterExec: true }],
+    completedModules: ['module-1', 'module-2', 'module-3'],
+    totalModules: 8,
+  });
+
+  const parsed = parseKnowledgeBaseUserStateJson(jsonWithDashboard);
+  assert.equal(parsed.valid, true);
+  assert.equal(parsed.data?.activeTaskState.activeArtifactTab, 'dashboard');
+  assert.equal(parsed.data?.academyProgress.completionPercent, 38);
+});
+
+test('XP Milestone Automatic Trigger & Local Storage Persistence: triggers MissionMilestoneOverlay on crossing thresholds (5,000 XP, 10,000 XP) and prevents duplicate toasts', () => {
+  // 1. Verify threshold configurations
+  assert.equal(XP_MILESTONES_STORAGE_KEY, 'ag_reached_xp_milestones_v1');
+  assert.equal(XP_MILESTONE_THRESHOLDS.length >= 5, true);
+  const thresholds = XP_MILESTONE_THRESHOLDS.map((m) => m.threshold);
+  assert.ok(thresholds.includes(1000));
+  assert.ok(thresholds.includes(2500));
+  assert.ok(thresholds.includes(5000));
+  assert.ok(thresholds.includes(7500));
+  assert.ok(thresholds.includes(10000));
+
+  // 2. evaluateUnreachedXpMilestones logic
+  const unreachedAt2950With1000 = evaluateUnreachedXpMilestones(2950, [1000]);
+  assert.equal(unreachedAt2950With1000.length, 1);
+  assert.equal(unreachedAt2950With1000[0].threshold, 2500);
+
+  const unreachedAt5000 = evaluateUnreachedXpMilestones(5000, [1000, 2500]);
+  assert.equal(unreachedAt5000.length, 1);
+  assert.equal(unreachedAt5000[0].threshold, 5000);
+  assert.equal(unreachedAt5000[0].badgeCode, 'XP-5000');
+
+  // 3. buildXpMilestonePayload generates a complete MissionMilestonePayload
+  const payload5k = buildXpMilestonePayload(unreachedAt5000[0], 4, 8);
+  assert.equal(payload5k.moduleId, 'xp-milestone-5000');
+  assert.equal(payload5k.xpAwarded, 5000);
+  assert.equal(payload5k.completedCount, 4);
+  assert.equal(payload5k.completionPercent, 50);
+  assert.equal(payload5k.isFullAcademyMastery, false);
+  assert.equal(payload5k.confettiParticles.length, 28);
+  assert.ok(payload5k.moduleTitleFa.includes('۵٬۰۰۰ XP') || payload5k.moduleTitleFa.includes('5000'));
+  assert.ok(payload5k.moduleTitleEn.includes('5000 XP'));
+  assert.ok(payload5k.quote.engineeringPrincipleEn.includes('XP-5000'));
+
+  // 4. checkAndTriggerXpMilestones: simulate storage and verify triggered toasts
+  let mockStorage: number[] = [1000, 2500];
+  let triggeredPayloads: any[] = [];
+
+  const getStored = () => [...mockStorage];
+  const saveStored = (next: number[]) => {
+    mockStorage = [...next];
+  };
+
+  // User currently at 4200 XP -> threshold 5000 not reached yet
+  const res1 = checkAndTriggerXpMilestones({
+    currentXp: 4200,
+    completedModulesCount: 4,
+    totalModules: 8,
+    onTriggerMilestone: (p) => triggeredPayloads.push(p),
+    getStored,
+    saveStored,
+  });
+  assert.equal(res1.triggered, false);
+  assert.equal(triggeredPayloads.length, 0);
+  assert.deepEqual(mockStorage, [1000, 2500]);
+
+  // User reaches 5,000 XP -> triggers 5,000 XP milestone overlay
+  const res2 = checkAndTriggerXpMilestones({
+    currentXp: 5000,
+    completedModulesCount: 5,
+    totalModules: 8,
+    onTriggerMilestone: (p) => triggeredPayloads.push(p),
+    getStored,
+    saveStored,
+  });
+  assert.equal(res2.triggered, true);
+  assert.equal(res2.newlyUnlocked.length, 1);
+  assert.equal(res2.newlyUnlocked[0].threshold, 5000);
+  assert.equal(triggeredPayloads.length, 1);
+  assert.equal(triggeredPayloads[0].xpAwarded, 5000);
+  assert.deepEqual(mockStorage, [1000, 2500, 5000]);
+
+  // Subsequent check with same XP (5,000 XP) -> DOES NOT TRIGGER DUPLICATE TOAST
+  const res3 = checkAndTriggerXpMilestones({
+    currentXp: 5000,
+    completedModulesCount: 5,
+    totalModules: 8,
+    onTriggerMilestone: (p) => triggeredPayloads.push(p),
+    getStored,
+    saveStored,
+  });
+  assert.equal(res3.triggered, false);
+  assert.equal(triggeredPayloads.length, 1); // Still 1, no duplicate!
+
+  // User earns more XP (5,400 XP) -> still below next threshold (7500), no duplicate toast
+  const res4 = checkAndTriggerXpMilestones({
+    currentXp: 5400,
+    completedModulesCount: 5,
+    totalModules: 8,
+    onTriggerMilestone: (p) => triggeredPayloads.push(p),
+    getStored,
+    saveStored,
+  });
+  assert.equal(res4.triggered, false);
+  assert.equal(triggeredPayloads.length, 1);
+
+  // User reaches 10,000 XP -> crosses 7,500 XP and 10,000 XP simultaneously
+  const res5 = checkAndTriggerXpMilestones({
+    currentXp: 10000,
+    completedModulesCount: 8,
+    totalModules: 8,
+    onTriggerMilestone: (p) => triggeredPayloads.push(p),
+    getStored,
+    saveStored,
+  });
+  assert.equal(res5.triggered, true);
+  assert.equal(res5.newlyUnlocked.length, 2); // 7500 and 10000
+  assert.equal(triggeredPayloads.length, 2);
+  assert.equal(triggeredPayloads[1].xpAwarded, 10000);
+  assert.equal(triggeredPayloads[1].isFullAcademyMastery, true);
+  assert.deepEqual(mockStorage, [1000, 2500, 5000, 7500, 10000]);
+
+  // Re-checking at 10,000 XP or higher does not trigger again
+  const res6 = checkAndTriggerXpMilestones({
+    currentXp: 10500,
+    completedModulesCount: 8,
+    totalModules: 8,
+    onTriggerMilestone: (p) => triggeredPayloads.push(p),
+    getStored,
+    saveStored,
+  });
+  assert.equal(res6.triggered, false);
+  assert.equal(triggeredPayloads.length, 2); // No duplicate toasts!
 });
 
 

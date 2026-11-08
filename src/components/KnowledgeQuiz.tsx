@@ -79,7 +79,7 @@ export const KnowledgeQuiz: React.FC<KnowledgeQuizProps> = ({
         contentSnippet: '{}',
         tokenCount: 320,
         stalenessPercent: 5,
-        bentoSpan: 'normal',
+        bentoSpan: 'normal' as const,
         updatedAtIso: new Date().toISOString(),
       }
     );

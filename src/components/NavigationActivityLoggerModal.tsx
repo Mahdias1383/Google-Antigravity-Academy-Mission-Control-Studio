@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Activity,
   X,
@@ -38,6 +38,7 @@ import {
   serializeActivityLogsToStorage,
 } from '../utils/activityLogger';
 import { useLanguage } from '../context/LanguageContext';
+import { formatLocalizedNumber, localizeDigits } from '../utils/bidiText';
 
 interface NavigationActivityLoggerModalProps {
   isOpen: boolean;
@@ -72,6 +73,17 @@ export const NavigationActivityLoggerModal: React.FC<NavigationActivityLoggerMod
     [filteredLogs]
   );
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleCopyOrDownloadJson = () => {
@@ -103,9 +115,13 @@ export const NavigationActivityLoggerModal: React.FC<NavigationActivityLoggerMod
       aria-modal="true"
       aria-labelledby="activity-logger-modal-title"
       data-testid="activity-logger-modal"
+      onClick={onClose}
     >
       {/* Outer Subtle Refined Gradient Border Capsule (Mission Control Aesthetic) */}
-      <div className="relative w-full max-w-4xl p-[1px] rounded-3xl bg-gradient-to-br from-cyan-500/40 via-indigo-500/25 to-slate-800/40 shadow-[0_0_50px_-10px_rgba(6,182,212,0.28)] transition-all">
+      <div
+        className="relative w-full max-w-4xl p-[1px] rounded-3xl bg-gradient-to-br from-cyan-500/40 via-indigo-500/25 to-slate-800/40 shadow-[0_0_50px_-10px_rgba(6,182,212,0.28)] transition-all"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Inner Semi-Transparent Glassmorphic Modal Panel */}
         <div
           dir={isRTL ? 'rtl' : 'ltr'}
@@ -193,13 +209,15 @@ export const NavigationActivityLoggerModal: React.FC<NavigationActivityLoggerMod
                     data-testid="activity-logger-session-time-value"
                     className="ltr-inline text-base font-mono font-extrabold text-cyan-600 dark:text-cyan-400 tabular-nums"
                   >
-                    {stats.totalSessionTimeFormatted}
+                    {localizeDigits(stats.totalSessionTimeFormatted, language)}
                   </span>
                   <span
                     dir="ltr"
                     className="ltr-inline text-[11px] font-mono text-cyan-700 dark:text-cyan-300 tabular-nums shrink-0 opacity-80"
                   >
-                    {stats.activeSessionsCount} {stats.activeSessionsCount === 1 ? 'session' : 'sessions'}
+                    {language === 'en'
+                      ? `${stats.activeSessionsCount} ${stats.activeSessionsCount === 1 ? 'session' : 'sessions'}`
+                      : `${formatLocalizedNumber(stats.activeSessionsCount, 'fa')} نشست`}
                   </span>
                 </div>
               </div>
@@ -223,7 +241,9 @@ export const NavigationActivityLoggerModal: React.FC<NavigationActivityLoggerMod
                     data-testid="activity-logger-most-visited-count"
                     className="ltr-inline text-[11px] font-mono font-semibold text-amber-600 dark:text-amber-300 tabular-nums shrink-0"
                   >
-                    {stats.topSectionCount} {stats.topSectionCount === 1 ? 'visit' : 'visits'}
+                    {language === 'en'
+                      ? `${stats.topSectionCount} ${stats.topSectionCount === 1 ? 'visit' : 'visits'}`
+                      : `${formatLocalizedNumber(stats.topSectionCount, 'fa')} بازدید`}
                   </span>
                 </div>
                 <div
@@ -247,7 +267,7 @@ export const NavigationActivityLoggerModal: React.FC<NavigationActivityLoggerMod
                   data-testid="activity-logger-total-count"
                   className="ltr-inline text-xs font-mono font-extrabold text-slate-900 dark:text-white tabular-nums shrink-0"
                 >
-                  {stats.totalEvents}
+                  {formatLocalizedNumber(stats.totalEvents, language)}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-slate-200/80 dark:border-slate-800/80">
@@ -260,7 +280,7 @@ export const NavigationActivityLoggerModal: React.FC<NavigationActivityLoggerMod
                   data-testid="activity-logger-unique-sections"
                   className="ltr-inline text-xs font-mono font-extrabold text-emerald-600 dark:text-emerald-400 tabular-nums shrink-0"
                 >
-                  {stats.uniqueSectionsCount} / 9
+                  {localizeDigits(`${stats.uniqueSectionsCount} / 9`, language)}
                 </span>
               </div>
             </div>
@@ -290,7 +310,9 @@ export const NavigationActivityLoggerModal: React.FC<NavigationActivityLoggerMod
                     dir="ltr"
                     className="ltr-code text-[11px] font-mono font-semibold text-cyan-600 dark:text-cyan-400 tabular-nums shrink-0"
                   >
-                    {chartSummary.totalDates}d · {chartSummary.totalEvents} events
+                    {language === 'en'
+                      ? `${chartSummary.totalDates}d · ${chartSummary.totalEvents} events`
+                      : `${formatLocalizedNumber(chartSummary.totalDates, 'fa')} روز · ${formatLocalizedNumber(chartSummary.totalEvents, 'fa')} رویداد`}
                   </span>
                 </div>
 
@@ -322,7 +344,7 @@ export const NavigationActivityLoggerModal: React.FC<NavigationActivityLoggerMod
                           dir="ltr"
                           className="ltr-code font-mono font-bold text-slate-500 dark:text-slate-400"
                         >
-                          ({sec.count})
+                          ({formatLocalizedNumber(sec.count, language)})
                         </span>
                       </button>
                     ))}
@@ -506,7 +528,7 @@ export const NavigationActivityLoggerModal: React.FC<NavigationActivityLoggerMod
                 data-testid="activity-logger-filtered-count"
                 className="ltr-inline text-xs font-mono font-semibold px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 shrink-0 tabular-nums"
               >
-                {filteredLogs.length}/{logs.length}
+                {localizeDigits(`${filteredLogs.length}/${logs.length}`, language)}
               </span>
             </div>
           </div>

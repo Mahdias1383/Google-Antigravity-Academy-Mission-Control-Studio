@@ -220,9 +220,23 @@ function buildProceduralSvgBlueprintDataUri(params: {
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const rawPort = Number(process.env.PORT);
+  const PORT = Number.isFinite(rawPort) && rawPort > 0 ? rawPort : 3000;
+  const HOST = process.env.HOST || '0.0.0.0';
 
   app.use(express.json({ limit: '20mb' }));
+
+  app.get(['/api/meta', '/api/health'], (_req, res) => {
+    res.json({
+      status: 'ok',
+      service: 'google-antigravity-academy',
+      title: 'Google Antigravity Academy & Mission Control Studio',
+      version: '2.0.0',
+      port: PORT,
+      uptimeSeconds: Math.round(process.uptime()),
+      timestamp: new Date().toISOString(),
+    });
+  });
 
   app.post('/api/antigravity/assistant', async (req, res) => {
     try {
@@ -1056,13 +1070,13 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.get('*', (_req, res) => {
+    app.use((_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+  app.listen(PORT, HOST, () => {
+    console.log(`Server running on http://${HOST}:${PORT}`);
   });
 }
 

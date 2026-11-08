@@ -9,7 +9,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
-import { formatLocalizedNumber, renderBidiText } from '../utils/bidiText';
+import { formatLocalizedNumber, formatLocalizedThousand, localizeDigits, renderBidiText } from '../utils/bidiText';
 import {
   buildKnowledgeCheckChallengeSharePayload,
   buildKnowledgeCheckTop5Leaderboard,
@@ -172,7 +172,7 @@ export const AcademyKnowledgeCheckLeaderboard: React.FC = () => {
               data-testid="kb-kc-leaderboard-user-rank"
               className="ltr-inline font-mono text-xs font-black text-indigo-600 dark:text-indigo-300 tabular-nums"
             >
-              #{leaderboard.currentUserEntry.rank}
+              #{formatLocalizedNumber(leaderboard.currentUserEntry.rank, language)}
             </span>
             <span className="text-slate-300 dark:text-slate-700">|</span>
             <span
@@ -180,7 +180,7 @@ export const AcademyKnowledgeCheckLeaderboard: React.FC = () => {
               data-testid="kb-kc-leaderboard-user-xp"
               className="ltr-inline font-mono text-xs font-black text-emerald-600 dark:text-emerald-400 tabular-nums"
             >
-              {leaderboard.currentUserEntry.cumulativeScoreXp} XP
+              {formatLocalizedThousand(leaderboard.currentUserEntry.cumulativeScoreXp, language)} XP
             </span>
           </div>
 
@@ -308,7 +308,7 @@ export const AcademyKnowledgeCheckLeaderboard: React.FC = () => {
                   dir="ltr"
                   className={`ltr-inline w-9 h-9 rounded-xl border font-mono text-xs font-black flex items-center justify-center shrink-0 tabular-nums ${rankBadgeStyle}`}
                 >
-                  #{student.rank}
+                  #{formatLocalizedNumber(student.rank, language)}
                 </div>
 
                 <div className="min-w-0 space-y-1">
@@ -391,7 +391,7 @@ export const AcademyKnowledgeCheckLeaderboard: React.FC = () => {
                   data-testid={`kb-kc-student-score-${student.rank}`}
                   className="ltr-inline px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/35 text-amber-700 dark:text-amber-300 font-mono text-xs sm:text-sm font-black tabular-nums"
                 >
-                  {student.cumulativeScoreXp} XP
+                  {formatLocalizedThousand(student.cumulativeScoreXp, language)} XP
                 </div>
               </div>
             </div>

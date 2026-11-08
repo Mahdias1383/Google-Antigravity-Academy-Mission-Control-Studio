@@ -445,12 +445,12 @@ function AntigravityAcademyContent() {
             </button>
 
             {/* Single-line Breadcrumb Pill */}
-            <div className="hidden xl:flex items-center gap-2 text-xs text-slate-400 border-s border-slate-800/90 ps-3 ms-1 whitespace-nowrap shrink-0">
-              <span className="text-slate-400 font-medium whitespace-nowrap">
+            <div className="hidden xl:flex items-center gap-2 text-xs text-slate-400 border-s border-slate-800/90 ps-3 ms-1 min-w-0 overflow-hidden">
+              <span className="text-slate-400 font-medium truncate max-w-[120px] 2xl:max-w-[180px]">
                 {breadcrumbs.group}
               </span>
-              <span className="text-slate-600">/</span>
-              <span className="text-cyan-400 font-bold truncate max-w-[180px] 2xl:max-w-[260px]">
+              <span className="text-slate-600 shrink-0">/</span>
+              <span className="text-cyan-400 font-bold truncate max-w-[140px] 2xl:max-w-[220px]">
                 {breadcrumbs.item}
               </span>
             </div>
@@ -470,7 +470,7 @@ function AntigravityAcademyContent() {
 
             {/* Streak & Multiplier Badge */}
             <div
-              className="hidden lg:flex items-center gap-1.5 h-9 px-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-400 text-xs whitespace-nowrap shrink-0"
+              className="hidden 2xl:flex items-center gap-1.5 h-9 px-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-400 text-xs whitespace-nowrap shrink-0"
               title={
                 language === 'en'
                   ? `Streak: ${streakData.currentStreakDays} days (${streakMultiplierInfo.multiplier}x Multiplier)`
@@ -491,6 +491,7 @@ function AntigravityAcademyContent() {
             {/* Search (Cmd+K) Trigger */}
             <button
               type="button"
+              data-testid="header-search-btn"
               onClick={() => setIsSearchOpen(true)}
               className="flex items-center gap-2 h-9 px-3 rounded-xl border border-slate-800/90 bg-slate-900/75 text-slate-300 hover:text-white hover:border-slate-700 text-xs transition-colors cursor-pointer whitespace-nowrap shrink-0"
             >
@@ -506,6 +507,7 @@ function AntigravityAcademyContent() {
             {/* Navigation Activity Log Modal Trigger */}
             <button
               type="button"
+              data-testid="header-activity-log-btn"
               onClick={() => setIsActivityModalOpen(true)}
               className="h-9 w-9 flex items-center justify-center rounded-xl border border-slate-800/90 bg-slate-900/75 text-slate-400 hover:text-cyan-400 hover:border-slate-700 text-xs transition-colors cursor-pointer shrink-0"
               title={language === 'en' ? 'Activity Log' : 'تاریخچه فعالیت‌ها'}
@@ -516,6 +518,7 @@ function AntigravityAcademyContent() {
             {/* Invite & Share Modal Trigger */}
             <button
               type="button"
+              data-testid="header-invite-share-btn"
               onClick={() => setIsInviteModalOpen(true)}
               className="h-9 w-9 flex items-center justify-center rounded-xl border border-slate-800/90 bg-slate-900/75 text-slate-400 hover:text-emerald-400 hover:border-slate-700 text-xs transition-colors cursor-pointer shrink-0"
               title={language === 'en' ? 'Invite & Share' : 'دعوت و اشتراک‌گذاری'}
@@ -526,6 +529,7 @@ function AntigravityAcademyContent() {
             {/* Language Switcher */}
             <button
               type="button"
+              data-testid="header-language-toggle-btn"
               onClick={toggleLanguage}
               className="flex items-center gap-1.5 h-9 px-2.5 rounded-xl border border-slate-800/90 bg-slate-900/75 text-slate-300 hover:text-white hover:border-slate-700 text-xs font-mono font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0"
               title="Toggle Persian / English"
@@ -537,6 +541,7 @@ function AntigravityAcademyContent() {
             {/* Profile Avatar & XP Pill */}
             <button
               type="button"
+              data-testid="header-profile-xp-btn"
               onClick={() => navigateToSection('profile')}
               className={`flex items-center gap-2 h-9 px-2.5 rounded-xl border text-xs font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 activeSection === 'profile'
@@ -684,6 +689,7 @@ function AntigravityAcademyContent() {
                       <button
                         key={item.id}
                         type="button"
+                        data-testid={`sidebar-nav-${item.id}`}
                         onClick={() =>
                           item.id === 'curriculum'
                             ? navigateToSection('curriculum', activeModuleId)
@@ -742,6 +748,7 @@ function AntigravityAcademyContent() {
                       <button
                         key={item.id}
                         type="button"
+                        data-testid={`sidebar-nav-${item.id}`}
                         onClick={() => navigateToSection(item.id)}
                         title={label}
                         className={`w-full flex items-center gap-3 rounded-xl text-start transition-all cursor-pointer relative group ${

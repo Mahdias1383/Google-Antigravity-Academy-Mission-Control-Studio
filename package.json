@@ -4,17 +4,21 @@
   "version": "2.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --port=3000 --host=0.0.0.0",
+    "dev": "tsx server.ts",
+    "start": "node server.ts",
     "build": "vite build",
     "lint": "tsc --noEmit",
-    "test": "tsx --test src/utils/generators.test.ts",
+    "test": "tsx --test src/utils/generators.test.ts src/utils/firestore.rules.test.ts",
     "audit:domain": "tsx src/utils/runRepositoryAudit.ts",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@google/genai": "^3.0.0",
     "@tailwindcss/vite": "^4.1.14",
+    "@types/express": "^5.0.6",
     "canvas-confetti": "^1.9.4",
     "d3": "^7.9.2",
+    "express": "^5.3.0",
     "firebase": "^13.2.0",
     "lucide-react": "^0.546.0",
     "react": "^19.0.0",

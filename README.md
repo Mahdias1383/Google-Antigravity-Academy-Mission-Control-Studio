@@ -13,7 +13,7 @@
 [![D3.js](https://img.shields.io/badge/D3.js-v7-F9A03C?style=for-the-badge&logo=d3.js&logoColor=white)](https://d3js.org/)
 [![Three.js WebGL](https://img.shields.io/badge/Three.js-WebGL_3D-000000?style=for-the-badge&logo=three.js&logoColor=white)](https://threejs.org/)
 [![PWA Ready](https://img.shields.io/badge/PWA-Installable_%26_Offline-10B981?style=for-the-badge&logo=pwa&logoColor=white)](https://web.dev/progressive-web-apps/)
-[![Automated QA Tests](https://img.shields.io/badge/QA_Tests-46%20Passed-10B981?style=for-the-badge&logo=githubactions&logoColor=white)](./src/utils/generators.test.ts)
+[![Automated QA Tests](https://img.shields.io/badge/QA_Tests-57%20Passed-10B981?style=for-the-badge&logo=githubactions&logoColor=white)](./src/utils/generators.test.ts)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-F59E0B?style=for-the-badge)](./LICENSE)
 
 <p align="center">
@@ -90,20 +90,19 @@
 
 ## ✨ ویژگی‌ها و قابلیت‌های کلیدی (Key Features & Capabilities)
 
-### 🚀 ۱. لندپیج استاندارد و مدرن (Flagship Educational Landing Page)
-- **هدر الهام‌بخش با تلمتری زنده:** نمایش ۴ آمار حیاتی آکادمی (۸ فصل تخصصی، ۴ استودیو، ۴۶+ تست خودکار و ۲,۹۰۰+ میانگین XP).
+### 🚀 ۱. لندپیج استاندارد، هدر یکپارچه و سایدبار تاشو (Flagship UI Shell & Landing Page)
+- **هدر تک‌خطی و منسجم (Single-Line Mission Control Header):** طراحی مدرن با ویجت **هدف روزانه (Daily Objectives)** متصل به ضریب استمرار (Streak Multiplier)، تایمر پومودورو، جستجوی سریع (`⌘K`)، مودال شیشه‌ای تاریخچه فعالیت‌ها و سوئیچر آنی زبان با اعداد کاملاً بومی‌سازی‌شده فارسی/انگلیسی.
+- **سایدبار ناوبری تاشو (Collapsible Navigation Dock):** دارای حالت باز و بسته (Compact Icon Rail در دسکتاپ + منوی کشویی موبایل)، گروه‌بندی‌های تاشو و نوار پیشرفت دوره.
+- **هدر الهام‌بخش با تلمتری زنده:** نمایش ۴ آمار حیاتی آکادمی (۸ فصل تخصصی، ۴ استودیو، ۵۷+ تست خودکار و ۲٬۹۰۰+ میانگین XP).
 - **نقشه راه تعاملی فازبندی‌شده:** فیلتر بر اساس فاز ۱ (معماری هسته)، فاز ۲ (قوانین و کانتکست) و فاز ۳ (FastMCP و مقیاس‌پذیری).
-- **ویترین استودیوهای تعاملی:** کارت‌های هدایت مستقیم به شبیه‌سازها با یک کلیک.
-- **پیش‌نمایش جدول نخبگان آکادمی:** نمایش رده‌بندی برترین معماران همراه با شناسه‌های ایمن، امتیاز XP و دقت در کوییزها.
-- **ماموریت روزانه معمار (Daily Mission):** تسک تصادفی معماری همراه با پاداش امتیاز XP جهت ارتقای استمرار مطالعه.
+- **ماموریت روزانه معمار (Daily Objectives & Streak Boost):** انتخاب و تکمیل ماموریت روزانه همراه با پاداش ضریب استمرار مطالعه.
 
-### 👤 ۲. پروفایل و کارنامه جامع تحصیلی (Architect Profile & Transcript)
+### 👤 ۲. پروفایل، کارنامه جامع و تایم‌لاین دستاوردها (Architect Profile, Heatmap & Milestones)
 - **کارت شناسنامه معمار:** نام قابل ویرایش (ذخیره پایدار در مرورگر)، شناسه رسمی، سطح مهارت و آواتار سفارشی.
-- **پایش پیشرفت و XP:** نوار وضعیت ارتقا به سطح ۵ (Principal Architect) و نمایش استمرار مطالعه (Study Streak).
-- **هیت‌مپ فعالیت سالانه (۵۲ هفته):** گرید سبک گیت‌هاب جهت رهگیری تعاملات روزانه، جلسات پومودورو و کوییزها.
-- **مجموعه نشان‌ها و گواهینامه‌های رسمی:** نشان‌های قابل بازگشایی (Dual-Surface Pilot, Context Rot Sentinel, FastMCP 2.0 Architect, Quiz Grandmaster).
-- **جدول ریزنمرات آزمون‌های سنجش مهارت (Knowledge Check Transcripts):** ثبت نمرات آزمون‌های ۳ سوالی هر ماژول با قابلیت آزمون مجدد.
-- **خروجی استاندارد JSON:** امکان دانلود کارنامه با کد اعتبارسنجی یکتا (`antigravity-transcript-*.json`).
+- **هیت‌مپ مشارکت ۳۰ روزه و ۵۲ هفته‌ای:** گرید تعاملی با تفکیک رنگ زنجیره استمرار فعال (سبز زمردی) و فعالیت‌های قبلی (آبی) همراه با اعداد کاملاً فارسی در حالت RTL.
+- **تایم‌لاین عمودی نقاط عطف (Milestone History Timeline):** ثبت خودکار عبور از مرزهای ۵٬۰۰۰ و ۱۰٬۰۰۰ XP در `localStorage` همراه با نمایش تایم‌لاین عمودی در بخش گواهینامه‌ها و دستاوردها.
+- **مودال شیشه‌ای تاریخچه ناوبری (Glassmorphic Activity Logger Modal):** ثبت رویدادهای `section_change` با افکت `backdrop-blur-2xl`، حاشیه گرادیانی ظریف و نمودار تحلیلی Recharts.
+- **جدول ریزنمرات آزمون‌های سنجش مهارت (Knowledge Check Transcripts):** ثبت نمرات آزمون‌های ۳ سوالی هر ماژول با قابلیت دانلود کارنامه استاندارد JSON.
 
 ### 📚 ۳. سرفصل‌های ۸گانه معمار ارشد (8-Module Curriculum)
 | شماره | عنوان فصل (Persian / English) | فاز | مدت زمان | مبحث کلیدی |
@@ -130,82 +129,83 @@
 ## 🛠️ ساختار ماژولار و مهندسی پروژه (Modular Architecture)
 
 ```
-├── .env                  # متغیرهای محیطی محلی توسعه
-├── .env-sample           # فایل نمونه متغیرهای استاندارد
-├── .env.example          # فایل مستندسازی متغیرها برای کلود
-├── public/               # دارایی‌های استاتیک، آیکون‌ها و تصاویر
+├── run.sh                # اسکریپت جامع مدیریت سرویس، پیش‌نیازها، تست و اجرا (CLI Service Manager)
+├── .env.example          # فایل نمونه متغیرهای محیطی
+├── docs/
+│   └── security_spec.md  # مستندات معماری امنیتی و قوانین Firestore
+├── public/               # دارایی‌های استاتیک، فونت‌های WOFF2 و تصاویر
 │   ├── assets/aistudio/  # تصاویر محیط کاربری و شبیه‌سازها
 │   └── github-banner.svg # بنر رسمی ریپازیتوری
 ├── src/
 │   ├── components/       # کامپوننت‌های مستقل و ماژولار
 │   │   ├── LandingPage.tsx                      # لندپیج جامع آکادمی
 │   │   ├── ProfilePage.tsx                      # پروفایل و کارنامه معمار
-│   │   ├── ModuleContentView.tsx                # نمایشگر محتوای سرفصل‌ها
-│   │   ├── ModuleKnowledgeCheck.tsx             # آزمون ۳ سوالی انتهای هر ماژول
-│   │   ├── AcademyKnowledgeCheckLeaderboard.tsx # جدول رده‌بندی نخبگان
+│   │   ├── ThirtyDayContributionHeatmap.tsx     # هیت‌مپ مشارکت و استمرار ۳۰ روزه
+│   │   ├── DailyObjectivesHeaderWidget.tsx      # ویجت اهداف روزانه در هدر
+│   │   ├── NavigationActivityLoggerModal.tsx    # مودال شیشه‌ای تاریخچه ناوبری
+│   │   ├── AchievementsCertificationView.tsx    # گواهینامه‌ها و تایم‌لاین نقاط عطف XP
+│   │   ├── KnowledgeBaseExplorer.tsx            # کاوشگر پایگاه دانش و گراف D3
 │   │   └── ...
-│   ├── studios/          # استودیوهای زنده مهندسی
-│   │   ├── MissionControlSimulator.tsx          # شبیه‌ساز Mission Control
-│   │   ├── GuardrailAutomationStudio.tsx        # استودیوی قوانین و پایپ‌لاین
-│   │   └── McpCheatSheetScenarioStudios.tsx     # استودیوی FastMCP و سناریوها
+│   ├── studios/          # استودیوهای زنده مهندسی (Mission Control، قوانین، FastMCP و سناریوها)
 │   ├── data/             # سرفصل‌ها و داده‌های معماری
-│   ├── utils/            # موتورهای الگوریتمی و تست‌ها
+│   ├── utils/            # موتورهای الگوریتمی، بومی‌سازی اعداد و تست‌ها
 │   │   ├── generators.ts                        # موتورهای لیدربورد، هیت‌مپ و آزمون‌ها
-│   │   └── generators.test.ts                   # ۴۶ تست اتوماتیک با node:test
+│   │   ├── bidiText.tsx                         # موتور ایزولاسیون RTL/LTR و اعداد فارسی
+│   │   ├── generators.test.ts                   # ۵۶ تست اتوماتیک واحد و تجمیعی
+│   │   └── firestore.rules.test.ts              # تست ممیزی قوانین امنیتی Firestore
 │   ├── context/          # زمینه زبان و مدیریت RTL/LTR دوطرفه
 │   └── types/            # تایپ‌های قدرتمند TypeScript
-├── server.ts             # سرور پروداکشن Express + پروکسی Vite
+├── server.ts             # سرور فول‌استک Express + پروکسی Vite و هوش مصنوعی
 └── package.json          # اسکریپت‌ها و وابستگی‌ها
 ```
 
 ---
 
-## ⚡ راهنمای راه‌اندازی و توسعه محلی (Local Development & Quickstart)
+## ⚡ راهنمای راه‌اندازی سریع با `run.sh` و توسعه محلی (Quickstart & Service Manager)
 
 ### پیش‌نیازها
-- **Node.js**: نسخه `18.0` یا بالاتر (`v20.x` یا `v22.x` پیشنهاد می‌شود)
-- **npm** یا **bun** یا **pnpm**
+- **Node.js**: نسخه `20.0` یا بالاتر (`v22.x` پیشنهاد می‌شود)
+- **npm**
 
-### ۱. کلون ریپازیتوری
+### ۱. اجرای یک‌دست‌فرمان با اسکریپت `run.sh` (پیشنهادی)
+اسکریپت `run.sh` در ریشه پروژه تمامی پیش‌نیازها، وابستگی‌ها، تایپ‌ها و سلامت سرویس را بررسی و مدیریت می‌کند:
+
 ```bash
-git clone https://github.com/mmmas1383/google-antigravity-academy.git
-cd google-antigravity-academy
+chmod +x run.sh
+
+./run.sh            # اجرای سرور فول‌استک در پیش‌زمینه (Ctrl+C برای توقف)
+./run.sh bg         # اجرا در پس‌زمینه + بررسی سلامت (/api/meta) + ثبت لاگ در data/server.log
+./run.sh status     # مشاهده وضعیت پردازش و سلامت سرویس
+./run.sh restart    # راه‌اندازی مجدد سرویس پس‌زمینه
+./run.sh stop       # توقف کامل سرویس در حال اجرا
+./run.sh check      # بررسی پیش‌نیازها، تایپ‌اسکریپت و ممیزی ساختار پروژه (بدون اجرا)
+./run.sh test       # اجرای کامل ۵۷ تست خودکار و ممیزی دامنه
+./run.sh build      # ساخت باندل پروداکشن در پوشه dist/
+./run.sh help       # نمایش راهنمای دستورات
 ```
 
-### ۲. تنظیم فایل‌های محیطی (`.env` و `.env-sample`)
-فایل نمونه را کپی کرده و در صورت نیاز متغیرها را تنظیم کنید:
+همچین می‌توانید پورت و آدرس شبکه دلخواه را مشخص کنید:
 ```bash
-cp .env-sample .env
-```
-محتوای پیش‌فرض فایل `.env`:
-```ini
-PORT=3000
-NODE_ENV=development
-APP_URL=http://localhost:3000
-VITE_APP_NAME="Google Antigravity Academy & Mission Control"
-VITE_APP_DEFAULT_LANG=fa
-VITE_APP_THEME=dark
-GEMINI_API_KEY=""
+PORT=8080 ./run.sh
+HOST=127.0.0.1 ./run.sh
 ```
 
-### ۳. نصب وابستگی‌ها
+### ۲. راه‌اندازی دستی با `npm`
 ```bash
+cp .env.example .env
 npm install
-```
-
-### ۴. اجرای سرور توسعه (Dev Server)
-```bash
 npm run dev
 ```
-برنامه در آدرس `http://localhost:3000` به صورت زنده در دسترس قرار می‌گیرد.
+برنامه در آدرس `http://localhost:3000` (همراه با اندپوینت سلامت `http://localhost:3000/api/meta`) در دسترس قرار می‌گیرد.
 
-### ۵. اجرای تست‌های خودکار تضمین کیفیت (QA Test Suite)
+### ۳. اجرای تست‌های خودکار تضمین کیفیت (QA Test Suite)
 ```bash
 npm test
+npm run audit:domain
 ```
-این دستور **۴۶ تست مستقل واحد و تجمیعی** در `src/utils/generators.test.ts` و فایل‌های امنیتی را بدون خطا اجرا می‌کند.
+این دستورات **۵۷ تست مستقل واحد، تجمیعی و امنیتی** (`src/utils/generators.test.ts` و `src/utils/firestore.rules.test.ts`) و ممیزی ساختار دامنه را اجرا می‌کنند.
 
-### ۶. بیلد پروداکشن و بررسی استاتیک
+### ۴. بیلد پروداکشن و بررسی استاتیک
 ```bash
 npm run lint
 npm run build

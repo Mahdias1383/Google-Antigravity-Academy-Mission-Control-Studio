@@ -3079,8 +3079,20 @@ export function buildDeterministicModuleQuickOverview(params: {
   const firstSub = module.subSections?.[0];
   const secondSub = module.subSections?.[1];
   const allBullets = (module.subSections || []).flatMap((s) => s.bulletPoints || []);
+  const safeKeyTakeaways =
+    Array.isArray(module.keyTakeaways) && module.keyTakeaways.length > 0
+      ? module.keyTakeaways
+      : [
+          {
+            titleFa: module.titleFa || 'معماری ایجنت‌محور',
+            titleEn: module.titleEn || 'Agent-First Architecture',
+            descFa: module.summaryFa || 'حاکمیت آرتیفکت و ایزولاسیون محیط کاربری.',
+            descEn: module.summaryEn || 'Artifact governance and workspace isolation.',
+            metricOrBadge: `MOD-0${module.number || 1}`,
+          },
+        ];
 
-  const baseTakeaways: QuickOverviewTakeawayItem[] = module.keyTakeaways
+  const baseTakeaways: QuickOverviewTakeawayItem[] = safeKeyTakeaways
     .slice(0, 3)
     .map((kt, idx) => {
       const rawTitle = isEn
@@ -3330,9 +3342,10 @@ export function buildDeterministicKbContextAwareness(params: {
   const { entry, baselineProfile, language } = params;
   const isEn = language === 'en';
   const nowIso = params.generatedAtIso || new Date().toISOString();
-  const snippetLower = entry.contentSnippet.toLowerCase();
+  const snippetLower = (entry.contentSnippet || '').toLowerCase();
+  const safeStaleness = typeof entry.stalenessPercent === 'number' ? entry.stalenessPercent : 20;
 
-  const isStale = entry.stalenessPercent >= 65;
+  const isStale = safeStaleness >= 65;
   const mentionsSse = snippetLower.includes('sse') || snippetLower.includes('http');
   const mentionsStdio = snippetLower.includes('stdio') || snippetLower.includes('uv');
   const mentionsReadOnly =
@@ -3345,7 +3358,7 @@ export function buildDeterministicKbContextAwareness(params: {
     snippetLower.includes('src/');
 
   // Compute deterministic drift risk score based on entry staleness + baseline mismatch
-  let baseRisk = Math.round(entry.stalenessPercent * 0.65);
+  let baseRisk = Math.round(safeStaleness * 0.65);
   if (baselineProfile === 'sse-remote-zero-trust' && !mentionsSse) {
     baseRisk += 22;
   }
@@ -3912,8 +3925,9 @@ export function buildDeterministicModuleKnowledgeCheck(params: {
   const isEn = language === 'en';
   const nowIso = params.generatedAtIso || new Date().toISOString();
 
-  const kt0 = module.keyTakeaways[0];
-  const kt1 = module.keyTakeaways[1] || module.keyTakeaways[0];
+  const safeTakeaways = Array.isArray(module.keyTakeaways) ? module.keyTakeaways : [];
+  const kt0 = safeTakeaways[0];
+  const kt1 = safeTakeaways[1] || safeTakeaways[0];
   const allBullets = (module.subSections || []).flatMap(
     (s) => s.bulletPoints || []
   );

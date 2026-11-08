@@ -70,7 +70,7 @@ import {
 import { KnowledgeQuiz } from './KnowledgeQuiz';
 import { AcademyKnowledgeCheckLeaderboard } from './AcademyKnowledgeCheckLeaderboard';
 import { useLanguage } from '../context/LanguageContext';
-import { renderBidiText, formatLocalizedNumber } from '../utils/bidiText';
+import { renderBidiText, formatLocalizedNumber, localizeDigits } from '../utils/bidiText';
 
 const DEFAULT_FALLBACK_STUDY_DAYS: StudySessionDay[] = [
   { dateIso: '2026-10-21', dayLabelFa: 'چهارشنبه', minutesStudied: 35, modulesTouched: 1, active: true },
@@ -1504,7 +1504,9 @@ export const KnowledgeBaseExplorer: React.FC<{
                 : 'میانگین شاخص فرسودگی:'}
             </span>
             <span dir="ltr" className="ltr-inline font-mono font-bold tabular-nums">
-              {telemetry.averageStalenessPercent}% Avg Staleness
+              {language === 'en'
+                ? `${telemetry.averageStalenessPercent}% Avg Staleness`
+                : `${formatLocalizedNumber(telemetry.averageStalenessPercent, 'fa')}٪ میانگین فرسودگی`}
             </span>
           </div>
         </div>
@@ -1522,7 +1524,10 @@ export const KnowledgeBaseExplorer: React.FC<{
               data-testid="kb-total-tokens"
               className="ltr-inline font-mono text-xs font-bold text-blue-600 dark:text-blue-400 tabular-nums"
             >
-              {telemetry.totalTokens} / {telemetry.tokenBudgetMax} Tokens ({telemetry.tokenUsagePercent}%)
+              {localizeDigits(
+                `${telemetry.totalTokens} / ${telemetry.tokenBudgetMax} Tokens (${telemetry.tokenUsagePercent}%)`,
+                language
+              )}
             </span>
           </div>
 
@@ -1547,7 +1552,9 @@ export const KnowledgeBaseExplorer: React.FC<{
                 : 'تعداد کل مدخل‌های فعال در Bento Grid:'}
             </span>
             <span dir="ltr" className="ltr-inline font-mono font-bold">
-              {telemetry.totalEntries} Entries
+              {language === 'en'
+                ? `${telemetry.totalEntries} Entries`
+                : `${formatLocalizedNumber(telemetry.totalEntries, 'fa')} مدخل`}
             </span>
           </div>
         </div>
@@ -1558,14 +1565,16 @@ export const KnowledgeBaseExplorer: React.FC<{
             <span className="text-xs font-extrabold text-slate-700 dark:text-slate-200">
               {language === 'en'
                 ? 'Prune Poisonous Items (Stale ≥ 65%)'
-                : 'پاک‌سازی آیتم‌های مسموم‌کننده (Stale Items ≥ 65%)'}
+                : 'پاک‌سازی آیتم‌های مسموم‌کننده (فرسودگی ≥ ۶۵٪)'}
             </span>
             <span
               dir="ltr"
               data-testid="kb-stale-count"
               className="ltr-inline text-amber-600 dark:text-amber-400 font-mono text-xs font-bold tabular-nums"
             >
-              {telemetry.staleEntriesCount} Stale
+              {language === 'en'
+                ? `${telemetry.staleEntriesCount} Stale`
+                : `${formatLocalizedNumber(telemetry.staleEntriesCount, 'fa')} فرسوده`}
             </span>
           </div>
 

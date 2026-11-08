@@ -222,8 +222,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             {
               labelEn: 'Verifiable Assertions',
               labelFa: 'تست خودکار و ممیزی',
-              valueEn: '46+',
-              valueFa: '+۴۶',
+              valueEn: '57+',
+              valueFa: '+۵۷',
               unitEn: 'Automated Tests',
               unitFa: 'آزمون تضمین کیفیت',
               colorClass: 'text-cyan-500 border-cyan-500/20 bg-cyan-500/5',
@@ -331,7 +331,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         {formatLocalizedNumber(mod.number, language, true)}
                       </span>
                       <span className="text-slate-500 dark:text-slate-400 font-medium">
-                        {mod.readingTime} · {mod.difficulty}
+                        {isEn
+                          ? mod.readingTime
+                          : localizeDigits(
+                              mod.readingTime.replace('min read', 'دقیقه مطالعه'),
+                              'fa'
+                            )}{' '}
+                        · {mod.difficulty}
                       </span>
                     </div>
 
@@ -467,7 +473,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       <IconComp className="w-5 h-5" />
                     </span>
                     <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/[0.06]">
-                      {studio.tag}
+                      {isEn ? studio.tag : localizeDigits(studio.tag.replace('Scenarios', 'سناریو'), 'fa')}
                     </span>
                   </div>
 
